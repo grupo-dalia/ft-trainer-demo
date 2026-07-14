@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FT Trainer · Fernando Tienda Training</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" /><link rel="stylesheet" href="catalogo.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="#" aria-label="FT Trainer">
+        <span class="brand-mark"><i></i><b></b><em></em></span>
+        <span><strong>FT</strong><small>ADMIN</small></span>
+      </a>
+      <nav id="nav">
+        <button class="nav-item active" data-page="dashboard"><span data-icon="grid"></span>Inicio</button>
+        <button class="nav-item" data-page="clients"><span data-icon="users"></span>Clientes <small>24</small></button>
+        <button class="nav-item" data-page="routines"><span data-icon="dumbbell"></span>Rutinas</button>
+        <button class="nav-item" data-page="exercises"><span data-icon="play"></span>Ejercicios</button>
+        <button class="nav-item" data-page="progress"><span data-icon="chart"></span>Progreso</button>
+        <button class="nav-item" data-page="payments"><span data-icon="card"></span>Pagos</button>
+      </nav>
+      <div class="ai-card">
+        <span class="spark">✦</span>
+        <strong>FT Coach IA</strong>
+        <p>Tu asistente está listo para crear una rutina.</p>
+        <button id="open-ai">Crear rutina</button>
+      </div>
+      <button class="profile" onclick="location.href='index.html'">
+        <span class="avatar">FT</span>
+        <span><b>Fernando Tienda</b><small>Entrenador</small></span>
+        <span class="dots">•••</span>
+      </button>
+    </aside>
+
+    <main>
+      <header>
+        <button class="mobile-menu" id="mobile-menu">☰</button>
+        <div><p class="eyebrow" id="eyebrow">MARTES, 14 DE JULIO</p><h1 id="page-title">Buenos días, Fernando</h1></div>
+        <div class="header-actions">
+          <label class="search"><span data-icon="search"></span><input id="search" placeholder="Buscar cliente..." /></label>
+          <button class="icon-btn" aria-label="Notificaciones"><span data-icon="bell"></span><i></i></button>
+          <button class="primary" id="new-client"><b>＋</b> Nuevo cliente</button>
+        </div>
+      </header>
+
+      <section id="content" class="content"></section>
+    </main>
+  </div>
+
+  <div class="modal-backdrop" id="modal">
+    <div class="modal">
+      <button class="modal-close" id="close-modal">×</button>
+      <span class="modal-icon">✦</span>
+      <p class="eyebrow">FT COACH IA</p>
+      <h2>Crear rutina inteligente</h2>
+      <p class="muted">Selecciona un cliente y el objetivo. La IA adaptará volumen, intensidad y ejercicios a su historial.</p>
+      <label>Cliente<select><option>Marcos Ruiz</option><option>Laura Sánchez</option><option>Diego Martín</option></select></label>
+      <label>Objetivo<select><option>Ganancia muscular</option><option>Pérdida de grasa</option><option>Fuerza</option><option>Movilidad</option></select></label>
+      <button class="primary full" id="generate">✦ Generar propuesta</button>
+    </div>
+  </div>
+  <div id="toast" class="toast">Cliente añadido correctamente</div>
+  <script src="app.js"></script>
+  <script src="catalogo.js"></script>
+</body>
+</html>
