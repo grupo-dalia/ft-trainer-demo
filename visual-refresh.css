@@ -1,0 +1,19 @@
+/* Dirección visual FT Trainer 2026: deportiva, clara y orientada a acciones. */
+body{background:#eef3f1}
+.access-page{background:#06141b}
+.access-wrap{grid-template-columns:minmax(420px,.86fr) minmax(560px,1.14fr);background:#06141b}
+.access-panel{grid-column:1;grid-row:1;background:linear-gradient(155deg,#07151d,#0b201d);color:#fff;padding:48px clamp(28px,5vw,72px);border-right:1px solid #2dac6caa}
+.access-hero{grid-column:2;grid-row:1;min-height:100vh;padding:48px;background-position:center 46%}
+.access-content{max-width:520px}.access-content::before{content:'';display:block;width:250px;height:76px;margin:0 auto 22px;background:#fff url('assets/brand/ft-horizontal-color.png') center/290px auto no-repeat;border-radius:13px;box-shadow:0 14px 35px #0005}
+.access-content .overline{text-align:center}.access-content h2{text-align:center;color:#fff;font-size:40px}.access-content .sub{text-align:center;color:#aebdb6}
+.login-form label,.request-form label{color:#cbd7d1}.login-form input:not([type=checkbox]){background:#ffffff09;border-color:#ffffff29;color:#fff}.login-form input::placeholder{color:#94a39c}.login-row{color:#aebdb6}.access-divider span{background:#0a1d1b;color:#91a39a}
+.google-login,.request-access{background:#ffffff08;border-color:#ffffff2b;color:#fff}.activation-note{background:#2dac6c14;color:#b7c9c0;border:1px solid #2dac6c25}.activation-note b{color:#59d696}.coach-access{color:#9eb1a7}
+.hero-copy{max-width:620px;margin:auto 0 auto 6%}.hero-copy h1{font-size:clamp(54px,6vw,92px);text-shadow:0 8px 30px #0008}.hero-copy p{font-size:18px}.hero-foot{font-size:11px}
+.request-form{color:var(--ink)}.request-form label{color:#516158}
+
+.client-body{background:linear-gradient(180deg,#f7f9f8,#edf3f0)}
+.client-main{max-width:1240px}.client-header{box-shadow:0 10px 30px #071f161b}.welcome{min-height:190px;border-radius:24px;padding:34px 40px;box-shadow:0 20px 45px #0d38251f}.welcome h2{font-size:38px}.welcome p{font-size:14px}.week-score{width:124px;height:124px}
+.workout-card,.client-card{border:0;border-radius:20px;box-shadow:0 12px 32px #183b2a12}.workout-cover{height:210px}.workout-content{padding:25px 30px}.exercise-row{border-radius:12px;padding:12px 10px;margin:2px -10px}.exercise-row:hover{background:#f1f8f4}.client-card{padding:24px}.progress-stats>div{padding:14px 5px}.mobile-nav{border:0;box-shadow:0 -8px 30px #173b2a16;border-radius:20px 20px 0 0}
+
+@media(max-width:900px){.access-wrap{grid-template-columns:1fr}.access-hero{grid-column:1;grid-row:1;min-height:310px}.access-panel{grid-column:1;grid-row:2;border:0;padding:34px 22px}.access-content{margin:auto}.access-content::before{width:220px;height:64px;background-size:255px auto}.hero-copy{margin:45px 0 0}.hero-copy h1{font-size:44px}.hero-brand{display:none}.hero-copy p,.hero-foot{display:none}}
+@media(max-width:760px){.welcome{min-height:150px;padding:22px;border-radius:19px}.welcome h2{font-size:28px}.workout-cover{height:175px}.client-card{padding:20px}}
