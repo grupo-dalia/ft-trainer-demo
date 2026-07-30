@@ -1,0 +1,30 @@
+.form-feedback {
+  min-height: 18px;
+  margin: 10px 0 !important;
+  color: #a23b2d !important;
+  font-size: 10px !important;
+}
+
+.admin-form .full {
+  width: 100%;
+  min-height: 46px;
+}
+
+.admin-form button:disabled {
+  opacity: .65;
+  cursor: wait;
+}
+
+@media (max-width: 600px) {
+  .admin-form-overlay {
+    align-items: end;
+    padding: 0;
+  }
+
+  .admin-form {
+    width: 100%;
+    max-height: 94svh;
+    border-radius: 20px 20px 0 0;
+    padding: 24px 20px calc(24px + env(safe-area-inset-bottom));
+  }
+}

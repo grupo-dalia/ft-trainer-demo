@@ -19,6 +19,50 @@ async function loadLiveDashboard(){
   stats.querySelectorAll('h3').forEach((el,index)=>el.textContent=values[index]??0);
 }
 
+const clientOverlay=document.createElement('div');
+clientOverlay.className='admin-form-overlay';
+clientOverlay.id='new-client-overlay';
+clientOverlay.innerHTML=`<form class="admin-form" id="new-client-form">
+  <button type="button" class="admin-form-close" aria-label="Cerrar">×</button>
+  <p class="eyebrow">NUEVO CLIENTE</p>
+  <h2>Crear perfil de cliente</h2>
+  <p>El perfil quedará pendiente hasta que Fernando confirme el acceso.</p>
+  <div class="admin-fields">
+    <label>Nombre<input name="first_name" autocomplete="given-name" required></label>
+    <label>Apellidos<input name="last_name" autocomplete="family-name"></label>
+    <label>Correo electrónico<input name="email" type="email" autocomplete="email" required></label>
+    <label>Teléfono<input name="phone" type="tel" autocomplete="tel"></label>
+    <label class="wide">Objetivo<select name="objective"><option value="">Sin definir</option><option>Ganancia muscular</option><option>Pérdida de grasa</option><option>Fuerza</option><option>Movilidad</option><option>Recomposición corporal</option></select></label>
+  </div>
+  <p class="form-feedback" id="new-client-feedback" aria-live="polite"></p>
+  <button class="primary full" type="submit">Guardar cliente</button>
+</form>`;
+document.body.appendChild(clientOverlay);
+
+const newClientForm=clientOverlay.querySelector('#new-client-form');
+const closeClientForm=()=>{clientOverlay.classList.remove('open');newClientForm.reset();clientOverlay.querySelector('#new-client-feedback').textContent='';};
+window.openNewClient=()=>clientOverlay.classList.add('open');
+clientOverlay.querySelector('.admin-form-close').onclick=closeClientForm;
+clientOverlay.onclick=event=>{if(event.target===clientOverlay)closeClientForm();};
+newClientForm.onsubmit=async event=>{
+  event.preventDefault();
+  const button=newClientForm.querySelector('[type="submit"]');
+  const feedback=clientOverlay.querySelector('#new-client-feedback');
+  const formData=new FormData(newClientForm);
+  const {data:{user}}=await ftSupabase.auth.getUser();
+  const record={first_name:String(formData.get('first_name')||'').trim(),last_name:String(formData.get('last_name')||'').trim(),email:String(formData.get('email')||'').trim().toLowerCase(),phone:String(formData.get('phone')||'').trim()||null,objective:String(formData.get('objective')||'').trim()||null,access_status:'pending',created_by:user?.id||null};
+  button.disabled=true;button.textContent='Guardando…';feedback.textContent='';
+  const {error}=await ftSupabase.from('clients').insert(record);
+  button.disabled=false;button.textContent='Guardar cliente';
+  if(error){feedback.textContent=error.code==='23505'?'Ya existe un cliente con ese correo.':'No se pudo guardar el cliente. Revisa los datos.';return;}
+  closeClientForm();render('clients');toast('Cliente creado correctamente');
+};
+
 const baseRender=render;
-render=function(page='dashboard'){baseRender(page);if(page==='dashboard')loadLiveDashboard();};
+render=function(page='dashboard'){
+  baseRender(page);
+  if(page==='dashboard')loadLiveDashboard();
+  if(page==='clients')setTimeout(()=>window.loadSupabaseClients?.(),0);
+};
+document.getElementById('new-client').onclick=openNewClient;
 render('dashboard');
