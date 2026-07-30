@@ -116,6 +116,15 @@ button,
   background-color: #2dac6c;
 }
 
+.login-error {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #fff0ed;
+  color: #9a3327;
+  font-size: 10px;
+}
+
 @media (max-width: 760px) {
   .access-hero {
     min-height: 330px;
