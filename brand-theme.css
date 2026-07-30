@@ -55,19 +55,45 @@ button,
 }
 
 .hero-brand {
-  width: max-content;
-  min-height: 62px;
+  width: 250px;
+  height: 74px;
+  background: url('assets/brand/ft-horizontal-white.png') center / 250px auto no-repeat;
   filter: drop-shadow(0 4px 12px rgba(0, 0, 0, .18));
 }
 
 .mini-brand {
-  width: max-content;
-  min-height: 46px;
+  width: 172px;
+  height: 54px;
+  background: url('assets/brand/ft-horizontal-white.png') center / 172px auto no-repeat;
 }
 
 .brand {
-  width: max-content;
-  min-height: 54px;
+  width: 190px;
+  height: 62px;
+  margin-left: 0;
+  background: url('assets/brand/ft-horizontal-white.png') center / 190px auto no-repeat;
+}
+
+.hero-brand > *,.mini-brand > *,.brand > *{display:none!important}
+
+/* Firma oficial en formularios y diálogos importantes. */
+.request-form::before,.admin-form::before,.modal::before{
+  content:'';
+  display:block;
+  width:190px;
+  height:50px;
+  margin:0 0 12px;
+  background:url('assets/brand/ft-horizontal-color.png') center / 190px auto no-repeat;
+}
+.request-form::before{width:210px;height:56px;margin:0 auto 10px}
+.modal::before{width:170px;height:46px}
+.coach-avatar,.avatar{
+  background-color:#fff;
+  background-image:url('assets/brand/ft-symbol-color.png');
+  background-position:center;
+  background-size:64px auto;
+  background-repeat:no-repeat;
+  color:transparent;
 }
 
 .client-header {
@@ -114,6 +140,7 @@ button,
     background-position: center 56%;
   }
 
-  .hero-brand { min-height: 50px; }
-  .mini-brand { min-height: 39px; }
+  .hero-brand { width:210px;height:62px;background-size:210px auto; }
+  .mini-brand { width:145px;height:46px;background-size:145px auto; }
+  .brand { width:180px;height:58px;background-size:180px auto; }
 }

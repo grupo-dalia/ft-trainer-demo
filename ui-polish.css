@@ -38,3 +38,5 @@ button,a,input,select,textarea{touch-action:manipulation}button{min-height:44px}
 .readiness-form input:not([type=checkbox]),.readiness-form select{height:48px!important;font-size:16px!important}.plan-head>div>p,.coach-alert{font-size:12px!important}
 .week-sessions header span{font-size:10px!important}.planned-exercise b,.planned-exercise>strong{font-size:12px!important}
 .planned-exercise small,.planned-exercise>strong small{font-size:10px!important}.coach-reasons>b{font-size:13px!important}.coach-reasons p{font-size:11px!important}
+.pending-card>p:not(.overline){font-size:13px!important}.pending-steps b{font-size:13px!important}.pending-steps small{font-size:12px!important}
+.limited b,.limited span{font-size:12px!important}.pending-back{min-height:48px}
