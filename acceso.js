@@ -7,7 +7,7 @@
   document.getElementById('request-form').onsubmit=event=>{event.preventDefault();location.href='pendiente.html';};
   document.getElementById('recover').onclick=event=>{event.preventDefault();modal.classList.add('open');};
   await load('vendor/supabase-js.min.js');
-  await load('supabase-config.js');
+  await load('supabase-config.js?v=2');
   const client=supabase.createClient(FT_SUPABASE.url,FT_SUPABASE.publishableKey);
   window.ftSupabase=client;
 

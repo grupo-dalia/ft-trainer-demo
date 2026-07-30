@@ -1,15 +1,18 @@
-@media (max-width: 760px) {
-  .access-wrap { display: block; }
-  .access-hero { min-height: 38svh; padding: 24px 22px; }
-  .access-panel { padding: 30px 20px 42px; }
+@media (max-width: 900px) {
+  html, body { width: 100%; overflow-x: hidden; }
+  .access-wrap { display: block; width: 100%; min-height: 100svh; }
+  .access-hero { display: none; }
+  .access-panel { width: 100%; min-height: 100svh; padding: 34px 20px 44px; place-items: center; }
   .hero-copy { margin-top: 34px; }
-  .login-content { margin: auto; }
+  .access-content.login-content { width: min(440px, 100%); margin: auto; }
   .activation-note { margin-bottom: 0; }
 }
 
 @media (max-width: 520px) {
-  .access-hero { min-height: 34svh; }
-  .hero-copy { margin-top: 24px; }
+  .access-panel { padding: 28px 18px 36px; place-items: start center; }
+  .access-content h2 { font-size: clamp(30px, 10vw, 38px); }
+  .sub { margin-bottom: 26px; }
   .login-row { gap: 12px; }
   .login-row a { text-align: right; }
+  .login-submit, .request-access { min-height: 48px; }
 }

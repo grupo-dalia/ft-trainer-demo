@@ -2,7 +2,7 @@
   document.body.style.visibility='hidden';
   const load=src=>new Promise((resolve,reject)=>{const script=document.createElement('script');script.src=src;script.onload=resolve;script.onerror=reject;document.head.appendChild(script)});
   await load('vendor/supabase-js.min.js');
-  await load('supabase-config.js');
+  await load('supabase-config.js?v=2');
   const client=supabase.createClient(FT_SUPABASE.url,FT_SUPABASE.publishableKey);
   const {data:{session}}=await client.auth.getSession();
   if(!session){location.replace('index.html');return;}
