@@ -13,6 +13,7 @@ else{
     await load('app.js');
     await load('catalogo.js?v=2');
     await load('admin-features.js?v=4');
+    await load('supabase-data.js?v=1');
     await load('client-import.js?v=1');
     document.body.style.visibility='visible';
   }
