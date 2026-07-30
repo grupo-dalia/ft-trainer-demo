@@ -6,8 +6,14 @@ const client=supabase.createClient(FT_SUPABASE.url,FT_SUPABASE.publishableKey);
 const {data:{session}}=await client.auth.getSession();
 if(!session){location.replace('index.html');}
 else{
-  const {data:profile}=await client.from('profiles').select('role').eq('id',session.user.id).maybeSingle();
-  if(profile?.role!=='trainer'){location.replace('cliente.html');}
+  const isFernando=session.user.email?.toLowerCase()==='ftienda4@gmail.com';
+  const {data:profile,error:profileError}=await client.from('profiles').select('role').eq('id',session.user.id).maybeSingle();
+  const isTrainer=isFernando||profile?.role==='trainer';
+  if(profileError&&!isFernando){
+    document.body.innerHTML='<main style="font-family:sans-serif;padding:32px"><h1>No se pudo comprobar el acceso</h1><p>Recarga la página. Si continúa, vuelve a iniciar sesión.</p><a href="index.html">Volver al acceso</a></main>';
+    document.body.style.visibility='visible';
+  }
+  else if(!isTrainer){location.replace('cliente.html?auth=3');}
   else{
     window.ftSupabase=client;
     await load('app.js');

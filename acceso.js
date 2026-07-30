@@ -35,7 +35,7 @@
     }
     const {data:profile}=await client.from('profiles').select('role').eq('id',data.user.id).maybeSingle();
     if(profile?.role==='trainer'){
-      location.href='admin.html';
+      location.href='admin.html?auth=3';
       return;
     }
     const {data:member}=await client.from('clients').select('access_status').eq('user_id',data.user.id).maybeSingle();
