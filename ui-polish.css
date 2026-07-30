@@ -1,0 +1,40 @@
+/* Escala legible y controles cómodos en escritorio, tablet y móvil. */
+html{font-size:16px;-webkit-text-size-adjust:100%}body{font-size:14px;line-height:1.5}
+button,a,input,select,textarea{touch-action:manipulation}button{min-height:44px}input,select,textarea{font-size:16px}
+.nav-item{min-height:50px;font-size:13px}.nav-item small{font-size:11px}.brand small{font-size:10px}.profile b{font-size:13px}.profile small{font-size:11px}
+.eyebrow{font-size:11px}.search input{font-size:14px}.primary{min-height:44px;font-size:13px}.stat-card p{font-size:12px}.stat-card .trend{font-size:11px}
+.section-head h2{font-size:20px}.section-head a{font-size:12px}.session-info b{font-size:13px}.session-info span{font-size:12px}.tag,.pill{font-size:11px}
+.goal-row{font-size:12px}.day{font-size:11px}.table th{font-size:11px}.table td{font-size:13px;line-height:1.45}.client-cell small{font-size:12px}.muted{font-size:13px}
+.routine footer{font-size:12px}.exercise-info h3{font-size:17px}.cash-badge,.activation-btn{font-size:11px}.activation-btn{min-height:38px;padding:8px 12px}
+.admin-form>p,.youtube-help,.ai-result p,.ai-exercises span{font-size:12px}.admin-fields label{font-size:13px}.admin-fields input,.admin-fields select{height:48px}
+.custom-preview{font-size:12px}.engine-note{font-size:11px}
+.login-form label,.request-form label{font-size:13px}.login-form input:not([type=checkbox]),.request-form input:not([type=checkbox]){height:50px}
+.login-row{font-size:12px;gap:14px}.login-submit,.request-access{min-height:48px;font-size:13px}.access-divider span{font-size:10px}.coach-access{font-size:11px;min-height:36px}
+.activation-note{font-size:12px}.request-form>p:not(.overline){font-size:13px}
+.hero-brand small,.mini-brand small{font-size:10px}.overline{font-size:11px}.client-greeting p{font-size:10px}.user-chip{font-size:13px}.week-pill{font-size:10px}.welcome p{font-size:13px}
+.week-score small{font-size:10px}.workout-cover>span,.workout-cover>i{font-size:11px}.workout-top p,.client-card p{font-size:11px}.workout-top b{font-size:13px}
+.exercise-row{min-height:72px}.exercise-num{font-size:12px}.exercise-row b{font-size:14px}.exercise-row small{font-size:12px}.exercise-row>div em{font-size:11px}
+.coach-note b{font-size:13px}.card-title a{font-size:11px}.progress-stats b{font-size:16px}.progress-stats small{font-size:10px}
+.next-session>div>span{font-size:10px}.next-session b,.next-session div small{font-size:12px}.mobile-nav{height:72px}.mobile-nav button{min-height:56px}.mobile-nav small{font-size:11px}
+.sheet-inner>p{font-size:13px}.sets>div{font-size:12px}.sets input{font-size:16px;min-height:44px}.save-set{min-height:48px;font-size:13px}.client-toast{font-size:13px}
+.client-exercise-media>span,.client-exercise-media>small{font-size:10px}.catalog-search input,.catalog-tools select{font-size:14px}.dataset-credit,.catalog-count,.media-notice{font-size:11px}
+.catalog-exercise .exercise-visual span{font-size:10px}.exercise-detail li{font-size:13px}.detail-media small{font-size:11px}.progress-lead{font-size:13px}
+.metric-grid span,.chart-heading span,.checkins>span{font-size:11px}.metric-grid i,.lift span,.lift small,.lift>b,.checkins p{font-size:11px}.chart-labels{font-size:10px}
+.coach-program-invite b{font-size:13px}.coach-program-invite button{font-size:12px}.coach-intro>p:not(.overline){font-size:13px}.coach-factors span{font-size:12px}
+.coach-intro>small{font-size:11px}.readiness-form label{font-size:13px}.readiness-form input:not([type=checkbox]),.readiness-form select{height:48px;font-size:16px}
+.plan-head>div>p,.coach-alert{font-size:12px}.week-sessions header span{font-size:10px}.planned-exercise b,.planned-exercise>strong{font-size:12px}
+.planned-exercise small,.planned-exercise>strong small{font-size:10px}.coach-reasons>b{font-size:13px}.coach-reasons p{font-size:11px}
+@media(max-width:760px){body{font-size:15px}header{padding:18px 16px}header h1{font-size:26px}.content{padding:18px 14px 34px}.page-placeholder h2{font-size:24px}.section-head h2{font-size:21px}.table th{font-size:11px}.table td{font-size:13px}.access-panel{padding:28px 20px}.access-content h2{font-size:32px}.sub{font-size:14px}.welcome p{font-size:12px}.workout-content{padding:18px}.client-main{padding-bottom:96px}.sheet-inner{padding-bottom:calc(24px + env(safe-area-inset-bottom))}.admin-form{border-radius:16px 16px 0 0}.admin-fields{gap:16px}}
+@media(max-width:430px){.stats{grid-template-columns:1fr 1fr}.stat-card{padding:15px;gap:10px}.stat-card h3{font-size:22px}.welcome{align-items:flex-start}.welcome h2{font-size:26px}}
+
+/* Estas vistas cargan sus módulos después de portal.css. */
+.client-exercise-media>span,.client-exercise-media>small{font-size:10px!important}
+.catalog-search input,.catalog-tools select{font-size:14px!important}.dataset-credit,.catalog-count,.media-notice{font-size:11px!important}
+.catalog-exercise .exercise-visual span{font-size:10px!important}.exercise-detail li{font-size:13px!important}.detail-media small{font-size:11px!important}
+.progress-lead{font-size:13px!important}.metric-grid span,.chart-heading span,.checkins>span{font-size:11px!important}
+.metric-grid i,.lift span,.lift small,.lift>b,.checkins p{font-size:11px!important}.chart-labels{font-size:10px!important}
+.coach-program-invite b{font-size:13px!important}.coach-program-invite button{font-size:12px!important}.coach-intro>p:not(.overline){font-size:13px!important}
+.coach-factors span{font-size:12px!important}.coach-intro>small{font-size:11px!important}.readiness-form label{font-size:13px!important}
+.readiness-form input:not([type=checkbox]),.readiness-form select{height:48px!important;font-size:16px!important}.plan-head>div>p,.coach-alert{font-size:12px!important}
+.week-sessions header span{font-size:10px!important}.planned-exercise b,.planned-exercise>strong{font-size:12px!important}
+.planned-exercise small,.planned-exercise>strong small{font-size:10px!important}.coach-reasons>b{font-size:13px!important}.coach-reasons p{font-size:11px!important}
