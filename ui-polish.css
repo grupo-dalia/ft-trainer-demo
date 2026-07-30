@@ -40,3 +40,4 @@ button,a,input,select,textarea{touch-action:manipulation}button{min-height:44px}
 .planned-exercise small,.planned-exercise>strong small{font-size:10px!important}.coach-reasons>b{font-size:13px!important}.coach-reasons p{font-size:11px!important}
 .pending-card>p:not(.overline){font-size:13px!important}.pending-steps b{font-size:13px!important}.pending-steps small{font-size:12px!important}
 .limited b,.limited span{font-size:12px!important}.pending-back{min-height:48px}
+.google-login{width:100%;min-height:48px;margin-top:12px;border:1px solid var(--line);border-radius:9px;background:#fff;color:#29342e;font-weight:700;cursor:pointer}.google-login span{display:inline-grid;place-items:center;width:24px;height:24px;margin-right:8px;border-radius:50%;background:#fff;box-shadow:0 1px 5px #0002;color:#4285f4;font:bold 16px Arial}.request-feedback{min-height:18px;margin:0!important;color:#9a3327!important;font-size:12px!important}

@@ -1,52 +1,18 @@
 (async()=>{
   const load=src=>new Promise((resolve,reject)=>{const script=document.createElement('script');script.src=src;script.onload=resolve;script.onerror=reject;document.head.appendChild(script)});
-  const modal=document.getElementById('access-modal');
+  const modal=document.getElementById('access-modal'),requestForm=document.getElementById('request-form'),requestFeedback=requestForm.querySelector('.request-feedback');
   document.getElementById('request-access').onclick=()=>modal.classList.add('open');
   document.querySelector('.request-close').onclick=()=>modal.classList.remove('open');
   modal.onclick=event=>{if(event.target===modal)modal.classList.remove('open');};
-  document.getElementById('request-form').onsubmit=event=>{event.preventDefault();location.href='pendiente.html';};
-  document.getElementById('recover').onclick=event=>{event.preventDefault();modal.classList.add('open');};
-  await load('vendor/supabase-js.min.js');
-  await load('supabase-config.js?v=2');
-  const client=supabase.createClient(FT_SUPABASE.url,FT_SUPABASE.publishableKey);
-  window.ftSupabase=client;
-
-  const form=document.getElementById('login-form');
-  const button=form.querySelector('.login-submit');
-  const error=document.createElement('p');
-  error.className='login-error';
-  error.hidden=true;
-  button.before(error);
-
-  form.onsubmit=async event=>{
-    event.preventDefault();
-    error.hidden=true;
-    button.disabled=true;
-    button.textContent='Comprobando acceso…';
-    const email=form.querySelector('input[type="email"]').value.trim();
-    const password=form.querySelector('input[type="password"]').value;
-    const {data,error:authError}=await client.auth.signInWithPassword({email,password});
-    if(authError){
-      error.textContent='Correo o contraseña incorrectos.';
-      error.hidden=false;
-      button.disabled=false;
-      button.textContent='Entrar en mi cuenta →';
-      return;
-    }
-    const {data:profile}=await client.from('profiles').select('role').eq('id',data.user.id).maybeSingle();
-    if(profile?.role==='trainer'){
-      location.href='admin.html?auth=3';
-      return;
-    }
-    const {data:member}=await client.from('clients').select('access_status').eq('user_id',data.user.id).maybeSingle();
-    if(member?.access_status==='active'){
-      location.href='cliente.html';
-      return;
-    }
-    await client.auth.signOut();
-    location.href='pendiente.html';
-  };
-})().catch(()=>{
-  const button=document.querySelector('#login-form .login-submit');
-  if(button){button.disabled=true;button.textContent='Servicio temporalmente no disponible';}
-});
+  await load('vendor/supabase-js.min.js');await load('supabase-config.js?v=2');
+  const client=supabase.createClient(FT_SUPABASE.url,FT_SUPABASE.publishableKey);window.ftSupabase=client;
+  const googleButton=document.getElementById('google-login');
+  try{const settings=await fetch(FT_SUPABASE.url+'/auth/v1/settings',{headers:{apikey:FT_SUPABASE.publishableKey}}).then(response=>response.json());if(!settings?.external?.google){googleButton.disabled=true;googleButton.textContent='Google · pendiente de activar';}}catch{googleButton.disabled=true;}
+  const routeUser=async user=>{const {data:profile}=await client.from('profiles').select('role').eq('id',user.id).maybeSingle();if(profile?.role==='trainer'||user.email?.toLowerCase()==='ftienda4@gmail.com'){location.href='admin.html?auth=3';return;}const {data:member}=await client.from('clients').select('access_status').eq('user_id',user.id).maybeSingle();location.href=member?.access_status==='active'?'cliente.html':'pendiente.html';};
+  const {data:{session}}=await client.auth.getSession();if(session&&location.hash)await routeUser(session.user);
+  document.getElementById('google-login').onclick=async()=>{const {error}=await client.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.origin+'/'}});if(error)alert('No se pudo iniciar el acceso con Google.');};
+  const form=document.getElementById('login-form'),button=form.querySelector('.login-submit'),error=document.createElement('p');error.className='login-error';error.hidden=true;button.before(error);
+  form.onsubmit=async event=>{event.preventDefault();error.hidden=true;button.disabled=true;button.textContent='Comprobando acceso…';const email=form.querySelector('input[type="email"]').value.trim(),password=form.querySelector('input[type="password"]').value;const {data,error:authError}=await client.auth.signInWithPassword({email,password});if(authError){error.textContent='Correo o contraseña incorrectos.';error.hidden=false;button.disabled=false;button.textContent='Entrar en mi cuenta →';return;}await routeUser(data.user);};
+  document.getElementById('recover').onclick=async event=>{event.preventDefault();const email=form.querySelector('input[type="email"]').value.trim();if(!email){error.textContent='Escribe primero tu correo para solicitar un enlace de recuperación.';error.hidden=false;form.querySelector('input[type="email"]').focus();return;}const {error:resetError}=await client.auth.resetPasswordForEmail(email,{redirectTo:location.origin+'/'});error.textContent=resetError?'No se pudo enviar el correo. Inténtalo de nuevo.':'Te hemos enviado un enlace para recuperar el acceso.';error.hidden=false;};
+  requestForm.onsubmit=async event=>{event.preventDefault();requestFeedback.textContent='';const submit=requestForm.querySelector('[type="submit"]'),fd=new FormData(requestForm);const firstName=String(fd.get('first_name')||'').trim(),lastName=String(fd.get('last_name')||'').trim(),email=String(fd.get('email')||'').trim().toLowerCase(),phone=String(fd.get('phone')||'').trim(),password=String(fd.get('password')||''),confirm=String(fd.get('password_confirm')||'');if(password!==confirm){requestFeedback.textContent='Las contraseñas no coinciden.';return;}submit.disabled=true;submit.textContent='Creando cuenta…';const {error:requestError}=await client.rpc('submit_access_request',{p_first_name:firstName,p_last_name:lastName,p_email:email,p_phone:phone,p_source:'web'});if(requestError){requestFeedback.textContent='No se pudo enviar la solicitud. Revisa los datos.';submit.disabled=false;submit.textContent='Crear cuenta y solicitar acceso';return;}const {data,error:signupError}=await client.auth.signUp({email,password,options:{emailRedirectTo:location.origin+'/',data:{display_name:(firstName+' '+lastName).trim(),given_name:firstName,family_name:lastName,phone}}});if(signupError){requestFeedback.textContent=signupError.message.includes('registered')?'Ese correo ya tiene cuenta. Usa “Solicitar acceso de nuevo”.':'No se pudo crear la cuenta. Prueba con otra contraseña.';submit.disabled=false;submit.textContent='Crear cuenta y solicitar acceso';return;}if(data.session)await client.rpc('submit_access_request',{p_first_name:firstName,p_last_name:lastName,p_email:email,p_phone:phone,p_source:'web'});location.href='pendiente.html';};
+})().catch(()=>{const button=document.querySelector('#login-form .login-submit');if(button){button.disabled=true;button.textContent='Servicio temporalmente no disponible';}});

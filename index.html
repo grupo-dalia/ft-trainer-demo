@@ -26,7 +26,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="portal.css?v=5">
+  <link rel="stylesheet" href="portal.css?v=6">
   <link rel="icon" type="image/png" href="assets/brand/ft-symbol-color.png">
   <link rel="apple-touch-icon" href="assets/brand/ft-symbol-color.png">
   <link rel="stylesheet" href="acceso.css?v=6">
@@ -49,6 +49,7 @@
           <div class="login-row"><label class="remember"><input type="checkbox"> Recordarme</label><a href="#" id="recover">Solicitar acceso de nuevo</a></div>
           <button class="login-submit">Entrar en mi cuenta →</button>
         </form>
+        <button class="google-login" id="google-login" type="button"><span>G</span> Continuar con Google</button>
         <div class="access-divider"><span>¿TODAVÍA NO TIENES CUENTA?</span></div>
         <button class="request-access" id="request-access">Solicitar registro</button>
         <button class="coach-access" onclick="location.href='admin.html'">Acceso de Fernando · Entrenador</button>
@@ -60,12 +61,13 @@
     <form class="request-form" id="request-form">
       <button type="button" class="request-close">×</button><p class="overline">SOLICITUD DE ACCESO</p><h2>Únete a FT Trainer</h2>
       <p>Podrás consultar tu perfil y progreso. Las rutinas se desbloquearán cuando Fernando active tu cuenta.</p>
-      <div class="form-two"><label>Nombre<input required placeholder="Nombre"></label><label>Apellidos<input required placeholder="Apellidos"></label></div>
-      <label>Teléfono<input required placeholder="600 000 000"></label><label>Correo<input type="email" required placeholder="tu@email.com"></label>
+      <div class="form-two"><label>Nombre<input name="first_name" required placeholder="Nombre"></label><label>Apellidos<input name="last_name" required placeholder="Apellidos"></label></div>
+      <label>Teléfono<input name="phone" required placeholder="600 000 000"></label><label>Correo<input name="email" type="email" required placeholder="tu@email.com"></label>
+      <div class="form-two"><label>Contraseña<input name="password" type="password" minlength="8" autocomplete="new-password" required></label><label>Repetir contraseña<input name="password_confirm" type="password" minlength="8" autocomplete="new-password" required></label></div>
       <label class="commitment"><input type="checkbox" required> Me comprometo a abonar la cuota en efectivo la próxima vez que vaya al gimnasio.</label>
-      <button class="login-submit">Enviar solicitud</button>
+      <p class="request-feedback" aria-live="polite"></p><button class="login-submit">Crear cuenta y solicitar acceso</button>
     </form>
   </div>
-  <script src="acceso.js?v=7"></script>
+  <script src="acceso.js?v=8"></script>
 </body>
 </html>

@@ -52,6 +52,8 @@ newClientForm.onsubmit=async event=>{
   const {data:{user}}=await ftSupabase.auth.getUser();
   const record={first_name:String(formData.get('first_name')||'').trim(),last_name:String(formData.get('last_name')||'').trim(),email:String(formData.get('email')||'').trim().toLowerCase(),phone:String(formData.get('phone')||'').trim()||null,objective:String(formData.get('objective')||'').trim()||null,access_status:'pending',created_by:user?.id||null};
   button.disabled=true;button.textContent='Guardando…';feedback.textContent='';
+  const {data:existingRequest}=await ftSupabase.from('access_requests').select('id,status').eq('email',record.email).maybeSingle();
+  if(existingRequest&&existingRequest.status!=='rejected'){button.disabled=false;button.textContent='Guardar cliente';feedback.textContent='Esta persona ya solicitó acceso. Revísala en “Solicitudes pendientes” para unir su cuenta sin duplicar el historial.';return;}
   const {error}=await ftSupabase.from('clients').insert(record);
   button.disabled=false;button.textContent='Guardar cliente';
   if(error){feedback.textContent=error.code==='23505'?'Ya existe un cliente con ese correo.':'No se pudo guardar el cliente. Revisa los datos.';return;}

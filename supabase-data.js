@@ -23,3 +23,18 @@ window.toggleActivation=async(button,id,current)=>{
 };
 
 document.querySelector('[data-page="clients"]').addEventListener('click',()=>setTimeout(loadSupabaseClients));
+
+const clientsBasePage=pages.clients;
+pages.clients=()=>`<section class="access-request-card card"><div class="section-head"><div><p class="eyebrow">ALTAS DE SOCIOS</p><h2>Solicitudes pendientes</h2></div><span class="cash-badge" id="request-count">Cargando…</span></div><div id="access-request-list"><p class="muted">Consultando solicitudes…</p></div></section>${clientsBasePage()}`;
+
+window.loadAccessRequests=async()=>{
+  const target=document.getElementById('access-request-list');if(!target)return;
+  const {data,error}=await ftSupabase.from('access_requests').select('id,first_name,last_name,email,phone,source,status,matched_client_id,conflict_reason,created_at').in('status',['pending','needs_review']).order('created_at',{ascending:false});
+  if(error){target.innerHTML='<p class="muted">No se pudieron cargar las solicitudes.</p>';return;}
+  document.getElementById('request-count').textContent=`${data.length} pendiente${data.length===1?'':'s'}`;
+  if(!data.length){target.innerHTML='<div class="request-empty">No hay solicitudes esperando revisión.</div>';return;}
+  target.innerHTML=data.map(request=>`<article class="request-row"><div><b>${escapeHtml(`${request.first_name} ${request.last_name}`.trim())}</b><small>${escapeHtml(request.email)}${request.phone?' · '+escapeHtml(request.phone):''}</small><em>${request.matched_client_id?'Coincide con un cliente existente':'Persona nueva'} · ${request.source==='google'?'Google':'Correo'}</em>${request.conflict_reason?`<strong>${escapeHtml(request.conflict_reason)}</strong>`:''}</div><button class="activation-btn" onclick="approveRequest(this,'${request.id}')">Revisar y activar</button></article>`).join('');
+};
+
+window.approveRequest=async(button,id)=>{button.disabled=true;button.textContent='Activando…';const {error}=await ftSupabase.rpc('approve_access_request',{p_request_id:id,p_client_id:null});if(error){button.disabled=false;button.textContent='Revisar y activar';toast(error.message.includes('identity_conflict')?'Conflicto de cuenta: comprueba el correo':'No se pudo aprobar la solicitud');return;}toast('Cuenta unida y acceso activado');await Promise.all([loadAccessRequests(),loadSupabaseClients()]);};
+document.querySelector('[data-page="clients"]').addEventListener('click',()=>setTimeout(loadAccessRequests));
