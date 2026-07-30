@@ -41,3 +41,7 @@ button,a,input,select,textarea{touch-action:manipulation}button{min-height:44px}
 .pending-card>p:not(.overline){font-size:13px!important}.pending-steps b{font-size:13px!important}.pending-steps small{font-size:12px!important}
 .limited b,.limited span{font-size:12px!important}.pending-back{min-height:48px}
 .google-login{width:100%;min-height:48px;margin-top:12px;border:1px solid var(--line);border-radius:9px;background:#fff;color:#29342e;font-weight:700;cursor:pointer}.google-login span{display:inline-grid;place-items:center;width:24px;height:24px;margin-right:8px;border-radius:50%;background:#fff;box-shadow:0 1px 5px #0002;color:#4285f4;font:bold 16px Arial}.request-feedback{min-height:18px;margin:0!important;color:#9a3327!important;font-size:12px!important}
+.access-modal{overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;align-items:start!important}
+.request-form{margin:auto;max-height:none;overflow:visible}
+body:has(.access-modal.open){overflow:hidden}
+@media(max-width:520px){.access-modal{padding:12px 10px calc(18px + env(safe-area-inset-bottom));place-items:start center!important}.request-form{width:100%;margin:0;padding:22px 18px 26px;border-radius:16px}.request-form::before{width:180px;height:48px;background-size:180px auto}.request-close{position:sticky;float:right;top:0;z-index:2;margin:-10px -8px -44px 0;background:#fff;border-radius:50%}}
