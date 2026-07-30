@@ -48,17 +48,17 @@ body:has(.access-modal.open){overflow:hidden}
 
 /* Escala óptica: Sporter necesita mayor tamaño para leerse como DM Sans. */
 .sidebar{width:260px}.app-shell{grid-template-columns:260px 1fr}
-.nav-item{font-size:15px!important;letter-spacing:.055em;min-height:54px}.nav-item small{font-size:12px!important}
+.nav-item{font-size:17px!important;letter-spacing:.045em;min-height:56px}.nav-item small{font-size:13px!important}
 .brand{margin-bottom:36px}.profile b{font-size:14px!important}.profile small{font-size:12px!important}
-.ai-card strong{font-size:16px}.ai-card p{font-size:14px!important}.ai-card button{font-size:13px!important;min-height:46px}
-.eyebrow,.overline{font-size:13px!important;line-height:1.4}.primary{font-size:14px!important;min-height:46px}
-.search input{font-size:15px!important}.cash-badge{font-size:12px!important}.activation-btn{font-size:12px!important;min-height:42px}
+.ai-card strong{font-size:17px}.ai-card p{font-size:15px!important}.ai-card button{font-size:15px!important;min-height:48px}
+.eyebrow,.overline{font-size:14px!important;line-height:1.4}.primary{font-size:15px!important;min-height:48px}
+.search input{font-size:15px!important}.cash-badge{font-size:13px!important}.activation-btn{font-size:14px!important;min-height:44px}
 .section-head h2{font-size:24px!important}.section-head a{font-size:14px!important}.muted{font-size:15px!important}
 .request-row b{font-size:16px!important}.request-row small{font-size:14px!important}.request-row em,.request-row strong{font-size:13px!important;line-height:1.45}
-.table th{font-size:12px!important}.table td{font-size:15px!important;padding-top:16px;padding-bottom:16px}.client-cell small{font-size:13px!important}
+.table th{font-size:14px!important}.table td{font-size:16px!important;padding-top:17px;padding-bottom:17px}.client-cell small{font-size:14px!important}
 .stat-card p{font-size:13px!important}.session-info b{font-size:15px!important}.session-info span{font-size:13px!important}
 .admin-fields label,.modal label{font-size:14px!important}.admin-form>p,.youtube-help,.ai-result p{font-size:14px!important}
 .login-form label,.request-form label{font-size:14px!important}.login-row{font-size:13px!important}.activation-note{font-size:13px!important}
 .login-submit,.request-access,.google-login{font-size:14px!important}.coach-access{font-size:12px!important}
 .workout-top p,.client-card p{font-size:12px!important}.exercise-row b{font-size:15px!important}.exercise-row small{font-size:13px!important}.mobile-nav small{font-size:12px!important}
-@media(max-width:760px){.sidebar{width:min(82vw,300px)}.nav-item{font-size:16px!important}.request-row b{font-size:17px!important}.request-row small{font-size:15px!important}.table td{font-size:15px!important}}
+@media(max-width:760px){.sidebar{width:min(84vw,310px)}.nav-item{font-size:18px!important}.request-row b{font-size:17px!important}.request-row small{font-size:15px!important}.table td{font-size:16px!important}}
