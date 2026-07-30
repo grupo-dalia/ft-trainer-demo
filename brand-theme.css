@@ -1,0 +1,64 @@
+.hero-brand,
+.mini-brand,
+.brand {
+  background-image: url('assets/brand/ft-horizontal-white.png');
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.hero-brand > *,
+.mini-brand > *,
+.brand > * {
+  visibility: hidden;
+}
+
+.access-hero {
+  background-image:
+    linear-gradient(140deg, rgba(6, 34, 23, .34), rgba(13, 97, 59, .18)),
+    url('assets/brand/ft-hero-training.png');
+  background-position: center;
+  background-size: cover;
+}
+
+.access-hero .hero-shade {
+  background: linear-gradient(180deg, rgba(7, 29, 20, .2), rgba(7, 29, 20, .76));
+}
+
+.hero-brand {
+  width: 230px;
+  height: 62px;
+  background-size: 230px 230px;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, .18));
+}
+
+.mini-brand {
+  width: 156px;
+  height: 46px;
+  background-size: 156px 156px;
+}
+
+.brand {
+  width: 162px;
+  height: 54px;
+  background-size: 162px 162px;
+}
+
+.client-header {
+  background: linear-gradient(95deg, #082a1c, #14583a);
+}
+
+.welcome {
+  background:
+    linear-gradient(100deg, rgba(8, 40, 27, .96), rgba(18, 88, 57, .78)),
+    url('assets/brand/ft-hero-training.png') center 58% / cover;
+}
+
+@media (max-width: 760px) {
+  .access-hero {
+    min-height: 330px;
+    background-position: center 56%;
+  }
+
+  .hero-brand { width: 190px; height: 50px; background-size: 190px 190px; }
+  .mini-brand { width: 132px; height: 39px; background-size: 132px 132px; }
+}
