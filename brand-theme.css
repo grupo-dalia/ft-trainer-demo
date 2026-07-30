@@ -1,3 +1,14 @@
+:root {
+  --g: #2dac6c;
+  --gd: #1a613d;
+  --green: #2dac6c;
+  --green-dark: #1a613d;
+  --ink: #1d1d1b;
+  --brand-blue: #3b99ae;
+  --brand-blue-dark: #3c81ae;
+  --brand-green-soft: #68ba83;
+}
+
 .hero-brand,
 .mini-brand,
 .brand {
@@ -51,6 +62,25 @@
   background:
     linear-gradient(100deg, rgba(8, 40, 27, .96), rgba(18, 88, 57, .78)),
     url('assets/brand/ft-hero-training.png') center 58% / cover;
+}
+
+.welcome:after {
+  content: none;
+}
+
+.overline,
+.eyebrow,
+.workout-cover > span {
+  color: #2dac6c;
+}
+
+.user-chip span,
+.avatar,
+.session-bar i,
+.save-set,
+.login-submit,
+.primary {
+  background-color: #2dac6c;
 }
 
 @media (max-width: 760px) {
