@@ -18,7 +18,7 @@
       </a>
       <nav id="nav">
         <button class="nav-item active" data-page="dashboard"><span data-icon="grid"></span>Inicio</button>
-        <button class="nav-item" data-page="clients"><span data-icon="users"></span>Clientes <small>24</small></button>
+        <button class="nav-item" data-page="clients"><span data-icon="users"></span>Clientes</button>
         <button class="nav-item" data-page="routines"><span data-icon="dumbbell"></span>Rutinas</button>
         <button class="nav-item" data-page="exercises"><span data-icon="play"></span>Ejercicios</button>
         <button class="nav-item" data-page="progress"><span data-icon="chart"></span>Progreso</button>
@@ -59,7 +59,7 @@
       <p class="eyebrow">FT COACH IA</p>
       <h2>Crear rutina inteligente</h2>
       <p class="muted">Selecciona un cliente y el objetivo. La IA adaptará volumen, intensidad y ejercicios a su historial.</p>
-      <label>Cliente<select><option>Marcos Ruiz</option><option>Laura Sánchez</option><option>Diego Martín</option></select></label>
+      <label>Cliente<select id="routine-client"><option value="">Selecciona un cliente activo</option></select></label>
       <label>Objetivo<select><option>Ganancia muscular</option><option>Pérdida de grasa</option><option>Fuerza</option><option>Movilidad</option></select></label>
       <button class="primary full" id="generate">✦ Generar propuesta</button>
     </div>

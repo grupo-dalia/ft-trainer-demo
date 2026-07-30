@@ -1,0 +1,15 @@
+@media (max-width: 760px) {
+  .access-wrap { display: block; }
+  .access-hero { min-height: 38svh; padding: 24px 22px; }
+  .access-panel { padding: 30px 20px 42px; }
+  .hero-copy { margin-top: 34px; }
+  .login-content { margin: auto; }
+  .activation-note { margin-bottom: 0; }
+}
+
+@media (max-width: 520px) {
+  .access-hero { min-height: 34svh; }
+  .hero-copy { margin-top: 24px; }
+  .login-row { gap: 12px; }
+  .login-row a { text-align: right; }
+}
