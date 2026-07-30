@@ -1,3 +1,15 @@
+@font-face {
+  font-family: 'Sporter';
+  src: url('assets/fonts/sporter.ttf') format('truetype');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Clean Sports';
+  src: url('assets/fonts/clean-sports.otf') format('opentype');
+  font-display: swap;
+}
+
 :root {
   --g: #2dac6c;
   --gd: #1a613d;
@@ -7,6 +19,27 @@
   --brand-blue: #3b99ae;
   --brand-blue-dark: #3c81ae;
   --brand-green-soft: #68ba83;
+}
+
+h1,
+h2,
+h3,
+.hero-copy h1,
+.workout-cover h3,
+.week-score b,
+.progress-ring span {
+  font-family: 'Clean Sports', 'Oswald', sans-serif;
+}
+
+.overline,
+.eyebrow,
+.week-pill,
+.nav-item,
+button,
+.hero-foot,
+.workout-cover > span {
+  font-family: 'Sporter', 'DM Sans', sans-serif;
+  letter-spacing: .04em;
 }
 
 .hero-brand,
