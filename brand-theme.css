@@ -55,23 +55,27 @@ button,
 }
 
 .hero-brand {
-  width: 250px;
-  height: 74px;
-  background: url('assets/brand/ft-horizontal-white.png') center / 250px auto no-repeat;
+  width: 260px;
+  height: 68px;
+  border-radius:12px;
+  background:#fff url('assets/brand/ft-horizontal-color.png') center / 300px auto no-repeat;
+  box-shadow:0 10px 30px rgba(0,0,0,.16);
   filter: drop-shadow(0 4px 12px rgba(0, 0, 0, .18));
 }
 
 .mini-brand {
-  width: 172px;
-  height: 54px;
-  background: url('assets/brand/ft-horizontal-white.png') center / 172px auto no-repeat;
+  width: 178px;
+  height: 50px;
+  border-radius:9px;
+  background:#fff url('assets/brand/ft-horizontal-color.png') center / 210px auto no-repeat;
 }
 
 .brand {
-  width: 190px;
-  height: 62px;
+  width: 198px;
+  height: 58px;
   margin-left: 0;
-  background: url('assets/brand/ft-horizontal-white.png') center / 190px auto no-repeat;
+  border-radius:10px;
+  background:#fff url('assets/brand/ft-horizontal-color.png') center / 230px auto no-repeat;
 }
 
 .hero-brand > *,.mini-brand > *,.brand > *{display:none!important}
@@ -140,7 +144,7 @@ button,
     background-position: center 56%;
   }
 
-  .hero-brand { width:210px;height:62px;background-size:210px auto; }
-  .mini-brand { width:145px;height:46px;background-size:145px auto; }
-  .brand { width:180px;height:58px;background-size:180px auto; }
+  .hero-brand { width:225px;height:58px;background-size:260px auto; }
+  .mini-brand { width:150px;height:44px;background-size:180px auto; }
+  .brand { width:185px;height:54px;background-size:215px auto; }
 }
