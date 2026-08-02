@@ -19,11 +19,11 @@ else{
     await load('app.js');
     await load('catalogo.js?v=2');
     await load('admin-features.js?v=4');
-    await load('supabase-data.js?v=2');
+    await load('supabase-data.js?v=3');
     await load('admin-live.js?v=4');
     await load('terms-viewer.js?v=1');
     await load('routine-folders.js?v=1');
-    await load('client-import.js?v=1');
+    await load('client-import.js?v=2');
     document.body.style.visibility='visible';
   }
 }
