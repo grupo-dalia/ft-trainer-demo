@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+const dni = value => String(value).trim().toUpperCase().replace(/[ -]/g, '');
+const validDni = value => /^([XYZ]\d{7}|\d{8})[A-Z]$/.test(dni(value));
+const phone = value => String(value).trim().replace(/[^0-9+]/g, '');
+const date = value => /^\d{4}-\d{2}-\d{2}$/.test(value) && value <= new Date().toISOString().slice(0, 10);
+assert.equal(dni(' 12 345 678 z '), '12345678Z');
+assert.equal(validDni('12345678Z'), true);
+assert.equal(validDni('123'), false);
+assert.equal(phone('+34 600 123 456'), '+34600123456');
+assert.equal(date('2000-01-01'), true);
+assert.equal(date('2999-01-01'), false);
+console.log('FT validation checks passed');

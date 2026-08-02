@@ -23,7 +23,7 @@ else{
     await load('admin-live.js?v=4');
     await load('terms-viewer.js?v=1');
     await load('routine-folders.js?v=2');
-    await load('admin-enhancements.js?v=1');
+    await load('admin-enhancements.js?v=2');
     await load('client-import.js?v=2');
     document.body.style.visibility='visible';
   }
