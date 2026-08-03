@@ -448,6 +448,8 @@
     ctx.fillStyle = "#8ce6b7";
     ctx.font = "700 24px Arial";
     ctx.fillText("GYM-FT.COM", 1004, 130);
+    ctx.font = "600 21px Arial";
+    ctx.fillText("@gym_ft_training", 1004, 164);
     ctx.textAlign = "left";
 
     ctx.fillStyle = "#fff";
@@ -512,7 +514,7 @@
     ctx.fillText("ENTRENA · SUPÉRATE · COMPARTE", 1004, 1770);
     ctx.fillStyle = "#8ddbb3";
     ctx.font = "700 23px Arial";
-    ctx.fillText("#FTTRAINER", 1004, 1812);
+    ctx.fillText("@gym_ft_training  ·  #FTTRAINER", 1004, 1812);
     ctx.textAlign = "left";
   }
 
@@ -555,7 +557,7 @@
       if (navigator.share && navigator.canShare?.({ files: [file] })) {
         await navigator.share({
           title: "Mi entrenamiento FT Trainer",
-          text: "Entrenamiento completado con Fernando Tienda Training 💪 #FTTrainer",
+          text: "Entrenamiento completado con Fernando Tienda Training 💪 @gym_ft_training #FTTrainer",
           files: [file],
         });
       } else {
