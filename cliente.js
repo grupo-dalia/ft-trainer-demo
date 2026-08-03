@@ -19,5 +19,6 @@
   window.ftSupabase=client;
   window.ftClientId=member.id;
   await load('cliente-base.js');
+  await load('client-home.js?v=1');
   document.body.style.visibility='visible';
 })().catch(()=>location.replace('index.html'));
