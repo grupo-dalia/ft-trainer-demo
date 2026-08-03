@@ -13,8 +13,8 @@
     new URLSearchParams(location.search).has("preview")
   ) {
     await load("cliente-base.js?v=2");
-    await load("client-home.js?v=4");
-    await load("client-sections.js?v=4");
+    await load("client-home.js?v=5");
+    await load("client-sections.js?v=5");
     document.body.style.visibility = "visible";
     return;
   }
@@ -59,7 +59,7 @@
   window.ftSupabase = client;
   window.ftClientId = member.id;
   await load("cliente-base.js?v=2");
-  await load("client-home.js?v=4");
-  await load("client-sections.js?v=4");
+  await load("client-home.js?v=5");
+  await load("client-sections.js?v=5");
   document.body.style.visibility = "visible";
 })().catch(() => location.replace("index.html"));

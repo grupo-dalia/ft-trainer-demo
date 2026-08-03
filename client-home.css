@@ -1089,17 +1089,17 @@ button {
 }
 
 .share-workout-button {
-  width: 100%;
-  margin: 18px 0 0;
-  padding: 17px 20px;
+  width: min(390px, 100%);
+  margin: 16px 0 0 auto;
+  padding: 10px 12px;
   border: 0;
   border-radius: 17px;
   background: linear-gradient(120deg, #082c38, #13523f 58%, #26ae69);
   color: #fff;
   display: grid;
-  grid-template-columns: 52px 1fr auto;
+  grid-template-columns: 40px 1fr auto;
   align-items: center;
-  gap: 15px;
+  gap: 11px;
   text-align: left;
   box-shadow: 0 14px 34px #0d45352d;
 }
@@ -1107,16 +1107,16 @@ button {
   display: none;
 }
 .share-workout-button > span:first-child {
-  width: 52px;
-  height: 52px;
-  border-radius: 15px;
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
   background: #ffffff17;
   display: grid;
   place-items: center;
 }
 .share-workout-button svg {
-  width: 27px;
-  height: 27px;
+  width: 21px;
+  height: 21px;
   stroke: #54e79b;
 }
 .share-workout-button b,
@@ -1124,19 +1124,19 @@ button {
   display: block;
 }
 .share-workout-button b {
-  font-size: 16px;
+  font-size: 13px;
 }
 .share-workout-button small {
-  margin-top: 4px;
+  margin-top: 2px;
   color: #b9d9cb;
-  font-size: 12px;
+  font-size: 10px;
 }
 .share-workout-button strong {
-  padding: 11px 16px;
+  padding: 8px 12px;
   border-radius: 20px;
   background: #fff;
   color: #11603e;
-  font: 700 13px "Oswald";
+  font: 700 11px "Oswald";
   text-transform: uppercase;
   letter-spacing: 0.4px;
 }
@@ -1234,15 +1234,15 @@ button {
 }
 @media (max-width: 600px) {
   .share-workout-button {
-    grid-template-columns: 44px 1fr;
-    padding: 14px;
+    grid-template-columns: 38px 1fr auto;
+    padding: 9px 10px;
   }
   .share-workout-button > span:first-child {
-    width: 44px;
-    height: 44px;
+    width: 38px;
+    height: 38px;
   }
   .share-workout-button strong {
-    grid-column: 1/-1;
+    grid-column: auto;
     text-align: center;
   }
   .workout-share-overlay {
@@ -1286,4 +1286,34 @@ button {
 .workout-cover.is-empty h3 mark {
   display: inline-block;
   margin-top: 5px;
+}
+
+.ft-app-credit {
+  max-width: 1120px;
+  margin: -72px auto 92px;
+  padding: 0 26px;
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  color: #7a8580;
+  font-size: 10px;
+}
+.ft-app-credit a {
+  color: #39735a;
+  font-weight: 700;
+  transition: color 0.2s;
+}
+.ft-app-credit a:hover {
+  color: #20a561;
+}
+@media (max-width: 760px) {
+  .ft-app-credit {
+    margin: -72px auto 88px;
+    padding: 0 16px;
+    display: grid;
+    justify-content: center;
+    gap: 4px;
+    text-align: center;
+    font-size: 9px;
+  }
 }

@@ -150,8 +150,8 @@
     button.type = "button";
     button.id = "share-workout";
     button.className = "share-workout-button";
-    button.hidden = true;
-    button.innerHTML = `<span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 10.5 6.8-4M8.6 13.5l6.8 4"/></svg></span><span><b>Compartir entrenamiento</b><small>Crea tu resumen para Instagram</small></span><strong>Crear Story</strong>`;
+    button.hidden = false;
+    button.innerHTML = `<span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 10.5 6.8-4M8.6 13.5l6.8 4"/></svg></span><span><b>Compartir resumen</b><small>Story de tu entrenamiento</small></span><strong>Abrir</strong>`;
     button.onclick = openWorkoutShare;
     host.after(button);
   }
@@ -163,7 +163,7 @@
     document.getElementById("percent").textContent = percent + "%";
     document.getElementById("session-progress").style.width = percent + "%";
     const share = document.getElementById("share-workout");
-    if (share) share.hidden = done === 0;
+    if (share) share.hidden = false;
     return { total, percent };
   }
 
@@ -636,11 +636,15 @@
         '<div class="client-empty-state">Inicia sesión para consultar tu perfil.</div>';
       return;
     }
-    const { data: client } = await db
+    const { data: client, error: profileError } = await db
       .from("clients")
       .select("*")
       .eq("id", clientId)
       .maybeSingle();
+    if (profileError || !client) {
+      host.innerHTML = `<div class="client-empty-state"><b>No hemos podido abrir tu perfil.</b><br>Recarga la página o vuelve a iniciar sesión.</div>`;
+      return;
+    }
     const initials = (client?.first_name || "FT").slice(0, 2).toUpperCase(),
       avatarContent = client?.avatar_url
         ? `<img src="${esc(client.avatar_url)}" alt="Foto de perfil">`

@@ -79,6 +79,7 @@
       if (action === "routine") scrollRoutine();
       if (action === "progress") openProgress();
       if (action === "coach") openCoach();
+      if (action === "profile") window.ftClientSections?.showProfile();
     };
   });
 
