@@ -4,13 +4,17 @@
   const number=(value,fallback)=>Number.isFinite(Number(value))?Number(value):fallback;
 
   async function fetchRoutine(id){
-    const [{data:routine,error:routineError},{data:items,error:itemsError},{data:exercises,error:exerciseError}]=await Promise.all([
+    const [{data:routine,error:routineError},{data:items,error:itemsError},{data:exercises,error:exerciseError},catalogResponse]=await Promise.all([
       ftSupabase.from('routines').select('id,name,description,status').eq('id',id).single(),
       ftSupabase.from('routine_exercises').select('id,exercise_id,day_number,position,target_sets,target_reps_min,target_reps_max,target_weight_kg,target_rir,rest_seconds,notes,exercises(name,body_group,primary_muscle)').eq('routine_id',id).order('day_number').order('position'),
-      ftSupabase.from('exercises').select('id,name,body_group,primary_muscle,equipment').eq('is_active',true).order('body_group').order('name').limit(1500)
+      ftSupabase.from('exercises').select('id,name,body_group,primary_muscle,equipment').eq('is_active',true).order('body_group').order('name').limit(1500),
+      fetch('data/ejercicios-es.json?v=2')
     ]);
     if(routineError||itemsError||exerciseError)throw routineError||itemsError||exerciseError;
-    return{routine,items:items||[],exercises:exercises||[]};
+    const catalog=await catalogResponse.json();
+    const stored=(exercises||[]).map(ex=>({...ex,source:'db',sourceId:ex.id}));
+    const local=catalog.map(ex=>({id:ex.id,name:localizedName(ex),body_group:ex.grupo,primary_muscle:catalogTranslations.target[ex.objetivo]||ex.objetivo,equipment:ex.equipo,source:'catalog',sourceId:ex.id,catalog:ex}));
+    return{routine,items:items||[],exercises:[...stored,...local]};
   }
 
   function exerciseOptions(exercises){
@@ -18,7 +22,7 @@
     return exercises.map(ex=>{
       const current=ex.body_group||'Otros';
       const prefix=current!==group?(group=current,`<option disabled>── ${esc(current)} ──</option>`):'';
-      return`${prefix}<option value="${ex.id}">${esc(ex.name)} · ${esc(ex.primary_muscle||current)}</option>`;
+      return`${prefix}<option value="${ex.source}:${ex.sourceId}">${esc(ex.name)} · ${esc(ex.primary_muscle||current)}</option>`;
     }).join('');
   }
 
@@ -64,7 +68,19 @@
         const min=number(data.get('target_reps_min'),8),max=number(data.get('target_reps_max'),min);
         if(max<min){feedback.textContent='Las repeticiones máximas no pueden ser menores que las mínimas.';return}
         button.disabled=true;feedback.textContent='';
-        const payload={routine_id:id,exercise_id:data.get('exercise_id'),day_number:day,position,target_sets:number(data.get('target_sets'),3),target_reps_min:min,target_reps_max:max,rest_seconds:number(data.get('rest_seconds'),90),target_rir:data.get('target_rir')===''?null:number(data.get('target_rir'),2),target_weight_kg:data.get('target_weight_kg')===''?null:number(data.get('target_weight_kg'),0),notes:String(data.get('notes')||'').trim()||null};
+        const selected=String(data.get('exercise_id')),exercise=exercises.find(ex=>`${ex.source}:${ex.sourceId}`===selected);
+        if(!exercise){feedback.textContent='Selecciona un ejercicio.';button.disabled=false;return}
+        let exerciseId=exercise.id;
+        if(exercise.source==='catalog'){
+          const existing=await ftSupabase.from('exercises').select('id').eq('name',exercise.name).eq('body_group',exercise.body_group).limit(1).maybeSingle();
+          if(existing.data?.id)exerciseId=existing.data.id;
+          else{
+            const raw=exercise.catalog,{data:created,error:createError}=await ftSupabase.from('exercises').insert({name:exercise.name,body_group:exercise.body_group,primary_muscle:exercise.primary_muscle,secondary_muscles:raw.musculos||[],equipment:exercise.equipment,instructions:(raw.instrucciones||[]).join('\n'),media_type:'gif',media_url:new URL(raw.gif,location.href).href,thumbnail_url:new URL(raw.imagen,location.href).href,is_custom:false,is_active:true}).select('id').single();
+            if(createError){feedback.textContent='No se pudo preparar el ejercicio en la base de datos.';button.disabled=false;return}
+            exerciseId=created.id;
+          }
+        }
+        const payload={routine_id:id,exercise_id:exerciseId,day_number:day,position,target_sets:number(data.get('target_sets'),3),target_reps_min:min,target_reps_max:max,rest_seconds:number(data.get('rest_seconds'),90),target_rir:data.get('target_rir')===''?null:number(data.get('target_rir'),2),target_weight_kg:data.get('target_weight_kg')===''?null:number(data.get('target_weight_kg'),0),notes:String(data.get('notes')||'').trim()||null};
         const {error}=await ftSupabase.from('routine_exercises').insert(payload);
         if(error){feedback.textContent='No se pudo añadir el ejercicio. Revisa los datos e inténtalo de nuevo.';button.disabled=false;return}
         toast('Ejercicio añadido');await renderEditor(id);
