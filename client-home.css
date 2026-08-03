@@ -26,6 +26,7 @@
   object-fit: contain;
 }
 .ft-home-user {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 13px;
@@ -47,9 +48,7 @@
   font-size: 0;
 }
 .ft-notification:before {
-  content: "●";
-  font-size: 22px;
-  color: #767d79;
+  content: none;
 }
 .ft-notification i {
   position: absolute;
@@ -60,6 +59,80 @@
   border-radius: 50%;
   background: var(--home-green);
   border: 2px solid #fff;
+}
+.ft-notification svg {
+  display: block;
+  margin: auto;
+  color: #173f31;
+}
+.ft-notification-panel {
+  position: absolute;
+  z-index: 30;
+  top: 58px;
+  right: 52px;
+  width: min(360px, calc(100vw - 28px));
+  display: none;
+  overflow: hidden;
+  border: 1px solid #dfe9e3;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 20px 55px #09291c33;
+}
+.ft-notification-panel.open {
+  display: block;
+}
+.ft-notification-panel header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 17px 18px;
+  background: #102f24;
+  color: #fff;
+}
+.ft-notification-panel header > span {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: #2db46d;
+}
+.ft-notification-panel header svg {
+  width: 20px;
+  height: 20px;
+}
+.ft-notification-panel header small,
+.ft-notification-panel header b {
+  display: block;
+}
+.ft-notification-panel header small {
+  margin-bottom: 2px;
+  color: #72dda5;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+.ft-notification-panel article {
+  display: flex;
+  gap: 12px;
+  padding: 18px;
+}
+.ft-notification-panel article > i {
+  width: 10px;
+  height: 10px;
+  flex: none;
+  margin-top: 5px;
+  border-radius: 50%;
+  background: #2db46d;
+}
+.ft-notification-panel article b {
+  font-size: 13px;
+}
+.ft-notification-panel article p {
+  margin: 5px 0 0;
+  color: #6c7871;
+  font-size: 11px;
+  line-height: 1.45;
 }
 .ft-avatar {
   width: 52px;
@@ -302,6 +375,11 @@
   align-items: center;
   justify-content: space-between;
 }
+.ft-section-title > div p {
+  margin: -5px 0 13px;
+  color: #737c77;
+  font-size: 12px;
+}
 .ft-section-title button {
   border: 0;
   background: none;
@@ -349,9 +427,17 @@
   position: relative;
 }
 .ft-program-card span {
-  font: 700 27px "Oswald";
-  font-style: italic;
+  display: grid;
+  gap: 4px;
+}
+.ft-program-card span b {
+  font: italic 700 25px "Oswald";
   text-transform: uppercase;
+}
+.ft-program-card span small {
+  color: #e5f1ec;
+  font: 600 10px "DM Sans";
+  text-transform: none;
 }
 .ft-program-card i {
   width: 30px;
@@ -437,6 +523,11 @@ button {
   .ft-avatar {
     width: 42px;
     height: 42px;
+  }
+  .ft-notification-panel {
+    position: fixed;
+    top: 72px;
+    right: 14px;
   }
   .ft-home-main {
     padding: 8px 14px 98px;

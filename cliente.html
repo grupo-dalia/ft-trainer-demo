@@ -19,7 +19,7 @@
     <link rel="stylesheet" href="cliente-media.css?v=4" />
     <link rel="stylesheet" href="historial.css?v=4" />
     <link rel="stylesheet" href="coach-engine.css?v=5" />
-    <link rel="stylesheet" href="client-home.css?v=4" />
+    <link rel="stylesheet" href="client-home.css?v=5" />
   </head>
   <body class="client-body ft-client-home">
     <svg class="ft-icon-sprite" aria-hidden="true">
@@ -75,8 +75,10 @@
             class="ft-notification"
             type="button"
             aria-label="Notificaciones"
+            aria-expanded="false"
           >
-            <svg><use href="#ico-bell" /></svg><i></i></button
+            <svg><use href="#ico-bell" /></svg
+            ><i aria-hidden="true"></i></button
           ><span class="ft-avatar" id="client-avatar">FT</span>
         </div>
       </header>
@@ -150,9 +152,14 @@
 
         <section class="ft-section ft-program-section">
           <div class="ft-section-title">
-            <h2>Programas</h2>
+            <div>
+              <h2>Tu espacio de entrenamiento</h2>
+              <p>
+                Accede a tu rutina, crea una programación o revisa tu evolución.
+              </p>
+            </div>
             <button type="button" data-home-action="routine">
-              Ver todos ›
+              Abrir mi rutina ›
             </button>
           </div>
           <div class="ft-program-grid">
@@ -161,21 +168,25 @@
               class="ft-program-card training"
               data-home-action="routine"
             >
-              <span>Training</span><i>›</i>
+              <span
+                ><b>Mi rutina</b><small>Plan asignado por Fernando</small></span
+              ><i>›</i>
             </button>
             <button
               type="button"
               class="ft-program-card gym"
-              data-home-action="routine"
+              data-home-action="progress"
             >
-              <span>Gimnasio</span><i>›</i>
+              <span><b>Mi progreso</b><small>Resultados y medidas</small></span
+              ><i>›</i>
             </button>
             <button
               type="button"
               class="ft-program-card coach"
               data-home-action="coach"
             >
-              <span>FT Coach</span><i>›</i>
+              <span><b>FT Coach</b><small>Programación adaptativa</small></span
+              ><i>›</i>
             </button>
           </div>
         </section>
@@ -298,7 +309,7 @@
       </div>
     </div>
     <div class="client-toast" id="client-toast">Ejercicio guardado</div>
-    <script src="cliente.js?v=11"></script>
+    <script src="cliente.js?v=12"></script>
     <script src="progreso.js"></script>
     <script src="coach-engine.js?v=5"></script>
   </body>
