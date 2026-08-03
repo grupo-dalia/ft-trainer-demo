@@ -641,7 +641,62 @@
       .select("*")
       .eq("id", clientId)
       .maybeSingle();
-    host.innerHTML = `<section class="client-profile-hero"><span>${esc((client?.first_name || "FT").slice(0, 2).toUpperCase())}</span><div><h2>${esc(client?.full_name || `${client?.first_name || ""} ${client?.last_name || ""}`.trim() || "Cliente FT")}</h2><p>${esc(client?.email || "")}</p><b>${client?.access_status === "active" ? "Acceso activo" : "Acceso pendiente"}</b></div></section><section class="client-panel-card"><div class="panel-title"><div><small>DATOS PERSONALES</small><h2>Información de contacto</h2></div></div><form id="profile-form" class="client-form-grid"><label>Nombre<input name="first_name" value="${esc(client?.first_name || "")}" required></label><label>Apellidos<input name="last_name" value="${esc(client?.last_name || "")}"></label><label>Teléfono<input name="phone" value="${esc(client?.phone || "")}"></label><label>Objetivo<input name="goal" value="${esc(client?.goal || "")}"></label><button class="client-primary" type="submit">Guardar cambios</button><p class="form-feedback"></p></form></section><button type="button" class="client-logout">${icon("logout")} Cerrar sesión</button>`;
+    const initials = (client?.first_name || "FT").slice(0, 2).toUpperCase(),
+      avatarContent = client?.avatar_url
+        ? `<img src="${esc(client.avatar_url)}" alt="Foto de perfil">`
+        : esc(initials);
+    host.innerHTML = `<section class="client-profile-hero"><span class="client-profile-avatar">${avatarContent}</span><div><h2>${esc(client?.full_name || `${client?.first_name || ""} ${client?.last_name || ""}`.trim() || "Cliente FT")}</h2><p>${esc(client?.email || "")}</p><b>${client?.access_status === "active" ? "Acceso activo" : "Acceso pendiente"}</b></div></section><section class="client-panel-card avatar-card"><div class="panel-title"><div><small>IMAGEN DE PERFIL</small><h2>Tu foto</h2></div></div><label class="avatar-upload"><span>${icon("user")}</span><div><b>Subir una foto</b><small>JPG, PNG o WebP · máximo 5 MB</small></div><input id="avatar-file" type="file" accept="image/jpeg,image/png,image/webp"><strong>Elegir imagen</strong></label><p class="avatar-feedback"></p></section><section class="client-panel-card"><div class="panel-title"><div><small>DATOS PERSONALES</small><h2>Información de contacto</h2></div></div><form id="profile-form" class="client-form-grid"><label>Nombre<input name="first_name" value="${esc(client?.first_name || "")}" required></label><label>Apellidos<input name="last_name" value="${esc(client?.last_name || "")}"></label><label>Teléfono<input name="phone" value="${esc(client?.phone || "")}"></label><button class="client-primary" type="submit">Guardar cambios</button><p class="form-feedback"></p></form></section><button type="button" class="client-logout">${icon("logout")} Cerrar sesión</button>`;
+    host.querySelector("#avatar-file").onchange = async (event) => {
+      const file = event.target.files?.[0],
+        feedback = host.querySelector(".avatar-feedback"),
+        uploadLabel = host.querySelector(".avatar-upload");
+      if (!file) return;
+      if (!file.type.match(/^image\/(jpeg|png|webp)$/) || file.size > 5242880) {
+        feedback.textContent =
+          "Selecciona una imagen JPG, PNG o WebP de menos de 5 MB.";
+        return;
+      }
+      uploadLabel.classList.add("uploading");
+      feedback.textContent = "Subiendo tu foto…";
+      const { data: authData } = await db.auth.getUser(),
+        userId = authData.user?.id,
+        extension = file.type.split("/")[1].replace("jpeg", "jpg"),
+        path = `${userId}/avatar.${extension}`;
+      if (!userId) {
+        feedback.textContent =
+          "Tu sesión ha caducado. Vuelve a iniciar sesión.";
+        uploadLabel.classList.remove("uploading");
+        return;
+      }
+      const uploaded = await db.storage
+        .from("client-avatars")
+        .upload(path, file, { upsert: true, contentType: file.type });
+      if (uploaded.error) {
+        feedback.textContent = "No se pudo subir la foto. Inténtalo de nuevo.";
+        uploadLabel.classList.remove("uploading");
+        return;
+      }
+      const publicUrl = db.storage.from("client-avatars").getPublicUrl(path)
+          .data.publicUrl,
+        avatarUrl = `${publicUrl}?v=${Date.now()}`,
+        saved = await db
+          .from("clients")
+          .update({
+            avatar_url: avatarUrl,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", clientId);
+      uploadLabel.classList.remove("uploading");
+      if (saved.error) {
+        feedback.textContent =
+          "La foto subió, pero no se pudo guardar en tu perfil.";
+        return;
+      }
+      host.querySelector(".client-profile-avatar").innerHTML =
+        `<img src="${esc(avatarUrl)}" alt="Foto de perfil">`;
+      window.ftApplyClientAvatar?.(avatarUrl);
+      feedback.textContent = "Foto de perfil actualizada.";
+    };
     host.querySelector("#profile-form").onsubmit = async (event) => {
       event.preventDefault();
       const form = event.currentTarget,
@@ -655,7 +710,6 @@
             last_name: last,
             full_name: `${first} ${last}`.trim(),
             phone: String(data.get("phone")).trim(),
-            objective: String(data.get("goal")).trim(),
             updated_at: new Date().toISOString(),
           })
           .eq("id", clientId);

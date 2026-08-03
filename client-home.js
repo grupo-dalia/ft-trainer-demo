@@ -3,13 +3,20 @@
     avatar = document.getElementById("client-avatar"),
     notificationButton = document.querySelector(".ft-notification");
   let hasRoutine = false;
+  const applyAvatar = (url) => {
+    if (!url) return;
+    avatar.textContent = "";
+    avatar.style.backgroundImage = `url("${String(url).replace(/"/g, "")}")`;
+    avatar.classList.add("has-photo");
+  };
+  window.ftApplyClientAvatar = applyAvatar;
 
   if (window.ftSupabase && window.ftClientId) {
     const [{ data: client }, { data: routines }, { data: sessions }] =
       await Promise.all([
         ftSupabase
           .from("clients")
-          .select("first_name,last_name,full_name")
+          .select("first_name,last_name,full_name,avatar_url")
           .eq("id", ftClientId)
           .maybeSingle(),
         ftSupabase
@@ -32,6 +39,7 @@
       client?.first_name || client?.full_name?.split(" ")[0] || "deportista";
     first.textContent = name;
     avatar.textContent = name.slice(0, 2).toUpperCase();
+    applyAvatar(client?.avatar_url);
     hasRoutine = Boolean(routines?.[0]);
     if (hasRoutine) {
       document.getElementById("next-session-title").textContent =

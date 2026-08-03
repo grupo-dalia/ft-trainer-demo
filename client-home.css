@@ -145,6 +145,11 @@
   font-weight: 800;
   box-shadow: 0 8px 20px #208b7b35;
 }
+.ft-avatar.has-photo {
+  background-position: center;
+  background-size: cover;
+  border: 2px solid #fff;
+}
 .ft-home-main {
   max-width: 1120px;
   margin: auto;
@@ -922,6 +927,74 @@ button {
   background: #2fc276;
   font: 700 25px "Oswald";
 }
+.client-profile-avatar {
+  overflow: hidden;
+  background-position: center;
+  background-size: cover;
+}
+.client-profile-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.avatar-upload {
+  position: relative;
+  display: grid;
+  grid-template-columns: 52px 1fr auto;
+  align-items: center;
+  gap: 14px;
+  min-height: 78px;
+  padding: 13px;
+  overflow: hidden;
+  border: 1px dashed #b9d3c5;
+  border-radius: 14px;
+  background: #f6faf8;
+  cursor: pointer;
+}
+.avatar-upload > span {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  background: #e6f7ee;
+  color: #239b5d;
+}
+.avatar-upload b,
+.avatar-upload small {
+  display: block;
+}
+.avatar-upload b {
+  font-size: 13px;
+}
+.avatar-upload small {
+  margin-top: 4px;
+  color: #738078;
+  font-size: 10px;
+}
+.avatar-upload input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+.avatar-upload strong {
+  padding: 10px 13px;
+  border-radius: 9px;
+  background: #2db46d;
+  color: #fff;
+  font-size: 11px;
+}
+.avatar-upload.uploading {
+  pointer-events: none;
+  opacity: 0.65;
+}
+.avatar-feedback {
+  min-height: 18px;
+  margin: 9px 0 0;
+  color: #20784b;
+  font-size: 11px;
+}
 .client-profile-hero h2 {
   margin: 0 0 4px;
   font: 700 28px "Oswald";
@@ -1001,6 +1074,17 @@ button {
   }
   .client-profile-hero h2 {
     font-size: 23px;
+  }
+  .avatar-upload {
+    grid-template-columns: 46px 1fr;
+  }
+  .avatar-upload > span {
+    width: 46px;
+    height: 46px;
+  }
+  .avatar-upload strong {
+    grid-column: 1/-1;
+    text-align: center;
   }
 }
 
