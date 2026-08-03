@@ -22,8 +22,9 @@ else{
     await load('supabase-data.js?v=3');
     await load('admin-live.js?v=5');
     await load('terms-viewer.js?v=1');
-    await load('routine-folders.js?v=3');
-    await load('admin-enhancements.js?v=5');
+    await load('routine-folders.js?v=4');
+    await load('admin-enhancements.js?v=6');
+    await load('routine-editor.js?v=1');
     await load('client-import.js?v=2');
     document.body.style.visibility='visible';
   }
