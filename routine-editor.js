@@ -14,7 +14,7 @@
     const catalog=await catalogResponse.json();
     const stored=(exercises||[]).map(ex=>({...ex,source:'db',sourceId:ex.id}));
     const local=catalog.map(ex=>({id:ex.id,name:localizedName(ex),body_group:ex.grupo,primary_muscle:catalogTranslations.target[ex.objetivo]||ex.objetivo,equipment:ex.equipo,source:'catalog',sourceId:ex.id,catalog:ex}));
-    return{routine,items:items||[],exercises:[...stored,...local]};
+    return{routine,items:items||[],exercises:[...stored,...local].sort((a,b)=>(a.body_group||'').localeCompare(b.body_group||'','es')||a.name.localeCompare(b.name,'es'))};
   }
 
   function exerciseOptions(exercises){
