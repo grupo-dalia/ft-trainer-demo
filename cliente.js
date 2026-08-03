@@ -1,7 +1,7 @@
 (async()=>{
   document.body.style.visibility='hidden';
   const load=src=>new Promise((resolve,reject)=>{const script=document.createElement('script');script.src=src;script.onload=resolve;script.onerror=reject;document.head.appendChild(script)});
-  if(['127.0.0.1','localhost'].includes(location.hostname)&&new URLSearchParams(location.search).has('preview')){await load('cliente-base.js');await load('client-home.js?v=1');document.body.style.visibility='visible';return}
+  if(['127.0.0.1','localhost'].includes(location.hostname)&&new URLSearchParams(location.search).has('preview')){await load('cliente-base.js');await load('client-home.js?v=1');await load('client-sections.js?v=1');document.body.style.visibility='visible';return}
   await load('vendor/supabase-js.min.js');
   await load('supabase-config.js?v=2');
   const client=supabase.createClient(FT_SUPABASE.url,FT_SUPABASE.publishableKey);
@@ -21,5 +21,6 @@
   window.ftClientId=member.id;
   await load('cliente-base.js');
   await load('client-home.js?v=1');
+  await load('client-sections.js?v=1');
   document.body.style.visibility='visible';
 })().catch(()=>location.replace('index.html'));

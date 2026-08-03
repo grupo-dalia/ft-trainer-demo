@@ -13,13 +13,15 @@
   <link rel="stylesheet" href="cliente-media.css?v=4">
   <link rel="stylesheet" href="historial.css?v=4">
   <link rel="stylesheet" href="coach-engine.css?v=5">
-  <link rel="stylesheet" href="client-home.css?v=2">
+  <link rel="stylesheet" href="client-home.css?v=3">
 </head>
 <body class="client-body ft-client-home">
+  <svg class="ft-icon-sprite" aria-hidden="true"><defs><symbol id="ico-home" viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5v8a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol><symbol id="ico-dumbbell" viewBox="0 0 24 24"><path d="M4 8v8M7 6v12M17 6v12M20 8v8M7 12h10"/></symbol><symbol id="ico-chart" viewBox="0 0 24 24"><path d="M4 19V9M10 19V5M16 19v-7M22 19V3"/></symbol><symbol id="ico-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c.6-5 3.3-7 8-7s7.4 2 8 7"/></symbol><symbol id="ico-spark" viewBox="0 0 24 24"><path d="m12 2 1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8z"/></symbol><symbol id="ico-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18M8 14h3M13 14h3M8 17h3"/></symbol><symbol id="ico-bell" viewBox="0 0 24 24"><path d="M6 17h12l-1.5-2v-4.5a4.5 4.5 0 0 0-9 0V15zM10 20h4"/></symbol><symbol id="ico-logout" viewBox="0 0 24 24"><path d="M10 5H5v14h5M14 8l4 4-4 4M8 12h10"/></symbol></defs></svg>
+  <svg class="ft-icon-sprite" aria-hidden="true"><defs><symbol id="ico-play" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m10 8 6 4-6 4z"/></symbol></defs></svg>
   <div class="client-shell">
     <header class="ft-home-header">
       <a href="cliente.html" class="ft-home-brand" aria-label="Fernando Tienda Training, inicio"></a>
-      <div class="ft-home-user"><div><span>Hola,</span><b id="client-first-name">deportista</b></div><button class="ft-notification" type="button" aria-label="Notificaciones">♟<i></i></button><span class="ft-avatar" id="client-avatar">FT</span></div>
+      <div class="ft-home-user"><div><span>Hola,</span><b id="client-first-name">deportista</b></div><button class="ft-notification" type="button" aria-label="Notificaciones"><svg><use href="#ico-bell"/></svg><i></i></button><span class="ft-avatar" id="client-avatar">FT</span></div>
     </header>
 
     <main class="ft-home-main">
@@ -28,16 +30,16 @@
       </section>
 
       <button class="ft-next-session" type="button" id="next-session-card">
-        <span class="ft-next-icon">▣</span><span><small>PRÓXIMA SESIÓN</small><b id="next-session-title">Tu entrenamiento está preparado</b><em id="next-session-detail">Abre tu rutina para consultar los ejercicios</em></span><strong>›</strong>
+        <span class="ft-next-icon"><svg><use href="#ico-calendar"/></svg></span><span><small>PRÓXIMA SESIÓN</small><b id="next-session-title">Tu entrenamiento está preparado</b><em id="next-session-detail">Abre tu rutina para consultar los ejercicios</em></span><strong>›</strong>
       </button>
 
       <section class="ft-section ft-quick-section">
         <h2>Accesos rápidos</h2>
         <div class="ft-quick-grid">
-          <button type="button" data-home-action="routine"><i>⌁</i><b>Rutinas</b></button>
-          <button type="button" data-home-action="coach"><i>✦</i><b>FT Coach</b></button>
-          <button type="button" data-home-action="progress"><i>▥</i><b>Progreso</b></button>
-          <button type="button" data-home-action="profile"><i>●</i><b>Mi perfil</b></button>
+          <button type="button" data-home-action="routine"><i><svg><use href="#ico-dumbbell"/></svg></i><b>Rutinas</b></button>
+          <button type="button" data-home-action="coach"><i><svg><use href="#ico-spark"/></svg></i><b>FT Coach</b></button>
+          <button type="button" data-home-action="progress"><i><svg><use href="#ico-chart"/></svg></i><b>Progreso</b></button>
+          <button type="button" data-home-action="profile"><i><svg><use href="#ico-user"/></svg></i><b>Mi perfil</b></button>
         </div>
       </section>
 
@@ -63,11 +65,11 @@
       </section>
     </main>
 
-    <nav class="mobile-nav ft-bottom-nav" aria-label="Navegación principal"><button class="active" type="button">⌂<small>Inicio</small></button><button type="button">⌁<small>Rutinas</small></button><button type="button">▥<small>Progreso</small></button><button type="button">●<small>Perfil</small></button></nav>
+    <nav class="mobile-nav ft-bottom-nav" aria-label="Navegación principal"><button class="active" type="button" data-client-nav="home"><svg><use href="#ico-home"/></svg><small>Inicio</small></button><button type="button" data-client-nav="routine"><svg><use href="#ico-dumbbell"/></svg><small>Rutinas</small></button><button type="button" data-client-nav="progress"><svg><use href="#ico-chart"/></svg><small>Progreso</small></button><button type="button" data-client-nav="profile"><svg><use href="#ico-user"/></svg><small>Perfil</small></button></nav>
   </div>
 
   <div class="set-sheet" id="set-sheet"><div class="sheet-inner"><button class="sheet-close" id="sheet-close">×</button><span class="week-pill">REGISTRAR EJERCICIO</span><h2 id="sheet-title">Ejercicio</h2><p>Introduce las repeticiones y el peso de cada serie.</p><div class="sets"><div><b>SERIE</b><b>REPS</b><b>PESO</b></div><label><span>1</span><input value="10" inputmode="numeric"><span><input value="0" inputmode="decimal"> kg</span></label><label><span>2</span><input value="10" inputmode="numeric"><span><input value="0" inputmode="decimal"> kg</span></label><label><span>3</span><input value="10" inputmode="numeric"><span><input value="0" inputmode="decimal"> kg</span></label></div><button class="save-set" id="save-set">Guardar y completar ✓</button></div></div>
   <div class="client-toast" id="client-toast">Ejercicio guardado</div>
-  <script src="cliente.js?v=8"></script><script src="progreso.js"></script><script src="coach-engine.js?v=5"></script>
+  <script src="cliente.js?v=9"></script><script src="progreso.js"></script><script src="coach-engine.js?v=5"></script>
 </body>
 </html>
