@@ -1,17 +1,1094 @@
-:root{--home-green:#2db46d;--home-blue:#218bb5;--home-dark:#102d25;--home-ink:#1d2428;--home-muted:#70787d;--home-line:#e6ebe8}
-.ft-client-home{background:#f4f7f6;color:var(--home-ink)}.ft-home-header{height:104px;max-width:1180px;margin:auto;padding:18px 28px;display:flex;align-items:center;justify-content:space-between}.ft-home-brand img{display:block;width:270px;max-height:68px;object-fit:contain}.ft-home-user{display:flex;align-items:center;gap:13px}.ft-home-user>div{font-size:18px}.ft-home-user>div span{margin-right:5px}.ft-notification{position:relative;width:44px;height:44px;border:0;border-radius:50%;background:#fff;box-shadow:0 8px 22px #17372a1c;font-size:0}.ft-notification:before{content:'●';font-size:22px;color:#767d79}.ft-notification i{position:absolute;right:6px;top:5px;width:9px;height:9px;border-radius:50%;background:var(--home-green);border:2px solid #fff}.ft-avatar{width:52px;height:52px;border-radius:50%;background:linear-gradient(145deg,var(--home-blue),var(--home-green));color:#fff;display:grid;place-items:center;font-weight:800;box-shadow:0 8px 20px #208b7b35}
-.ft-home-main{max-width:1120px;margin:auto;padding:16px 26px 112px}.ft-training-hero{min-height:350px;border-radius:28px;overflow:hidden;position:relative;background:linear-gradient(90deg,#07324aeF 0%,#093e4bde 48%,#0d4d3aa8 100%),url('assets/brand/ft-hero-training.png') 76% 48%/cover;box-shadow:0 20px 45px #113c3040}.ft-training-hero:after{content:'FT';position:absolute;right:6%;top:-25%;font:700 470px/1 'Oswald';color:#ffffff0a}.ft-training-copy{position:relative;z-index:1;padding:52px 62px;color:#fff}.ft-training-copy>span{font-size:11px;letter-spacing:2px;color:#57d69a;font-weight:800}.ft-training-copy h1{font:700 clamp(38px,5vw,64px)/.98 'Oswald';text-transform:uppercase;font-style:italic;margin:11px 0 17px}.ft-training-copy p{font-size:18px;line-height:1.45;color:#e6f3ee}.ft-training-copy button{min-width:260px;height:58px;border:0;border-radius:30px;background:linear-gradient(90deg,#34bf72,#27b965);color:#fff;font:700 20px 'Oswald';font-style:italic;text-transform:uppercase;box-shadow:0 12px 26px #071c1745}.ft-training-copy button b{font-size:28px;margin-left:18px}
-.ft-next-session{width:100%;margin:24px 0;border:0;border-left:5px solid var(--home-green);border-radius:20px;background:#fff;box-shadow:0 12px 30px #17372a16;padding:20px 26px;display:grid;grid-template-columns:62px 1fr auto;align-items:center;gap:18px;text-align:left}.ft-next-icon{width:62px;height:62px;border-radius:17px;background:#edf9f3;color:var(--home-green);display:grid;place-items:center;font-size:27px}.ft-next-session>span:nth-child(2){display:grid;gap:3px}.ft-next-session small{font-size:12px;color:var(--home-muted);font-weight:700;letter-spacing:.4px}.ft-next-session b{font-size:20px}.ft-next-session em{font-style:normal;color:#555f5a}.ft-next-session strong{font-size:36px;color:#9ca4a0;font-weight:400}
-.ft-section{margin:28px 0}.ft-section>h2,.ft-section-title h2{font-size:15px;text-transform:uppercase;color:#6e7579;margin:0 0 12px}.ft-quick-grid{display:grid;grid-template-columns:repeat(4,1fr);background:#fff;border:1px solid var(--home-line);border-radius:20px;box-shadow:0 10px 28px #17372a12;padding:18px}.ft-quick-grid button{min-height:106px;border:0;border-right:1px solid var(--home-line);background:#fff;display:grid;place-items:center;align-content:center;gap:8px;color:#282e31}.ft-quick-grid button:last-child{border-right:0}.ft-quick-grid i{font-style:normal;width:52px;height:52px;border-radius:15px;background:#f5f9f7;box-shadow:0 8px 18px #153c2a13;display:grid;place-items:center;font-size:25px;color:var(--home-blue)}.ft-quick-grid button:nth-child(even) i{color:var(--home-green)}.ft-quick-grid b{font-size:14px}
-.ft-week-goal{margin:28px 0;background:#fff;border:1px solid var(--home-line);border-radius:20px;box-shadow:0 10px 28px #17372a12;padding:25px 36px;display:grid;grid-template-columns:1fr 190px;align-items:center}.ft-week-goal>div:first-child{padding-right:45px;border-right:1px solid var(--home-line)}.ft-week-goal span{font:700 25px 'Oswald';font-style:italic}.ft-week-goal p{font-size:16px;margin:9px 0}.ft-week-goal p b{font-size:24px;color:var(--home-green)}.ft-goal-bar{height:12px;background:#e8ecea;border-radius:8px;overflow:hidden}.ft-goal-bar i{display:block;width:0;height:100%;background:var(--home-green);border-radius:8px;transition:.4s}.ft-week-goal small{display:block;margin-top:9px;color:var(--home-muted)}.ft-goal-ring{justify-self:center;width:122px;height:122px;border-radius:50%;display:grid;place-items:center;align-content:center;background:radial-gradient(circle,#fff 57%,transparent 58%),conic-gradient(var(--home-green) calc(var(--progress)*1%),#e5eae7 0)}.ft-goal-ring b{font:700 29px 'Oswald'}.ft-goal-ring small{font-size:9px;margin:0}
-.ft-section-title{display:flex;align-items:center;justify-content:space-between}.ft-section-title button{border:0;background:none;color:#6f7679;font-size:13px}.ft-program-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}.ft-program-card{height:145px;border:0;border-radius:18px;padding:20px;color:#fff;text-align:left;display:flex;align-items:end;justify-content:space-between;overflow:hidden;position:relative;background-position:center;background-size:cover;box-shadow:0 11px 26px #123c3030}.ft-program-card:before{content:'';position:absolute;inset:0;background:linear-gradient(15deg,#062b37e8,#0f4e4670)}.ft-program-card.training{background-image:url('media/images/0025-EIeI8Vf.jpg')}.ft-program-card.gym{background-image:url('media/images/0770-jFtipLl.jpg')}.ft-program-card.coach{background-image:url('assets/brand/ft-social-preview.png')}.ft-program-card span,.ft-program-card i{position:relative}.ft-program-card span{font:700 27px 'Oswald';font-style:italic;text-transform:uppercase}.ft-program-card i{width:30px;height:30px;border:2px solid #fff;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:22px}
-.ft-coach-tip{position:relative;overflow:hidden;margin:34px 0;background:linear-gradient(90deg,#f7fbfd,#f5f8f7);border-left:5px solid var(--home-blue);border-radius:20px;box-shadow:0 10px 28px #17372a12;padding:24px 32px;display:flex;align-items:center;gap:24px}.ft-tip-symbol{width:82px;height:82px;border-radius:50%;background:#fff;display:grid;place-items:center}.ft-tip-symbol img{width:55px}.ft-coach-tip small{font-size:12px;color:var(--home-green);font-weight:800}.ft-coach-tip h2{font-size:20px;margin:5px 0}.ft-coach-tip p{margin:0;color:#59625e}.ft-tip-watermark{position:absolute;right:28px;width:120px;opacity:.1}.ft-session-area{scroll-margin-top:20px;margin-top:40px}.ft-bottom-nav{grid-template-columns:repeat(4,1fr)!important}
-button{cursor:pointer}.ft-quick-grid button:focus-visible,.ft-program-card:focus-visible,.ft-next-session:focus-visible,.ft-training-copy button:focus-visible{outline:3px solid #1b96bd;outline-offset:3px}
-@media(max-width:760px){.ft-home-header{height:78px;padding:10px 16px}.ft-home-brand img{width:190px}.ft-home-user>div{display:none}.ft-avatar{width:42px;height:42px}.ft-home-main{padding:8px 14px 98px}.ft-training-hero{min-height:260px;border-radius:20px;background-position:70% center}.ft-training-copy{padding:30px 24px}.ft-training-copy h1{font-size:39px}.ft-training-copy p{font-size:14px}.ft-training-copy button{min-width:210px;height:50px;font-size:17px}.ft-next-session{grid-template-columns:48px 1fr auto;padding:16px;gap:12px;border-radius:17px}.ft-next-icon{width:48px;height:48px;border-radius:13px}.ft-next-session b{font-size:15px}.ft-next-session em{font-size:12px}.ft-quick-grid{padding:8px}.ft-quick-grid button{min-height:88px}.ft-quick-grid i{width:43px;height:43px}.ft-quick-grid b{font-size:11px}.ft-week-goal{grid-template-columns:1fr 105px;padding:20px}.ft-week-goal>div:first-child{padding-right:18px}.ft-week-goal span{font-size:20px}.ft-goal-ring{width:88px;height:88px}.ft-goal-ring b{font-size:22px}.ft-program-grid{display:flex;overflow:auto;scroll-snap-type:x mandatory;padding-bottom:6px}.ft-program-card{min-width:78%;height:130px;scroll-snap-align:start}.ft-coach-tip{padding:18px;gap:14px}.ft-tip-symbol{width:58px;height:58px}.ft-tip-symbol img{width:40px}.ft-tip-watermark{display:none}.ft-coach-tip p{font-size:12px}.ft-session-area{margin-top:26px}}
-@media(max-width:430px){.ft-home-brand img{width:165px}.ft-training-hero{min-height:240px}.ft-training-copy h1{font-size:34px}.ft-quick-grid{grid-template-columns:repeat(2,1fr)}.ft-quick-grid button{border-bottom:1px solid var(--home-line)}.ft-quick-grid button:nth-child(2){border-right:0}.ft-week-goal{grid-template-columns:1fr}.ft-week-goal>div:first-child{border:0;padding:0}.ft-goal-ring{display:none}.ft-program-card{min-width:86%}}
-.ft-home-brand{display:block;width:300px;height:70px;background:url('assets/brand/ft-horizontal-color.png') center/400px 400px no-repeat}
-@media(max-width:760px){.ft-home-brand{width:205px;height:58px;background-size:290px 290px}}
-@media(max-width:430px){.ft-home-brand{width:175px;background-size:250px 250px}}
-.ft-icon-sprite{position:absolute;width:0;height:0;overflow:hidden}.ft-client-home svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.ft-icon-sprite #ico-home path{fill:currentColor;stroke:none}.ft-notification svg{width:22px;height:22px}.ft-next-icon svg{width:28px;height:28px}.ft-quick-grid i svg{width:27px;height:27px}.ft-bottom-nav button>svg{display:block;width:23px;height:23px;margin:0 auto 3px}.ft-bottom-nav button{font-size:0!important}
-.exercise-row.live-exercise{width:100%;border-left:0;border-right:0;border-bottom:0;background:transparent;text-align:left;font:inherit}.exercise-row.live-exercise>span:nth-child(2){display:block}.exercise-row.live-exercise svg{width:20px;height:20px;stroke:#fff}.client-empty-state{padding:28px;border:1px dashed #cbd8d1;border-radius:14px;background:#f7faf8;color:#6c7972;text-align:center;line-height:1.5}.client-section-panel{position:fixed;inset:0;z-index:80;display:none;overflow:auto;background:#f3f7f5;padding-bottom:90px}.client-section-panel.open{display:block}.client-section-panel>header{position:sticky;top:0;z-index:2;min-height:96px;background:#fff;border-bottom:1px solid #e2e9e5;display:flex;align-items:center;gap:16px;padding:17px max(24px,calc((100vw - 1060px)/2))}.client-section-panel>header>span{width:48px;height:48px;border-radius:14px;background:#e9f8f0;color:#1c9b5b;display:grid;place-items:center}.client-section-panel>header small{color:#2aab68;font-size:10px;font-weight:800;letter-spacing:1px}.client-section-panel>header h1{font:700 30px 'Oswald';margin:1px 0}.client-panel-back{width:44px;height:44px;border:1px solid #dde7e1;border-radius:12px;background:#fff;color:#204c36;font-size:24px}.client-panel-content{max-width:1060px;margin:auto;padding:28px 24px}.panel-loading{padding:80px;text-align:center;color:#718078}.client-metric-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px}.client-metric-grid article,.client-panel-card{background:#fff;border:1px solid #e3eae6;border-radius:18px;box-shadow:0 10px 30px #17372a0c}.client-metric-grid article{padding:24px}.client-metric-grid small,.panel-title small{font-size:10px;color:#78847d;font-weight:800;letter-spacing:.8px}.client-metric-grid b{display:block;font:700 32px 'Oswald';margin-top:8px;color:#153e2b}.client-metric-grid em{font:500 14px 'DM Sans';color:#718078}.client-panel-card{padding:24px;margin-bottom:18px}.panel-title h2{font:700 23px 'Oswald';margin:3px 0 18px}.client-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}.client-form-grid label{display:grid;gap:6px;font-size:12px;font-weight:700;color:#526158}.client-form-grid input{width:100%;height:46px;border:1px solid #d7e1dc;border-radius:10px;background:#fff;padding:0 12px;font:inherit}.client-primary{grid-column:1/-1;min-height:48px;border:0;border-radius:11px;background:#2db46d;color:#fff;font-weight:800}.client-form-grid .form-feedback{grid-column:1/-1;margin:0;color:#20784b}.measurement-history{display:grid;gap:8px}.measurement-history>div{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;padding:13px 4px;border-top:1px solid #e8eeea}.measurement-history time,.measurement-history span{color:#738078;font-size:12px}.client-profile-hero{display:flex;align-items:center;gap:18px;padding:24px;margin-bottom:18px;border-radius:20px;background:linear-gradient(135deg,#123d2b,#206845);color:#fff}.client-profile-hero>span{width:78px;height:78px;border-radius:50%;display:grid;place-items:center;background:#2fc276;font:700 25px 'Oswald'}.client-profile-hero h2{margin:0 0 4px;font:700 28px 'Oswald'}.client-profile-hero p{margin:0;color:#c3dbcf}.client-profile-hero b{display:inline-block;margin-top:9px;padding:5px 9px;border-radius:20px;background:#ffffff14;color:#5de59d;font-size:10px}.client-logout{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;min-height:48px;border:1px solid #e6b9b1;border-radius:11px;background:#fff;color:#ad3f32;font-weight:800}.client-logout svg{width:20px;height:20px}
-@media(max-width:680px){.client-section-panel>header{min-height:76px;padding:12px 14px}.client-section-panel>header>span{display:none}.client-section-panel>header h1{font-size:25px}.client-panel-content{padding:18px 14px 90px}.client-metric-grid{grid-template-columns:1fr}.client-metric-grid article{padding:18px}.client-form-grid{grid-template-columns:1fr}.client-primary,.client-form-grid .form-feedback{grid-column:1}.client-panel-card{padding:18px}.measurement-history>div{grid-template-columns:1fr auto}.measurement-history span{grid-column:1/-1}.client-profile-hero{padding:18px}.client-profile-hero>span{width:62px;height:62px}.client-profile-hero h2{font-size:23px}}
+:root {
+  --home-green: #2db46d;
+  --home-blue: #218bb5;
+  --home-dark: #102d25;
+  --home-ink: #1d2428;
+  --home-muted: #70787d;
+  --home-line: #e6ebe8;
+}
+.ft-client-home {
+  background: #f4f7f6;
+  color: var(--home-ink);
+}
+.ft-home-header {
+  height: 104px;
+  max-width: 1180px;
+  margin: auto;
+  padding: 18px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.ft-home-brand img {
+  display: block;
+  width: 270px;
+  max-height: 68px;
+  object-fit: contain;
+}
+.ft-home-user {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+.ft-home-user > div {
+  font-size: 18px;
+}
+.ft-home-user > div span {
+  margin-right: 5px;
+}
+.ft-notification {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 8px 22px #17372a1c;
+  font-size: 0;
+}
+.ft-notification:before {
+  content: "●";
+  font-size: 22px;
+  color: #767d79;
+}
+.ft-notification i {
+  position: absolute;
+  right: 6px;
+  top: 5px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--home-green);
+  border: 2px solid #fff;
+}
+.ft-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, var(--home-blue), var(--home-green));
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  box-shadow: 0 8px 20px #208b7b35;
+}
+.ft-home-main {
+  max-width: 1120px;
+  margin: auto;
+  padding: 16px 26px 112px;
+}
+.ft-training-hero {
+  min-height: 350px;
+  border-radius: 28px;
+  overflow: hidden;
+  position: relative;
+  background:
+    linear-gradient(90deg, #07324aef 0%, #093e4bde 48%, #0d4d3aa8 100%),
+    url("assets/brand/ft-hero-training.png") 76% 48% / cover;
+  box-shadow: 0 20px 45px #113c3040;
+}
+.ft-training-hero:after {
+  content: "FT";
+  position: absolute;
+  right: 6%;
+  top: -25%;
+  font: 700 470px/1 "Oswald";
+  color: #ffffff0a;
+}
+.ft-training-copy {
+  position: relative;
+  z-index: 1;
+  padding: 52px 62px;
+  color: #fff;
+}
+.ft-training-copy > span {
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: #57d69a;
+  font-weight: 800;
+}
+.ft-training-copy h1 {
+  font: 700 clamp(38px, 5vw, 64px)/0.98 "Oswald";
+  text-transform: uppercase;
+  font-style: italic;
+  margin: 11px 0 17px;
+}
+.ft-training-copy p {
+  font-size: 18px;
+  line-height: 1.45;
+  color: #e6f3ee;
+}
+.ft-training-copy button {
+  min-width: 260px;
+  height: 58px;
+  border: 0;
+  border-radius: 30px;
+  background: linear-gradient(90deg, #34bf72, #27b965);
+  color: #fff;
+  font: 700 20px "Oswald";
+  font-style: italic;
+  text-transform: uppercase;
+  box-shadow: 0 12px 26px #071c1745;
+}
+.ft-training-copy button b {
+  font-size: 28px;
+  margin-left: 18px;
+}
+.ft-next-session {
+  width: 100%;
+  margin: 24px 0;
+  border: 0;
+  border-left: 5px solid var(--home-green);
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 12px 30px #17372a16;
+  padding: 20px 26px;
+  display: grid;
+  grid-template-columns: 62px 1fr auto;
+  align-items: center;
+  gap: 18px;
+  text-align: left;
+}
+.ft-next-icon {
+  width: 62px;
+  height: 62px;
+  border-radius: 17px;
+  background: #edf9f3;
+  color: var(--home-green);
+  display: grid;
+  place-items: center;
+  font-size: 27px;
+}
+.ft-next-session > span:nth-child(2) {
+  display: grid;
+  gap: 3px;
+}
+.ft-next-session small {
+  font-size: 12px;
+  color: var(--home-muted);
+  font-weight: 700;
+  letter-spacing: 0.4px;
+}
+.ft-next-session b {
+  font-size: 20px;
+}
+.ft-next-session em {
+  font-style: normal;
+  color: #555f5a;
+}
+.ft-next-session strong {
+  font-size: 36px;
+  color: #9ca4a0;
+  font-weight: 400;
+}
+.ft-section {
+  margin: 28px 0;
+}
+.ft-section > h2,
+.ft-section-title h2 {
+  font-size: 15px;
+  text-transform: uppercase;
+  color: #6e7579;
+  margin: 0 0 12px;
+}
+.ft-quick-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  background: #fff;
+  border: 1px solid var(--home-line);
+  border-radius: 20px;
+  box-shadow: 0 10px 28px #17372a12;
+  padding: 18px;
+}
+.ft-quick-grid button {
+  min-height: 106px;
+  border: 0;
+  border-right: 1px solid var(--home-line);
+  background: #fff;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  color: #282e31;
+}
+.ft-quick-grid button:last-child {
+  border-right: 0;
+}
+.ft-quick-grid i {
+  font-style: normal;
+  width: 52px;
+  height: 52px;
+  border-radius: 15px;
+  background: #f5f9f7;
+  box-shadow: 0 8px 18px #153c2a13;
+  display: grid;
+  place-items: center;
+  font-size: 25px;
+  color: var(--home-blue);
+}
+.ft-quick-grid button:nth-child(even) i {
+  color: var(--home-green);
+}
+.ft-quick-grid b {
+  font-size: 14px;
+}
+.ft-week-goal {
+  margin: 28px 0;
+  background: #fff;
+  border: 1px solid var(--home-line);
+  border-radius: 20px;
+  box-shadow: 0 10px 28px #17372a12;
+  padding: 25px 36px;
+  display: grid;
+  grid-template-columns: 1fr 190px;
+  align-items: center;
+}
+.ft-week-goal > div:first-child {
+  padding-right: 45px;
+  border-right: 1px solid var(--home-line);
+}
+.ft-week-goal span {
+  font: 700 25px "Oswald";
+  font-style: italic;
+}
+.ft-week-goal p {
+  font-size: 16px;
+  margin: 9px 0;
+}
+.ft-week-goal p b {
+  font-size: 24px;
+  color: var(--home-green);
+}
+.ft-goal-bar {
+  height: 12px;
+  background: #e8ecea;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.ft-goal-bar i {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: var(--home-green);
+  border-radius: 8px;
+  transition: 0.4s;
+}
+.ft-week-goal small {
+  display: block;
+  margin-top: 9px;
+  color: var(--home-muted);
+}
+.ft-goal-ring {
+  justify-self: center;
+  width: 122px;
+  height: 122px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  background:
+    radial-gradient(circle, #fff 57%, transparent 58%),
+    conic-gradient(var(--home-green) calc(var(--progress) * 1%), #e5eae7 0);
+}
+.ft-goal-ring b {
+  font: 700 29px "Oswald";
+}
+.ft-goal-ring small {
+  font-size: 9px;
+  margin: 0;
+}
+.ft-section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.ft-section-title button {
+  border: 0;
+  background: none;
+  color: #6f7679;
+  font-size: 13px;
+}
+.ft-program-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+.ft-program-card {
+  height: 145px;
+  border: 0;
+  border-radius: 18px;
+  padding: 20px;
+  color: #fff;
+  text-align: left;
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  overflow: hidden;
+  position: relative;
+  background-position: center;
+  background-size: cover;
+  box-shadow: 0 11px 26px #123c3030;
+}
+.ft-program-card:before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(15deg, #062b37e8, #0f4e4670);
+}
+.ft-program-card.training {
+  background-image: url("media/images/0025-EIeI8Vf.jpg");
+}
+.ft-program-card.gym {
+  background-image: url("media/images/0770-jFtipLl.jpg");
+}
+.ft-program-card.coach {
+  background-image: url("assets/brand/ft-social-preview.png");
+}
+.ft-program-card span,
+.ft-program-card i {
+  position: relative;
+}
+.ft-program-card span {
+  font: 700 27px "Oswald";
+  font-style: italic;
+  text-transform: uppercase;
+}
+.ft-program-card i {
+  width: 30px;
+  height: 30px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-style: normal;
+  font-size: 22px;
+}
+.ft-coach-tip {
+  position: relative;
+  overflow: hidden;
+  margin: 34px 0;
+  background: linear-gradient(90deg, #f7fbfd, #f5f8f7);
+  border-left: 5px solid var(--home-blue);
+  border-radius: 20px;
+  box-shadow: 0 10px 28px #17372a12;
+  padding: 24px 32px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+.ft-tip-symbol {
+  width: 82px;
+  height: 82px;
+  border-radius: 50%;
+  background: #fff;
+  display: grid;
+  place-items: center;
+}
+.ft-tip-symbol img {
+  width: 55px;
+}
+.ft-coach-tip small {
+  font-size: 12px;
+  color: var(--home-green);
+  font-weight: 800;
+}
+.ft-coach-tip h2 {
+  font-size: 20px;
+  margin: 5px 0;
+}
+.ft-coach-tip p {
+  margin: 0;
+  color: #59625e;
+}
+.ft-tip-watermark {
+  position: absolute;
+  right: 28px;
+  width: 120px;
+  opacity: 0.1;
+}
+.ft-session-area {
+  scroll-margin-top: 20px;
+  margin-top: 40px;
+}
+.ft-bottom-nav {
+  grid-template-columns: repeat(4, 1fr) !important;
+}
+button {
+  cursor: pointer;
+}
+.ft-quick-grid button:focus-visible,
+.ft-program-card:focus-visible,
+.ft-next-session:focus-visible,
+.ft-training-copy button:focus-visible {
+  outline: 3px solid #1b96bd;
+  outline-offset: 3px;
+}
+@media (max-width: 760px) {
+  .ft-home-header {
+    height: 78px;
+    padding: 10px 16px;
+  }
+  .ft-home-brand img {
+    width: 190px;
+  }
+  .ft-home-user > div {
+    display: none;
+  }
+  .ft-avatar {
+    width: 42px;
+    height: 42px;
+  }
+  .ft-home-main {
+    padding: 8px 14px 98px;
+  }
+  .ft-training-hero {
+    min-height: 260px;
+    border-radius: 20px;
+    background-position: 70% center;
+  }
+  .ft-training-copy {
+    padding: 30px 24px;
+  }
+  .ft-training-copy h1 {
+    font-size: 39px;
+  }
+  .ft-training-copy p {
+    font-size: 14px;
+  }
+  .ft-training-copy button {
+    min-width: 210px;
+    height: 50px;
+    font-size: 17px;
+  }
+  .ft-next-session {
+    grid-template-columns: 48px 1fr auto;
+    padding: 16px;
+    gap: 12px;
+    border-radius: 17px;
+  }
+  .ft-next-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 13px;
+  }
+  .ft-next-session b {
+    font-size: 15px;
+  }
+  .ft-next-session em {
+    font-size: 12px;
+  }
+  .ft-quick-grid {
+    padding: 8px;
+  }
+  .ft-quick-grid button {
+    min-height: 88px;
+  }
+  .ft-quick-grid i {
+    width: 43px;
+    height: 43px;
+  }
+  .ft-quick-grid b {
+    font-size: 11px;
+  }
+  .ft-week-goal {
+    grid-template-columns: 1fr 105px;
+    padding: 20px;
+  }
+  .ft-week-goal > div:first-child {
+    padding-right: 18px;
+  }
+  .ft-week-goal span {
+    font-size: 20px;
+  }
+  .ft-goal-ring {
+    width: 88px;
+    height: 88px;
+  }
+  .ft-goal-ring b {
+    font-size: 22px;
+  }
+  .ft-program-grid {
+    display: flex;
+    overflow: auto;
+    scroll-snap-type: x mandatory;
+    padding-bottom: 6px;
+  }
+  .ft-program-card {
+    min-width: 78%;
+    height: 130px;
+    scroll-snap-align: start;
+  }
+  .ft-coach-tip {
+    padding: 18px;
+    gap: 14px;
+  }
+  .ft-tip-symbol {
+    width: 58px;
+    height: 58px;
+  }
+  .ft-tip-symbol img {
+    width: 40px;
+  }
+  .ft-tip-watermark {
+    display: none;
+  }
+  .ft-coach-tip p {
+    font-size: 12px;
+  }
+  .ft-session-area {
+    margin-top: 26px;
+  }
+}
+@media (max-width: 430px) {
+  .ft-home-brand img {
+    width: 165px;
+  }
+  .ft-training-hero {
+    min-height: 240px;
+  }
+  .ft-training-copy h1 {
+    font-size: 34px;
+  }
+  .ft-quick-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .ft-quick-grid button {
+    border-bottom: 1px solid var(--home-line);
+  }
+  .ft-quick-grid button:nth-child(2) {
+    border-right: 0;
+  }
+  .ft-week-goal {
+    grid-template-columns: 1fr;
+  }
+  .ft-week-goal > div:first-child {
+    border: 0;
+    padding: 0;
+  }
+  .ft-goal-ring {
+    display: none;
+  }
+  .ft-program-card {
+    min-width: 86%;
+  }
+}
+.ft-home-brand {
+  display: block;
+  width: 300px;
+  height: 70px;
+  background: url("assets/brand/ft-horizontal-color.png") center/400px 400px
+    no-repeat;
+}
+@media (max-width: 760px) {
+  .ft-home-brand {
+    width: 205px;
+    height: 58px;
+    background-size: 290px 290px;
+  }
+}
+@media (max-width: 430px) {
+  .ft-home-brand {
+    width: 175px;
+    background-size: 250px 250px;
+  }
+}
+.ft-icon-sprite {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+.ft-client-home svg {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.ft-icon-sprite #ico-home path {
+  fill: currentColor;
+  stroke: none;
+}
+.ft-notification svg {
+  width: 22px;
+  height: 22px;
+}
+.ft-next-icon svg {
+  width: 28px;
+  height: 28px;
+}
+.ft-quick-grid i svg {
+  width: 27px;
+  height: 27px;
+}
+.ft-bottom-nav button > svg {
+  display: block;
+  width: 23px;
+  height: 23px;
+  margin: 0 auto 3px;
+}
+.ft-bottom-nav button {
+  font-size: 0 !important;
+}
+.exercise-row.live-exercise {
+  width: 100%;
+  border-left: 0;
+  border-right: 0;
+  border-bottom: 0;
+  background: transparent;
+  text-align: left;
+  font: inherit;
+}
+.exercise-row.live-exercise > span:nth-child(2) {
+  display: block;
+}
+.exercise-row.live-exercise svg {
+  width: 20px;
+  height: 20px;
+  stroke: #fff;
+}
+.client-empty-state {
+  padding: 28px;
+  border: 1px dashed #cbd8d1;
+  border-radius: 14px;
+  background: #f7faf8;
+  color: #6c7972;
+  text-align: center;
+  line-height: 1.5;
+}
+.client-section-panel {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: none;
+  overflow: auto;
+  background: #f3f7f5;
+  padding-bottom: 90px;
+}
+.client-section-panel.open {
+  display: block;
+}
+.client-section-panel > header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  min-height: 96px;
+  background: #fff;
+  border-bottom: 1px solid #e2e9e5;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 17px max(24px, calc((100vw - 1060px) / 2));
+}
+.client-section-panel > header > span {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: #e9f8f0;
+  color: #1c9b5b;
+  display: grid;
+  place-items: center;
+}
+.client-section-panel > header small {
+  color: #2aab68;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+.client-section-panel > header h1 {
+  font: 700 30px "Oswald";
+  margin: 1px 0;
+}
+.client-panel-back {
+  width: 44px;
+  height: 44px;
+  border: 1px solid #dde7e1;
+  border-radius: 12px;
+  background: #fff;
+  color: #204c36;
+  font-size: 24px;
+}
+.client-panel-content {
+  max-width: 1060px;
+  margin: auto;
+  padding: 28px 24px;
+}
+.panel-loading {
+  padding: 80px;
+  text-align: center;
+  color: #718078;
+}
+.client-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.client-metric-grid article,
+.client-panel-card {
+  background: #fff;
+  border: 1px solid #e3eae6;
+  border-radius: 18px;
+  box-shadow: 0 10px 30px #17372a0c;
+}
+.client-metric-grid article {
+  padding: 24px;
+}
+.client-metric-grid small,
+.panel-title small {
+  font-size: 10px;
+  color: #78847d;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+}
+.client-metric-grid b {
+  display: block;
+  font: 700 32px "Oswald";
+  margin-top: 8px;
+  color: #153e2b;
+}
+.client-metric-grid em {
+  font: 500 14px "DM Sans";
+  color: #718078;
+}
+.client-panel-card {
+  padding: 24px;
+  margin-bottom: 18px;
+}
+.panel-title h2 {
+  font: 700 23px "Oswald";
+  margin: 3px 0 18px;
+}
+.client-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+.client-form-grid label {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #526158;
+}
+.client-form-grid input {
+  width: 100%;
+  height: 46px;
+  border: 1px solid #d7e1dc;
+  border-radius: 10px;
+  background: #fff;
+  padding: 0 12px;
+  font: inherit;
+}
+.client-primary {
+  grid-column: 1/-1;
+  min-height: 48px;
+  border: 0;
+  border-radius: 11px;
+  background: #2db46d;
+  color: #fff;
+  font-weight: 800;
+}
+.client-form-grid .form-feedback {
+  grid-column: 1/-1;
+  margin: 0;
+  color: #20784b;
+}
+.measurement-history {
+  display: grid;
+  gap: 8px;
+}
+.measurement-history > div {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+  padding: 13px 4px;
+  border-top: 1px solid #e8eeea;
+}
+.measurement-history time,
+.measurement-history span {
+  color: #738078;
+  font-size: 12px;
+}
+.client-profile-hero {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 24px;
+  margin-bottom: 18px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #123d2b, #206845);
+  color: #fff;
+}
+.client-profile-hero > span {
+  width: 78px;
+  height: 78px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #2fc276;
+  font: 700 25px "Oswald";
+}
+.client-profile-hero h2 {
+  margin: 0 0 4px;
+  font: 700 28px "Oswald";
+}
+.client-profile-hero p {
+  margin: 0;
+  color: #c3dbcf;
+}
+.client-profile-hero b {
+  display: inline-block;
+  margin-top: 9px;
+  padding: 5px 9px;
+  border-radius: 20px;
+  background: #ffffff14;
+  color: #5de59d;
+  font-size: 10px;
+}
+.client-logout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid #e6b9b1;
+  border-radius: 11px;
+  background: #fff;
+  color: #ad3f32;
+  font-weight: 800;
+}
+.client-logout svg {
+  width: 20px;
+  height: 20px;
+}
+@media (max-width: 680px) {
+  .client-section-panel > header {
+    min-height: 76px;
+    padding: 12px 14px;
+  }
+  .client-section-panel > header > span {
+    display: none;
+  }
+  .client-section-panel > header h1 {
+    font-size: 25px;
+  }
+  .client-panel-content {
+    padding: 18px 14px 90px;
+  }
+  .client-metric-grid {
+    grid-template-columns: 1fr;
+  }
+  .client-metric-grid article {
+    padding: 18px;
+  }
+  .client-form-grid {
+    grid-template-columns: 1fr;
+  }
+  .client-primary,
+  .client-form-grid .form-feedback {
+    grid-column: 1;
+  }
+  .client-panel-card {
+    padding: 18px;
+  }
+  .measurement-history > div {
+    grid-template-columns: 1fr auto;
+  }
+  .measurement-history span {
+    grid-column: 1/-1;
+  }
+  .client-profile-hero {
+    padding: 18px;
+  }
+  .client-profile-hero > span {
+    width: 62px;
+    height: 62px;
+  }
+  .client-profile-hero h2 {
+    font-size: 23px;
+  }
+}
+
+.share-workout-button {
+  width: 100%;
+  margin: 18px 0 0;
+  padding: 17px 20px;
+  border: 0;
+  border-radius: 17px;
+  background: linear-gradient(120deg, #082c38, #13523f 58%, #26ae69);
+  color: #fff;
+  display: grid;
+  grid-template-columns: 52px 1fr auto;
+  align-items: center;
+  gap: 15px;
+  text-align: left;
+  box-shadow: 0 14px 34px #0d45352d;
+}
+.share-workout-button[hidden] {
+  display: none;
+}
+.share-workout-button > span:first-child {
+  width: 52px;
+  height: 52px;
+  border-radius: 15px;
+  background: #ffffff17;
+  display: grid;
+  place-items: center;
+}
+.share-workout-button svg {
+  width: 27px;
+  height: 27px;
+  stroke: #54e79b;
+}
+.share-workout-button b,
+.share-workout-button small {
+  display: block;
+}
+.share-workout-button b {
+  font-size: 16px;
+}
+.share-workout-button small {
+  margin-top: 4px;
+  color: #b9d9cb;
+  font-size: 12px;
+}
+.share-workout-button strong {
+  padding: 11px 16px;
+  border-radius: 20px;
+  background: #fff;
+  color: #11603e;
+  font: 700 13px "Oswald";
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.workout-share-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 140;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 22px;
+  background: #04110dcc;
+  backdrop-filter: blur(10px);
+  overflow: auto;
+}
+.workout-share-overlay.open {
+  display: flex;
+}
+.workout-share-modal {
+  width: min(920px, 100%);
+  max-height: calc(100vh - 44px);
+  overflow: auto;
+  background: #f8faf9;
+  border-radius: 24px;
+  padding: 24px;
+  box-shadow: 0 28px 80px #0008;
+}
+.workout-share-modal > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+.workout-share-modal small {
+  font-size: 10px;
+  letter-spacing: 1.4px;
+  color: #23a762;
+  font-weight: 900;
+}
+.workout-share-modal h2 {
+  font: 700 28px "Oswald";
+  margin: 4px 0;
+}
+.share-close {
+  width: 42px;
+  height: 42px;
+  border: 1px solid #dbe5df;
+  border-radius: 12px;
+  background: #fff;
+  color: #183c2c;
+  font-size: 27px;
+}
+.story-preview {
+  width: min(340px, 100%);
+  margin: auto;
+  border-radius: 17px;
+  overflow: hidden;
+  background: #092b2c;
+  box-shadow: 0 18px 42px #113b2c30;
+}
+.story-preview canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 9/16;
+}
+.workout-share-modal > p {
+  margin: 17px auto;
+  color: #68756e;
+  text-align: center;
+  font-size: 12px;
+}
+.share-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  max-width: 600px;
+  margin: auto;
+}
+.share-actions button {
+  min-height: 50px;
+  border-radius: 12px;
+  font-weight: 800;
+}
+.share-native {
+  border: 0;
+  background: #2db46d;
+  color: #fff;
+}
+.share-download {
+  border: 1px solid #2db46d;
+  background: #fff;
+  color: #16824a;
+}
+@media (max-width: 600px) {
+  .share-workout-button {
+    grid-template-columns: 44px 1fr;
+    padding: 14px;
+  }
+  .share-workout-button > span:first-child {
+    width: 44px;
+    height: 44px;
+  }
+  .share-workout-button strong {
+    grid-column: 1/-1;
+    text-align: center;
+  }
+  .workout-share-overlay {
+    align-items: flex-start;
+    padding: 10px;
+  }
+  .workout-share-modal {
+    max-height: none;
+    border-radius: 18px;
+    padding: 16px;
+  }
+  .workout-share-modal h2 {
+    font-size: 23px;
+  }
+  .story-preview {
+    width: min(280px, 75vw);
+  }
+  .share-actions {
+    grid-template-columns: 1fr;
+  }
+  .share-actions button {
+    min-height: 52px;
+  }
+}

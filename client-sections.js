@@ -51,9 +51,19 @@
   let routine = null,
     routineItems = [],
     sessionId = null,
+    sessionStartedAt = Date.now(),
     selectedItem = null;
   async function loadRoutine() {
-    if (!db || !clientId) return;
+    if (!db || !clientId) {
+      if (
+        location.hostname === "127.0.0.1" ||
+        location.hostname === "localhost"
+      ) {
+        ensureShareButton();
+        document.getElementById("share-workout").hidden = false;
+      }
+      return;
+    }
     const { data: routines } = await db
       .from("routines")
       .select("id,name,description,status,week_start")
@@ -76,6 +86,7 @@
       .order("position");
     routineItems = items || [];
     renderRoutine();
+    await restoreTodaySession();
   }
   function renderRoutineEmpty() {
     document.querySelector(".workout-cover h3").innerHTML =
@@ -121,6 +132,59 @@
               button,
             )),
       );
+    ensureShareButton();
+  }
+
+  function ensureShareButton() {
+    const host = document.getElementById("exercise-list");
+    if (!host || document.getElementById("share-workout")) return;
+    const button = document.createElement("button");
+    button.type = "button";
+    button.id = "share-workout";
+    button.className = "share-workout-button";
+    button.hidden = true;
+    button.innerHTML = `<span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 10.5 6.8-4M8.6 13.5l6.8 4"/></svg></span><span><b>Compartir entrenamiento</b><small>Crea tu resumen para Instagram</small></span><strong>Crear Story</strong>`;
+    button.onclick = openWorkoutShare;
+    host.after(button);
+  }
+
+  function updateWorkoutProgress(done) {
+    const total = routineItems.length,
+      percent = total ? Math.round((done / total) * 100) : 0;
+    document.getElementById("done-count").textContent = done;
+    document.getElementById("percent").textContent = percent + "%";
+    document.getElementById("session-progress").style.width = percent + "%";
+    const share = document.getElementById("share-workout");
+    if (share) share.hidden = done === 0;
+    return { total, percent };
+  }
+
+  async function restoreTodaySession() {
+    if (!db || !clientId || !routine) return;
+    const today = new Date().toISOString().slice(0, 10),
+      { data: session } = await db
+        .from("workout_sessions")
+        .select("id,started_at,completed_at,duration_minutes")
+        .eq("client_id", clientId)
+        .eq("routine_id", routine.id)
+        .eq("planned_for", today)
+        .maybeSingle();
+    if (!session) return;
+    sessionId = session.id;
+    sessionStartedAt = session.started_at
+      ? new Date(session.started_at).getTime()
+      : Date.now();
+    const { data: logs } = await db
+      .from("set_logs")
+      .select("exercise_id")
+      .eq("session_id", sessionId);
+    const completedIds = new Set((logs || []).map((log) => log.exercise_id));
+    document.querySelectorAll(".live-exercise").forEach((row, index) => {
+      if (!completedIds.has(routineItems[index]?.exercise_id)) return;
+      row.classList.add("done");
+      row.querySelector("strong").textContent = "✓";
+    });
+    updateWorkoutProgress(completedIds.size);
   }
   async function openExercise(item, row) {
     selectedItem = { item, row };
@@ -169,15 +233,19 @@
     const today = new Date().toISOString().slice(0, 10),
       existing = await db
         .from("workout_sessions")
-        .select("id")
+        .select("id,started_at")
         .eq("client_id", clientId)
         .eq("routine_id", routine.id)
         .eq("planned_for", today)
         .maybeSingle();
     if (existing.data?.id) {
       sessionId = existing.data.id;
+      sessionStartedAt = existing.data.started_at
+        ? new Date(existing.data.started_at).getTime()
+        : Date.now();
       return sessionId;
     }
+    const startedAt = new Date().toISOString();
     const created = await db
       .from("workout_sessions")
       .insert({
@@ -185,12 +253,13 @@
         routine_id: routine.id,
         day_number: selectedItem.item.day_number,
         planned_for: today,
-        started_at: new Date().toISOString(),
+        started_at: startedAt,
       })
       .select("id")
       .single();
     if (created.error) throw created.error;
     sessionId = created.data.id;
+    sessionStartedAt = new Date(startedAt).getTime();
     return sessionId;
   }
   const oldSave = document.getElementById("save-set"),
@@ -223,16 +292,21 @@
       selectedItem.row.classList.add("done");
       selectedItem.row.querySelector("strong").textContent = "✓";
       const done = document.querySelectorAll(".live-exercise.done").length,
-        total = routineItems.length,
-        percent = total ? Math.round((done / total) * 100) : 0;
-      document.getElementById("done-count").textContent = done;
-      document.getElementById("percent").textContent = percent + "%";
-      document.getElementById("session-progress").style.width = percent + "%";
-      if (done === total)
+        { total } = updateWorkoutProgress(done),
+        duration = Math.max(
+          1,
+          Math.round((Date.now() - sessionStartedAt) / 60000),
+        );
+      if (done === total) {
         await db
           .from("workout_sessions")
-          .update({ completed_at: new Date().toISOString() })
+          .update({
+            completed_at: new Date().toISOString(),
+            duration_minutes: duration,
+          })
           .eq("id", currentSession);
+        toast("¡Entrenamiento completado! Ya puedes compartirlo");
+      }
       document.getElementById("set-sheet").classList.remove("open");
       toast("Series guardadas correctamente");
     } catch (error) {
@@ -242,6 +316,256 @@
       save.textContent = "Guardar y completar ✓";
     }
   };
+
+  async function getWorkoutShareData() {
+    if (
+      !db &&
+      (location.hostname === "127.0.0.1" || location.hostname === "localhost")
+    ) {
+      return {
+        routineName: "Fuerza · Torso A",
+        duration: 64,
+        series: 14,
+        volume: 5840,
+        exercises: [
+          {
+            name: "Press de banca",
+            sets: [
+              { weight_kg: 70, reps: 10 },
+              { weight_kg: 72.5, reps: 8 },
+              { weight_kg: 72.5, reps: 8 },
+            ],
+          },
+          {
+            name: "Remo con barra",
+            sets: [
+              { weight_kg: 55, reps: 10 },
+              { weight_kg: 55, reps: 10 },
+              { weight_kg: 55, reps: 9 },
+            ],
+          },
+          {
+            name: "Press inclinado",
+            sets: [
+              { weight_kg: 24, reps: 12 },
+              { weight_kg: 24, reps: 11 },
+              { weight_kg: 24, reps: 10 },
+            ],
+          },
+          {
+            name: "Jalón al pecho",
+            sets: [
+              { weight_kg: 50, reps: 12 },
+              { weight_kg: 50, reps: 12 },
+              { weight_kg: 50, reps: 10 },
+            ],
+          },
+          {
+            name: "Elevaciones laterales",
+            sets: [
+              { weight_kg: 8, reps: 15 },
+              { weight_kg: 8, reps: 14 },
+            ],
+          },
+        ],
+      };
+    }
+    const duration = Math.max(
+      1,
+      Math.round((Date.now() - sessionStartedAt) / 60000),
+    );
+    let logs = [];
+    if (db && sessionId) {
+      const result = await db
+        .from("set_logs")
+        .select("exercise_id,set_number,reps,weight_kg")
+        .eq("session_id", sessionId)
+        .order("set_number");
+      logs = result.data || [];
+    }
+    const grouped = new Map();
+    logs.forEach((log) => {
+      if (!grouped.has(log.exercise_id)) grouped.set(log.exercise_id, []);
+      grouped.get(log.exercise_id).push(log);
+    });
+    const exercises = routineItems
+      .filter((item) => grouped.has(item.exercise_id))
+      .map((item) => ({
+        name: item.exercises?.name || "Ejercicio",
+        sets: grouped.get(item.exercise_id),
+      }));
+    return {
+      routineName: routine?.name || "Mi entrenamiento",
+      duration,
+      exercises,
+      series: logs.length,
+      volume: Math.round(
+        logs.reduce(
+          (sum, log) =>
+            sum + Number(log.reps || 0) * Number(log.weight_kg || 0),
+          0,
+        ),
+      ),
+    };
+  }
+
+  function roundRect(ctx, x, y, width, height, radius, fill) {
+    ctx.beginPath();
+    ctx.roundRect(x, y, width, height, radius);
+    ctx.fillStyle = fill;
+    ctx.fill();
+  }
+
+  function drawShareCard(canvas, data) {
+    const ctx = canvas.getContext("2d"),
+      gradient = ctx.createLinearGradient(0, 0, 1080, 1920);
+    gradient.addColorStop(0, "#061c27");
+    gradient.addColorStop(0.55, "#0d3c35");
+    gradient.addColorStop(1, "#16945a");
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, 1080, 1920);
+    ctx.globalAlpha = 0.08;
+    ctx.fillStyle = "#fff";
+    ctx.font = "900 760px Arial";
+    ctx.fillText("FT", 150, 1180);
+    ctx.globalAlpha = 1;
+
+    ctx.fillStyle = "#43d887";
+    ctx.font = "800 34px Arial";
+    ctx.fillText("FERNANDO TIENDA", 76, 105);
+    ctx.fillStyle = "#fff";
+    ctx.font = "italic 900 66px Arial";
+    ctx.fillText("TRAINING", 76, 174);
+    ctx.textAlign = "right";
+    ctx.fillStyle = "#8ce6b7";
+    ctx.font = "700 24px Arial";
+    ctx.fillText("GYM-FT.COM", 1004, 130);
+    ctx.textAlign = "left";
+
+    ctx.fillStyle = "#fff";
+    ctx.font = "900 74px Arial";
+    ctx.fillText("ENTRENAMIENTO", 76, 350);
+    ctx.fillStyle = "#42d786";
+    ctx.fillText("COMPLETADO", 76, 430);
+    ctx.fillStyle = "#cce3d8";
+    ctx.font = "500 31px Arial";
+    ctx.fillText(data.routineName.toUpperCase().slice(0, 42), 78, 490);
+
+    const cards = [
+      [String(data.duration), "MINUTOS"],
+      [String(data.exercises.length), "EJERCICIOS"],
+      [String(data.series), "SERIES"],
+    ];
+    cards.forEach(([value, label], index) => {
+      const x = 76 + index * 316;
+      roundRect(ctx, x, 560, 286, 190, 28, "rgba(255,255,255,.11)");
+      ctx.fillStyle = "#fff";
+      ctx.font = "900 69px Arial";
+      ctx.fillText(value, x + 28, 650);
+      ctx.fillStyle = "#86d8ae";
+      ctx.font = "700 22px Arial";
+      ctx.fillText(label, x + 30, 703);
+    });
+
+    ctx.fillStyle = "#fff";
+    ctx.font = "800 30px Arial";
+    ctx.fillText("RESUMEN DE LA SESIÓN", 76, 855);
+    const list = data.exercises.slice(0, 6);
+    list.forEach((exercise, index) => {
+      const y = 915 + index * 128,
+        best = exercise.sets.reduce(
+          (max, set) =>
+            Number(set.weight_kg || 0) > Number(max.weight_kg || 0) ? set : max,
+          exercise.sets[0] || {},
+        );
+      roundRect(ctx, 76, y, 928, 102, 22, "rgba(3,25,28,.34)");
+      ctx.fillStyle = "#42d786";
+      ctx.font = "900 31px Arial";
+      ctx.fillText(String(index + 1).padStart(2, "0"), 105, y + 61);
+      ctx.fillStyle = "#fff";
+      ctx.font = "700 29px Arial";
+      ctx.fillText(exercise.name.slice(0, 34), 175, y + 45);
+      ctx.fillStyle = "#b7d2c6";
+      ctx.font = "500 21px Arial";
+      const result = `${exercise.sets.length} series · ${best.weight_kg || 0} kg × ${best.reps || 0}`;
+      ctx.fillText(result, 175, y + 76);
+    });
+    if (data.volume > 0) {
+      ctx.fillStyle = "#fff";
+      ctx.font = "900 38px Arial";
+      ctx.fillText(`${data.volume.toLocaleString("es-ES")} KG`, 76, 1735);
+      ctx.fillStyle = "#80dbaa";
+      ctx.font = "700 20px Arial";
+      ctx.fillText("VOLUMEN TOTAL MOVIDO", 76, 1770);
+    }
+    ctx.textAlign = "right";
+    ctx.fillStyle = "#fff";
+    ctx.font = "italic 800 27px Arial";
+    ctx.fillText("ENTRENA · SUPÉRATE · COMPARTE", 1004, 1770);
+    ctx.fillStyle = "#8ddbb3";
+    ctx.font = "700 23px Arial";
+    ctx.fillText("#FTTRAINER", 1004, 1812);
+    ctx.textAlign = "left";
+  }
+
+  async function canvasBlob(canvas) {
+    return new Promise((resolve) => canvas.toBlob(resolve, "image/png", 0.95));
+  }
+
+  async function openWorkoutShare() {
+    const data = await getWorkoutShareData();
+    if (!data.exercises.length) {
+      toast("Registra al menos un ejercicio antes de compartir");
+      return;
+    }
+    let overlay = document.getElementById("workout-share-overlay");
+    if (!overlay) {
+      overlay = document.createElement("div");
+      overlay.id = "workout-share-overlay";
+      overlay.className = "workout-share-overlay";
+      overlay.innerHTML = `<section class="workout-share-modal" role="dialog" aria-modal="true" aria-labelledby="share-title"><header><div><small>LISTO PARA PUBLICAR</small><h2 id="share-title">Comparte tu entrenamiento</h2></div><button type="button" class="share-close" aria-label="Cerrar">×</button></header><div class="story-preview"><canvas width="1080" height="1920"></canvas></div><p>Imagen vertical optimizada para Instagram Stories. En móvil se abrirá el menú de compartir.</p><div class="share-actions"><button type="button" class="share-native">Compartir ahora</button><button type="button" class="share-download">Descargar Story</button></div></section>`;
+      document.body.appendChild(overlay);
+      overlay.querySelector(".share-close").onclick = () =>
+        overlay.classList.remove("open");
+      overlay.onclick = (event) => {
+        if (event.target === overlay) overlay.classList.remove("open");
+      };
+    }
+    const canvas = overlay.querySelector("canvas");
+    drawShareCard(canvas, data);
+    overlay.classList.add("open");
+    const makeFile = async () => {
+      const blob = await canvasBlob(canvas);
+      return new File(
+        [blob],
+        `ft-entrenamiento-${new Date().toISOString().slice(0, 10)}.png`,
+        { type: "image/png" },
+      );
+    };
+    overlay.querySelector(".share-native").onclick = async () => {
+      const file = await makeFile();
+      if (navigator.share && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({
+          title: "Mi entrenamiento FT Trainer",
+          text: "Entrenamiento completado con Fernando Tienda Training 💪 #FTTrainer",
+          files: [file],
+        });
+      } else {
+        overlay.querySelector(".share-download").click();
+        toast("Imagen descargada. Ya puedes subirla a Instagram");
+      }
+    };
+    overlay.querySelector(".share-download").onclick = async () => {
+      const file = await makeFile(),
+        link = document.createElement("a");
+      link.href = URL.createObjectURL(file);
+      link.download = file.name;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+    };
+  }
+
+  window.ftWorkoutShare = { open: openWorkoutShare };
 
   const progressPanel = panel("real-progress-panel", "Mi progreso", "chart");
   async function showProgress() {
