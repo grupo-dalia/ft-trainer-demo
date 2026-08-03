@@ -424,42 +424,82 @@
     ctx.fill();
   }
 
-  function drawShareCard(canvas, data) {
-    const ctx = canvas.getContext("2d"),
-      gradient = ctx.createLinearGradient(0, 0, 1080, 1920);
-    gradient.addColorStop(0, "#061c27");
-    gradient.addColorStop(0.55, "#0d3c35");
-    gradient.addColorStop(1, "#16945a");
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, 1080, 1920);
-    ctx.globalAlpha = 0.08;
-    ctx.fillStyle = "#fff";
-    ctx.font = "900 760px Arial";
-    ctx.fillText("FT", 150, 1180);
-    ctx.globalAlpha = 1;
+  function fittedShareFont(ctx, text, size, maxWidth, family) {
+    let current = size;
+    do {
+      ctx.font = `${current}px ${family}`;
+      current -= 2;
+    } while (ctx.measureText(text).width > maxWidth && current > 28);
+  }
 
-    ctx.fillStyle = "#43d887";
-    ctx.font = "800 34px Arial";
-    ctx.fillText("FERNANDO TIENDA", 76, 105);
-    ctx.fillStyle = "#fff";
-    ctx.font = "italic 900 66px Arial";
-    ctx.fillText("TRAINING", 76, 174);
+  const loadCanvasImage = (src) =>
+    new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = reject;
+      image.src = src;
+    });
+
+  async function drawShareCard(canvas, data) {
+    const ctx = canvas.getContext("2d");
+    await Promise.all([
+      document.fonts?.load('80px "Clean Sports"'),
+      document.fonts?.load('30px "Sporter"'),
+    ]).catch(() => {});
+    const [hero, logo] = await Promise.all([
+      loadCanvasImage("assets/brand/ft-social-preview.png"),
+      loadCanvasImage("assets/brand/ft-horizontal-white.png"),
+    ]);
+
+    ctx.fillStyle = "#061c18";
+    ctx.fillRect(0, 0, 1080, 1920);
+    ctx.drawImage(hero, 700, 0, 1220, 1080, 0, 0, 1080, 710);
+    const heroShade = ctx.createLinearGradient(0, 0, 0, 760);
+    heroShade.addColorStop(0, "rgba(2,18,17,.18)");
+    heroShade.addColorStop(0.54, "rgba(4,27,24,.54)");
+    heroShade.addColorStop(1, "#061c18");
+    ctx.fillStyle = heroShade;
+    ctx.fillRect(0, 0, 1080, 780);
+    const sideShade = ctx.createLinearGradient(0, 0, 780, 0);
+    sideShade.addColorStop(0, "rgba(2,20,20,.82)");
+    sideShade.addColorStop(1, "rgba(2,20,20,0)");
+    ctx.fillStyle = sideShade;
+    ctx.fillRect(0, 0, 850, 710);
+
+    ctx.drawImage(logo, 240, 1350, 3680, 1300, 60, 45, 530, 188);
     ctx.textAlign = "right";
-    ctx.fillStyle = "#8ce6b7";
-    ctx.font = "700 24px Arial";
-    ctx.fillText("GYM-FT.COM", 1004, 130);
-    ctx.font = "600 21px Arial";
-    ctx.fillText("@gym_ft_training", 1004, 164);
+    ctx.fillStyle = "#d3e7dc";
+    ctx.font = '22px "Sporter", Arial';
+    ctx.fillText("GYM-FT.COM", 1010, 100);
+    ctx.fillStyle = "#45bd7b";
+    ctx.fillText("@GYM_FT_TRAINING", 1010, 138);
     ctx.textAlign = "left";
 
     ctx.fillStyle = "#fff";
-    ctx.font = "900 74px Arial";
-    ctx.fillText("ENTRENAMIENTO", 76, 350);
-    ctx.fillStyle = "#42d786";
-    ctx.fillText("COMPLETADO", 76, 430);
-    ctx.fillStyle = "#cce3d8";
-    ctx.font = "500 31px Arial";
-    ctx.fillText(data.routineName.toUpperCase().slice(0, 42), 78, 490);
+    fittedShareFont(
+      ctx,
+      "ENTRENAMIENTO",
+      82,
+      940,
+      '"Clean Sports", "Oswald", sans-serif',
+    );
+    ctx.fillText("ENTRENAMIENTO", 66, 405);
+    ctx.fillStyle = "#2dac6c";
+    fittedShareFont(
+      ctx,
+      "COMPLETADO",
+      105,
+      940,
+      '"Clean Sports", "Oswald", sans-serif',
+    );
+    ctx.fillText("COMPLETADO", 66, 515);
+    ctx.fillStyle = "#d5e7dd";
+    ctx.font = '25px "Sporter", "DM Sans", sans-serif';
+    ctx.fillText(data.routineName.toUpperCase().slice(0, 39), 70, 572);
+    ctx.fillStyle = "#3b99ae";
+    ctx.fillRect(70, 605, 145, 7);
+    ctx.fillStyle = "#2dac6c";
+    ctx.fillRect(215, 605, 230, 7);
 
     const cards = [
       [String(data.duration), "MINUTOS"],
@@ -467,54 +507,71 @@
       [String(data.series), "SERIES"],
     ];
     cards.forEach(([value, label], index) => {
-      const x = 76 + index * 316;
-      roundRect(ctx, x, 560, 286, 190, 28, "rgba(255,255,255,.11)");
+      const x = 66 + index * 326;
+      roundRect(ctx, x, 690, 296, 168, 22, "rgba(255,255,255,.085)");
+      ctx.strokeStyle = index === 0 ? "#3b99ae" : "#2dac6c";
+      ctx.lineWidth = 3;
+      ctx.strokeRect(x + 1.5, 690 + 1.5, 293, 165);
       ctx.fillStyle = "#fff";
-      ctx.font = "900 69px Arial";
-      ctx.fillText(value, x + 28, 650);
-      ctx.fillStyle = "#86d8ae";
-      ctx.font = "700 22px Arial";
-      ctx.fillText(label, x + 30, 703);
+      ctx.font = '68px "Clean Sports", "Oswald", sans-serif';
+      ctx.fillText(value, x + 25, 780);
+      ctx.fillStyle = "#91cdb0";
+      ctx.font = '18px "Sporter", Arial';
+      ctx.fillText(label, x + 27, 824);
     });
 
     ctx.fillStyle = "#fff";
-    ctx.font = "800 30px Arial";
-    ctx.fillText("RESUMEN DE LA SESIÓN", 76, 855);
+    ctx.font = '25px "Sporter", Arial';
+    ctx.fillText("RESUMEN DE LA SESIÓN", 70, 945);
+    ctx.fillStyle = "#2dac6c";
+    ctx.fillRect(70, 967, 940, 2);
     const list = data.exercises.slice(0, 6);
     list.forEach((exercise, index) => {
-      const y = 915 + index * 128,
+      const y = 1000 + index * 111,
         best = exercise.sets.reduce(
           (max, set) =>
             Number(set.weight_kg || 0) > Number(max.weight_kg || 0) ? set : max,
           exercise.sets[0] || {},
         );
-      roundRect(ctx, 76, y, 928, 102, 22, "rgba(3,25,28,.34)");
-      ctx.fillStyle = "#42d786";
-      ctx.font = "900 31px Arial";
-      ctx.fillText(String(index + 1).padStart(2, "0"), 105, y + 61);
+      roundRect(ctx, 70, y, 940, 90, 16, "rgba(255,255,255,.055)");
+      ctx.fillStyle = index % 2 ? "#3b99ae" : "#2dac6c";
+      ctx.fillRect(70, y, 8, 90);
+      ctx.fillStyle = "#7bd79f";
+      ctx.font = '24px "Sporter", Arial';
+      ctx.fillText(String(index + 1).padStart(2, "0"), 100, y + 56);
       ctx.fillStyle = "#fff";
-      ctx.font = "700 29px Arial";
-      ctx.fillText(exercise.name.slice(0, 34), 175, y + 45);
-      ctx.fillStyle = "#b7d2c6";
-      ctx.font = "500 21px Arial";
-      const result = `${exercise.sets.length} series · ${best.weight_kg || 0} kg × ${best.reps || 0}`;
-      ctx.fillText(result, 175, y + 76);
+      ctx.font = '26px "DM Sans", Arial';
+      ctx.fillText(exercise.name.slice(0, 35), 170, y + 38);
+      ctx.fillStyle = "#9db9ad";
+      ctx.font = '19px "DM Sans", Arial';
+      ctx.fillText(
+        `${exercise.sets.length} series · ${best.weight_kg || 0} kg × ${best.reps || 0}`,
+        170,
+        y + 69,
+      );
     });
+
+    const footerY = 1735;
+    ctx.fillStyle = "rgba(255,255,255,.075)";
+    ctx.fillRect(0, footerY, 1080, 185);
     if (data.volume > 0) {
       ctx.fillStyle = "#fff";
-      ctx.font = "900 38px Arial";
-      ctx.fillText(`${data.volume.toLocaleString("es-ES")} KG`, 76, 1735);
-      ctx.fillStyle = "#80dbaa";
-      ctx.font = "700 20px Arial";
-      ctx.fillText("VOLUMEN TOTAL MOVIDO", 76, 1770);
+      ctx.font = '44px "Clean Sports", "Oswald", sans-serif';
+      ctx.fillText(`${data.volume.toLocaleString("es-ES")} KG`, 70, 1810);
+      ctx.fillStyle = "#75c997";
+      ctx.font = '16px "Sporter", Arial';
+      ctx.fillText("VOLUMEN TOTAL MOVIDO", 72, 1845);
     }
     ctx.textAlign = "right";
     ctx.fillStyle = "#fff";
-    ctx.font = "italic 800 27px Arial";
-    ctx.fillText("ENTRENA · SUPÉRATE · COMPARTE", 1004, 1770);
-    ctx.fillStyle = "#8ddbb3";
-    ctx.font = "700 23px Arial";
-    ctx.fillText("@gym_ft_training  ·  #FTTRAINER", 1004, 1812);
+    ctx.font = '22px "Sporter", Arial';
+    ctx.fillText("ENTRENA · SUPÉRATE · COMPARTE", 1010, 1805);
+    ctx.fillStyle = "#42b879";
+    ctx.font = '18px "Sporter", Arial';
+    ctx.fillText("@GYM_FT_TRAINING  ·  #FTTRAINER", 1010, 1846);
+    ctx.fillStyle = "#678579";
+    ctx.font = '14px "DM Sans", Arial';
+    ctx.fillText("Fernando Tienda Training", 1010, 1880);
     ctx.textAlign = "left";
   }
 
@@ -542,7 +599,7 @@
       };
     }
     const canvas = overlay.querySelector("canvas");
-    drawShareCard(canvas, data);
+    await drawShareCard(canvas, data);
     overlay.classList.add("open");
     const makeFile = async () => {
       const blob = await canvasBlob(canvas);
