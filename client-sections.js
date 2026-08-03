@@ -89,8 +89,15 @@
     await restoreTodaySession();
   }
   function renderRoutineEmpty() {
-    document.querySelector(".workout-cover h3").innerHTML =
-      "Sin rutina<br><mark>asignada</mark>";
+    const cover = document.querySelector(".workout-cover"),
+      totalText = document.querySelector(".workout-top b");
+    cover.classList.add("is-empty");
+    cover.querySelector("h3").innerHTML =
+      "Tu próxima rutina<br><mark>está en preparación</mark>";
+    document.getElementById("done-count").textContent = "0";
+    if (totalText) totalText.lastChild.textContent = " de 0 completados";
+    document.getElementById("percent").textContent = "0%";
+    document.getElementById("session-progress").style.width = "0%";
     document.getElementById("exercise-list").innerHTML =
       '<div class="client-empty-state">Fernando todavía no ha activado una rutina para ti.</div>';
     document.getElementById("next-session-title").textContent =
@@ -99,6 +106,7 @@
       "Fernando te avisará cuando tu rutina esté lista";
   }
   function renderRoutine() {
+    document.querySelector(".workout-cover").classList.remove("is-empty");
     document.querySelector(".workout-cover h3").innerHTML =
       `${esc(routine.name)}<br><mark>${routine.status === "active" ? "Activa" : "Borrador"}</mark>`;
     document.getElementById("next-session-title").textContent = routine.name;

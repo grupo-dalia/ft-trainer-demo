@@ -1092,3 +1092,23 @@ button {
     min-height: 52px;
   }
 }
+
+.workout-cover h3 {
+  max-width: 90%;
+  font-size: clamp(34px, 5vw, 54px);
+  line-height: 1.15;
+  letter-spacing: 0.01em;
+}
+
+.workout-cover.is-empty h3 {
+  max-width: 620px;
+  font-family: "Oswald", sans-serif;
+  font-size: clamp(30px, 4.4vw, 48px);
+  line-height: 1.12;
+  text-transform: none;
+}
+
+.workout-cover.is-empty h3 mark {
+  display: inline-block;
+  margin-top: 5px;
+}
