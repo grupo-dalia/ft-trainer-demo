@@ -46,7 +46,8 @@
         <div class="routine-editor-layout">
           <form id="add-routine-exercise" class="routine-add-form">
             <h3>Añadir ejercicio</h3>
-            <label>Ejercicio<select name="exercise_id" required><option value="">Selecciona un ejercicio</option>${exerciseOptions(exercises)}</select></label>
+            <label>Buscar ejercicio<input id="routine-exercise-search" type="search" placeholder="Ej. press, espalda, mancuerna…" autocomplete="off"></label>
+            <label>Ejercicio<select name="exercise_id" required><option value="">Escribe arriba para buscar</option></select><small class="exercise-search-help">Busca por nombre, músculo o material.</small></label>
             <div class="routine-fields"><label>Día<input type="number" name="day_number" min="1" max="14" value="1" required></label><label>Series<input type="number" name="target_sets" min="1" max="20" value="3" required></label><label>Repeticiones mín.<input type="number" name="target_reps_min" min="1" max="100" value="8" required></label><label>Repeticiones máx.<input type="number" name="target_reps_max" min="1" max="100" value="12" required></label><label>Descanso (seg.)<input type="number" name="rest_seconds" min="0" max="900" value="90" required></label><label>Peso objetivo (kg)<input type="number" name="target_weight_kg" min="0" max="999" step="0.5" placeholder="Opcional"></label><label>RIR<input type="number" name="target_rir" min="0" max="10" value="2"></label></div>
             <label>Notas<textarea name="notes" placeholder="Técnica, tempo o indicaciones para el cliente"></textarea></label>
             <p class="form-feedback" aria-live="polite"></p><button class="primary full" type="submit">＋ Añadir a la rutina</button>
@@ -55,6 +56,9 @@
         </div>
       </section>`;
       host.querySelector('.admin-form-close').onclick=()=>host.classList.remove('open');
+      const search=host.querySelector('#routine-exercise-search'),exerciseSelect=host.querySelector('[name="exercise_id"]');
+      const renderChoices=()=>{const query=search.value.trim().toLocaleLowerCase('es'),matches=exercises.filter(ex=>!query||`${ex.name} ${ex.body_group} ${ex.primary_muscle} ${ex.equipment||''}`.toLocaleLowerCase('es').includes(query)).slice(0,160);exerciseSelect.innerHTML=`<option value="">${query?`${matches.length} resultados · selecciona uno`:'Selecciona o escribe para filtrar'}</option>${exerciseOptions(matches)}`};
+      search.oninput=renderChoices;renderChoices();
       host.querySelectorAll('.remove-routine-exercise').forEach(button=>button.onclick=async()=>{
         button.disabled=true;
         const {error}=await ftSupabase.from('routine_exercises').delete().eq('id',button.dataset.item);
