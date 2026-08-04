@@ -1,3 +1,6 @@
+window.addEventListener("pageshow", (event) => {
+  if (event.persisted) location.reload();
+});
 (async () => {
   document.body.style.visibility = "hidden";
   const load = (src) =>
@@ -14,7 +17,7 @@
   ) {
     await load("cliente-base.js?v=2");
     await load("client-home.js?v=5");
-    await load("client-sections.js?v=9");
+    await load("client-sections.js?v=10");
     document.body.style.visibility = "visible";
     return;
   }
@@ -92,6 +95,6 @@
     member.access_status === "active" && membershipIsCurrent;
   await load("cliente-base.js?v=2");
   await load("client-home.js?v=5");
-  await load("client-sections.js?v=9");
+  await load("client-sections.js?v=10");
   document.body.style.visibility = "visible";
 })().catch(() => location.replace("index.html"));

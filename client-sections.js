@@ -1013,4 +1013,11 @@
   };
   await loadRoutine();
   window.ftClientSections = { showProgress, showProfile, loadRoutine };
+  let lastRoutineRefresh = Date.now();
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState !== "visible") return;
+    if (Date.now() - lastRoutineRefresh < 15000) return;
+    lastRoutineRefresh = Date.now();
+    loadRoutine();
+  });
 })();
