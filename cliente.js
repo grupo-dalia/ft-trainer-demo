@@ -14,7 +14,7 @@
   ) {
     await load("cliente-base.js?v=2");
     await load("client-home.js?v=5");
-    await load("client-sections.js?v=7");
+    await load("client-sections.js?v=8");
     document.body.style.visibility = "visible";
     return;
   }
@@ -60,6 +60,6 @@
   window.ftClientId = member.id;
   await load("cliente-base.js?v=2");
   await load("client-home.js?v=5");
-  await load("client-sections.js?v=7");
+  await load("client-sections.js?v=8");
   document.body.style.visibility = "visible";
 })().catch(() => location.replace("index.html"));

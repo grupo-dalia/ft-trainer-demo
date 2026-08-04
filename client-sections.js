@@ -49,7 +49,10 @@
   };
 
   let routine = null,
+    allRoutineItems = [],
     routineItems = [],
+    selectedRoutineDay = 1,
+    completedExerciseIds = new Set(),
     sessionId = null,
     sessionStartedAt = Date.now(),
     selectedItem = null;
@@ -84,7 +87,14 @@
       .eq("routine_id", routine.id)
       .order("day_number")
       .order("position");
-    routineItems = items || [];
+    allRoutineItems = items || [];
+    const routineDays = [
+      ...new Set(allRoutineItems.map((item) => Number(item.day_number) || 1)),
+    ].sort((a, b) => a - b);
+    selectedRoutineDay = routineDays[0] || 1;
+    routineItems = allRoutineItems.filter(
+      (item) => (Number(item.day_number) || 1) === selectedRoutineDay,
+    );
     renderRoutine();
     await restoreTodaySession();
   }
@@ -106,19 +116,56 @@
       "Fernando te avisará cuando tu rutina esté lista";
   }
   function renderRoutine() {
+    const days = [
+        ...new Set(allRoutineItems.map((item) => Number(item.day_number) || 1)),
+      ].sort((a, b) => a - b),
+      muscles = [
+        ...new Set(
+          routineItems
+            .map(
+              (item) =>
+                item.exercises?.primary_muscle || item.exercises?.body_group,
+            )
+            .filter(Boolean),
+        ),
+      ];
     document.querySelector(".workout-cover").classList.remove("is-empty");
     document.querySelector(".workout-cover h3").innerHTML =
       `${esc(routine.name)}<br><mark>${routine.status === "active" ? "Activa" : "Borrador"}</mark>`;
     document.getElementById("next-session-title").textContent = routine.name;
     document.getElementById("next-session-detail").textContent =
-      `${routineItems.length} ejercicios · planificación de Fernando`;
+      `${days.length} ${days.length === 1 ? "sesión" : "sesiones"} · ${allRoutineItems.length} ejercicios · Fernando`;
     document.getElementById("done-count").textContent = "0";
     document.querySelector(".workout-top b").lastChild.textContent =
       ` de ${routineItems.length} completados`;
     document.getElementById("percent").textContent = "0%";
     document.getElementById("session-progress").style.width = "0%";
     document.getElementById("exercise-list").innerHTML =
-      routineItems
+      `<div class="session-plan-head"><div><span>SESIÓN ${selectedRoutineDay}</span><b>${esc(muscles.join(" · ") || "Entrenamiento completo")}</b></div><small>${routineItems.length} ejercicios</small></div>` +
+      (days.length > 1
+        ? `<div class="session-day-tabs" role="tablist" aria-label="Sesiones de la semana">${days
+            .map((day) => {
+              const dayItems = allRoutineItems.filter(
+                  (item) => (Number(item.day_number) || 1) === day,
+                ),
+                dayMuscles = [
+                  ...new Set(
+                    dayItems
+                      .map(
+                        (item) =>
+                          item.exercises?.primary_muscle ||
+                          item.exercises?.body_group,
+                      )
+                      .filter(Boolean),
+                  ),
+                ]
+                  .slice(0, 2)
+                  .join(" + ");
+              return `<button type="button" role="tab" aria-selected="${day === selectedRoutineDay}" class="${day === selectedRoutineDay ? "active" : ""}" data-routine-day="${day}"><span>Día ${day}</span><small>${esc(dayMuscles || "Entrenamiento")}</small></button>`;
+            })
+            .join("")}</div>`
+        : "") +
+      (routineItems
         .map((item, index) => {
           const ex = item.exercises || {},
             reps =
@@ -129,7 +176,21 @@
           return `<button type="button" class="exercise-row live-exercise" data-live-index="${index}"><span class="exercise-thumb"><img src="${esc(image)}" alt="${esc(ex.name)}" loading="lazy"><i>${icon("play")}</i></span><span><b>${esc(ex.name || "Ejercicio")}</b><small>${item.target_sets} series · ${reps} repeticiones${item.target_weight_kg != null ? ` · ${item.target_weight_kg} kg` : ""}</small><em>Ver técnica y registrar</em></span><strong>›</strong></button>`;
         })
         .join("") ||
-      '<div class="client-empty-state">Esta rutina aún no contiene ejercicios.</div>';
+        '<div class="client-empty-state">Esta sesión aún no contiene ejercicios.</div>');
+    document.querySelectorAll("[data-routine-day]").forEach((button) => {
+      button.onclick = () => {
+        selectedRoutineDay = Number(button.dataset.routineDay) || 1;
+        routineItems = allRoutineItems.filter(
+          (item) => (Number(item.day_number) || 1) === selectedRoutineDay,
+        );
+        renderRoutine();
+        updateWorkoutProgress(
+          routineItems.filter((item) =>
+            completedExerciseIds.has(item.exercise_id),
+          ).length,
+        );
+      };
+    });
     document
       .querySelectorAll(".live-exercise")
       .forEach(
@@ -140,6 +201,11 @@
               button,
             )),
       );
+    document.querySelectorAll(".live-exercise").forEach((row, index) => {
+      if (!completedExerciseIds.has(routineItems[index]?.exercise_id)) return;
+      row.classList.add("done");
+      row.querySelector("strong").textContent = "✓";
+    });
     ensureShareButton();
   }
 
@@ -187,12 +253,15 @@
       .select("exercise_id")
       .eq("session_id", sessionId);
     const completedIds = new Set((logs || []).map((log) => log.exercise_id));
+    completedExerciseIds = completedIds;
     document.querySelectorAll(".live-exercise").forEach((row, index) => {
       if (!completedIds.has(routineItems[index]?.exercise_id)) return;
       row.classList.add("done");
       row.querySelector("strong").textContent = "✓";
     });
-    updateWorkoutProgress(completedIds.size);
+    updateWorkoutProgress(
+      routineItems.filter((item) => completedIds.has(item.exercise_id)).length,
+    );
   }
   async function openExercise(item, row) {
     selectedItem = { item, row };
@@ -299,6 +368,7 @@
       if (error) throw error;
       selectedItem.row.classList.add("done");
       selectedItem.row.querySelector("strong").textContent = "✓";
+      completedExerciseIds.add(selectedItem.item.exercise_id);
       const done = document.querySelectorAll(".live-exercise.done").length,
         { total } = updateWorkoutProgress(done),
         duration = Math.max(
