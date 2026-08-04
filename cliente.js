@@ -17,7 +17,7 @@ window.addEventListener("pageshow", (event) => {
   ) {
     await load("cliente-base.js?v=2");
     await load("client-home.js?v=5");
-    await load("client-sections.js?v=10");
+    await load("client-sections.js?v=11");
     document.body.style.visibility = "visible";
     return;
   }
@@ -95,6 +95,6 @@ window.addEventListener("pageshow", (event) => {
     member.access_status === "active" && membershipIsCurrent;
   await load("cliente-base.js?v=2");
   await load("client-home.js?v=5");
-  await load("client-sections.js?v=10");
+  await load("client-sections.js?v=11");
   document.body.style.visibility = "visible";
 })().catch(() => location.replace("index.html"));

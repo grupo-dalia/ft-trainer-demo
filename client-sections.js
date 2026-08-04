@@ -200,7 +200,11 @@
         '<div class="client-empty-state">Esta sesión aún no contiene ejercicios.</div>');
     document.querySelectorAll("[data-routine-day]").forEach((button) => {
       button.onclick = () => {
-        selectedRoutineDay = Number(button.dataset.routineDay) || 1;
+        const targetDay = Number(button.dataset.routineDay) || 1;
+        if (targetDay === selectedRoutineDay) return;
+        if (!confirm(`¿Seguro que quieres empezar el día ${targetDay}?`))
+          return;
+        selectedRoutineDay = targetDay;
         routineItems = allRoutineItems.filter(
           (item) => (Number(item.day_number) || 1) === selectedRoutineDay,
         );
