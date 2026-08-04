@@ -57,7 +57,7 @@
       </section>`;
       host.querySelector('.admin-form-close').onclick=()=>host.classList.remove('open');
       const search=host.querySelector('#routine-exercise-search'),exerciseSelect=host.querySelector('[name="exercise_id"]');
-      const renderChoices=()=>{const query=search.value.trim().toLocaleLowerCase('es'),matches=exercises.filter(ex=>!query||`${ex.name} ${ex.body_group} ${ex.primary_muscle} ${ex.equipment||''}`.toLocaleLowerCase('es').includes(query)).slice(0,160);exerciseSelect.innerHTML=`<option value="">${query?`${matches.length} resultados · selecciona uno`:'Selecciona o escribe para filtrar'}</option>${exerciseOptions(matches)}`};
+      const renderChoices=()=>{const query=search.value.trim(),matches=exercises.filter(ex=>matchesQuery(`${ex.name} ${ex.body_group} ${ex.primary_muscle} ${ex.equipment||''} ${(ex.catalog?.musculos||[]).join(' ')} ${ex.catalog?.nombre||''}`,query)).slice(0,160);exerciseSelect.innerHTML=`<option value="">${query?`${matches.length} resultados · selecciona uno`:'Selecciona o escribe para filtrar'}</option>${exerciseOptions(matches)}`};
       search.oninput=renderChoices;renderChoices();
       host.querySelectorAll('.remove-routine-exercise').forEach(button=>button.onclick=async()=>{
         button.disabled=true;
