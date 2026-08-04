@@ -56,7 +56,28 @@
     sessionId = null,
     sessionStartedAt = Date.now(),
     selectedItem = null;
+  function renderRoutineLocked() {
+    const cover = document.querySelector(".workout-cover"),
+      totalText = document.querySelector(".workout-top b");
+    cover.classList.add("is-empty");
+    cover.querySelector("h3").innerHTML =
+      "Tu cuota está<br><mark>pendiente de confirmar</mark>";
+    document.getElementById("done-count").textContent = "0";
+    if (totalText) totalText.lastChild.textContent = " de 0 completados";
+    document.getElementById("percent").textContent = "0%";
+    document.getElementById("session-progress").style.width = "0%";
+    document.getElementById("exercise-list").innerHTML =
+      '<div class="client-empty-state"><b>Rutinas bloqueadas</b><p>Fernando debe confirmar tu cuota en el gimnasio para desbloquear tus rutinas y el generador FT Coach. Mientras tanto puedes consultar tu perfil y tus resultados anteriores.</p></div>';
+    document.getElementById("next-session-title").textContent =
+      "Cuota pendiente de confirmar";
+    document.getElementById("next-session-detail").textContent =
+      "Habla con Fernando en el gimnasio para activar tu acceso";
+  }
   async function loadRoutine() {
+    if (db && clientId && window.ftMembershipActive === false) {
+      renderRoutineLocked();
+      return;
+    }
     if (!db || !clientId) {
       if (
         location.hostname === "127.0.0.1" ||

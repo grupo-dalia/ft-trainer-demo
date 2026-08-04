@@ -14,7 +14,7 @@
   ) {
     await load("cliente-base.js?v=2");
     await load("client-home.js?v=5");
-    await load("client-sections.js?v=8");
+    await load("client-sections.js?v=9");
     document.body.style.visibility = "visible";
     return;
   }
@@ -82,14 +82,16 @@
       membershipIsCurrent = Boolean(previousPayment);
     }
   }
-  if (member?.access_status !== "active" || !membershipIsCurrent) {
+  if (!member?.id) {
     location.replace("pendiente.html");
     return;
   }
   window.ftSupabase = client;
   window.ftClientId = member.id;
+  window.ftMembershipActive =
+    member.access_status === "active" && membershipIsCurrent;
   await load("cliente-base.js?v=2");
   await load("client-home.js?v=5");
-  await load("client-sections.js?v=8");
+  await load("client-sections.js?v=9");
   document.body.style.visibility = "visible";
 })().catch(() => location.replace("index.html"));
