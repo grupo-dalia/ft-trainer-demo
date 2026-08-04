@@ -52,7 +52,33 @@
     .select("id,access_status")
     .eq("user_id", session.user.id)
     .maybeSingle();
-  if (member?.access_status !== "active") {
+  let membershipIsCurrent = false;
+  if (member?.id && member.access_status === "active") {
+    const today = new Date(),
+      todayIso = today.toISOString().slice(0, 10),
+      { data: currentPayment } = await client
+        .from("payments")
+        .select("id,period_end")
+        .eq("client_id", member.id)
+        .lte("period_start", todayIso)
+        .gte("period_end", todayIso)
+        .limit(1)
+        .maybeSingle();
+    membershipIsCurrent = Boolean(currentPayment);
+    if (!membershipIsCurrent && today.getDate() <= 10) {
+      const previousMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0),
+        previousEndIso = previousMonthEnd.toISOString().slice(0, 10),
+        { data: previousPayment } = await client
+          .from("payments")
+          .select("id")
+          .eq("client_id", member.id)
+          .gte("period_end", previousEndIso)
+          .limit(1)
+          .maybeSingle();
+      membershipIsCurrent = Boolean(previousPayment);
+    }
+  }
+  if (member?.access_status !== "active" || !membershipIsCurrent) {
     location.replace("pendiente.html");
     return;
   }
