@@ -908,6 +908,63 @@ button {
   color: #738078;
   font-size: 12px;
 }
+.strength-history {
+  display: grid;
+  gap: 16px;
+}
+.strength-row {
+  border-top: 1px solid #e8eeea;
+  padding-top: 12px;
+}
+.strength-row:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+.strength-row h3 {
+  font: 700 14px "DM Sans";
+  margin: 0 0 8px;
+  color: #153e2b;
+}
+.strength-weeks {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+.strength-week {
+  flex: 0 0 auto;
+  min-width: 104px;
+  background: #f6faf7;
+  border: 1px solid #e3eae6;
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: grid;
+  gap: 4px;
+}
+.strength-week time {
+  font-size: 10px;
+  color: #78847d;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.strength-week b {
+  font-size: 13px;
+  color: #153e2b;
+}
+.strength-week em {
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 700;
+}
+.strength-week em.up {
+  color: #1a8a4c;
+}
+.strength-week em.down {
+  color: #c23c2e;
+}
+.strength-week em.flat {
+  color: #78847d;
+}
 .client-profile-hero {
   display: flex;
   align-items: center;

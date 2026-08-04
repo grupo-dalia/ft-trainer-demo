@@ -1,0 +1,66 @@
+.training-log-form {
+  width: min(760px, calc(100% - 28px)) !important;
+}
+.training-log-body {
+  display: grid;
+  gap: 18px;
+  margin-top: 18px;
+}
+.training-row {
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+}
+.training-row:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+.training-row h3 {
+  font: 700 15px "DM Sans";
+  margin: 0 0 10px;
+  color: #16442f;
+}
+.training-weeks {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+.training-week {
+  flex: 0 0 auto;
+  min-width: 108px;
+  background: #f6faf7;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: grid;
+  gap: 4px;
+}
+.training-week time {
+  font-size: 10px;
+  color: var(--muted);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.training-week b {
+  font-size: 13px;
+  color: #16442f;
+}
+.training-week em {
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 700;
+}
+.training-week em.training-up {
+  color: #1a8a4c;
+}
+.training-week em.training-down {
+  color: #c23c2e;
+}
+.training-week em.training-flat {
+  color: var(--muted);
+}
+.training-empty {
+  padding: 30px;
+  text-align: center;
+  color: var(--muted);
+}

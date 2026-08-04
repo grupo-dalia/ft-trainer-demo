@@ -47,11 +47,15 @@
     document.body.style.visibility = "visible";
     return;
   }
-  const { data: member } = await client
+  let { data: member } = await client
     .from("clients")
     .select("id,access_status")
     .eq("user_id", session.user.id)
     .maybeSingle();
+  if (!member) {
+    const { data: linked } = await client.rpc("link_client_identity");
+    if (linked) member = linked;
+  }
   let membershipIsCurrent = false;
   if (member?.id && member.access_status === "active") {
     const today = new Date(),

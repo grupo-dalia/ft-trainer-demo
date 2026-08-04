@@ -280,29 +280,36 @@
         ex.instructions ||
         item.notes ||
         "Sigue las indicaciones de Fernando y controla la técnica.";
-    const { data: lastSets } = await db
+    let logsQuery = db
       .from("set_logs")
-      .select("reps,weight_kg,created_at")
+      .select("session_id,set_number,reps,weight_kg,created_at")
       .eq("exercise_id", item.exercise_id)
       .order("created_at", { ascending: false })
-      .limit(item.target_sets || 3);
+      .limit(60);
+    if (sessionId) logsQuery = logsQuery.neq("session_id", sessionId);
+    const { data: recentLogs } = await logsQuery;
+    const previousSessionId = recentLogs?.[0]?.session_id,
+      previousSets = (recentLogs || [])
+        .filter((log) => log.session_id === previousSessionId)
+        .sort((a, b) => a.set_number - b.set_number);
     const last = document.querySelector(".last-record");
     if (last) {
-      const top = (lastSets || []).reduce(
+      const top = (recentLogs || []).reduce(
         (best, set) =>
           Number(set.weight_kg) > Number(best?.weight_kg || 0) ? set : best,
         null,
       );
-      last.innerHTML = `<div><span>ÚLTIMA VEZ</span><b>${lastSets?.[0] ? `${lastSets[0].weight_kg || 0} kg × ${lastSets[0].reps || 0}` : "Sin registros"}</b></div><div><span>MEJOR CARGA</span><b>${top ? `${top.weight_kg || 0} kg` : "—"}</b></div>`;
+      last.innerHTML = `<div><span>SEMANA PASADA</span><b>${previousSets[0] ? `${previousSets[0].weight_kg ?? 0} kg × ${previousSets[0].reps ?? 0}` : "Sin registros"}</b></div><div><span>MEJOR CARGA</span><b>${top ? `${top.weight_kg || 0} kg` : "—"}</b></div>`;
     }
     const sets = sheet.querySelector(".sets");
     sets.innerHTML =
       "<div><b>SERIE</b><b>REPS</b><b>PESO</b></div>" +
-      Array.from(
-        { length: item.target_sets || 3 },
-        (_, index) =>
-          `<label><span>${index + 1}</span><input class="live-reps" value="${item.target_reps_min || ""}" inputmode="numeric" aria-label="Repeticiones serie ${index + 1}"><span><input class="live-weight" value="${item.target_weight_kg ?? ""}" inputmode="decimal" aria-label="Peso serie ${index + 1}"> kg</span></label>`,
-      ).join("");
+      Array.from({ length: item.target_sets || 3 }, (_, index) => {
+        const previous = previousSets[index],
+          reps = previous?.reps ?? item.target_reps_min ?? "",
+          weight = previous?.weight_kg ?? item.target_weight_kg ?? "";
+        return `<label><span>${index + 1}</span><input class="live-reps" value="${reps}" inputmode="numeric" aria-label="Repeticiones serie ${index + 1}"><span><input class="live-weight" value="${weight}" inputmode="decimal" aria-label="Peso serie ${index + 1}"> kg</span></label>`;
+      }).join("");
     sheet.classList.add("open");
   }
   async function ensureSession() {
@@ -704,6 +711,100 @@
 
   window.ftWorkoutShare = { open: openWorkoutShare };
 
+  function weekKey(dateStr) {
+    const date = new Date(`${dateStr}T12:00:00`),
+      offset = (date.getDay() + 6) % 7;
+    date.setDate(date.getDate() - offset);
+    return date.toISOString().slice(0, 10);
+  }
+  function weekLabel(week) {
+    return new Date(`${week}T12:00:00`).toLocaleDateString("es-ES", {
+      day: "2-digit",
+      month: "short",
+    });
+  }
+  async function renderStrengthHistory(host) {
+    const { data: sessions } = await db
+      .from("workout_sessions")
+      .select("id,planned_for")
+      .eq("client_id", clientId)
+      .not("completed_at", "is", null)
+      .order("planned_for", { ascending: false })
+      .limit(160);
+    if (!sessions?.length) {
+      host.innerHTML =
+        '<p class="client-empty-state">Todavía no hay entrenamientos completados.</p>';
+      return;
+    }
+    const sessionDate = new Map(sessions.map((s) => [s.id, s.planned_for]));
+    const { data: logs } = await db
+      .from("set_logs")
+      .select("session_id,exercise_id,weight_kg,reps")
+      .in(
+        "session_id",
+        sessions.map((s) => s.id),
+      );
+    const nameMap = new Map(
+      allRoutineItems.map((item) => [item.exercise_id, item.exercises?.name]),
+    );
+    const missing = [
+      ...new Set((logs || []).map((log) => log.exercise_id)),
+    ].filter((id) => !nameMap.has(id));
+    if (missing.length) {
+      const { data: extra } = await db
+        .from("exercises")
+        .select("id,name")
+        .in("id", missing);
+      (extra || []).forEach((ex) => nameMap.set(ex.id, ex.name));
+    }
+    const byExercise = new Map();
+    (logs || []).forEach((log) => {
+      if (log.weight_kg == null) return;
+      const planned = sessionDate.get(log.session_id);
+      if (!planned) return;
+      const week = weekKey(planned);
+      if (!byExercise.has(log.exercise_id))
+        byExercise.set(log.exercise_id, new Map());
+      const weeks = byExercise.get(log.exercise_id),
+        current = weeks.get(week);
+      if (!current || Number(log.weight_kg) > Number(current.weight_kg))
+        weeks.set(week, { weight_kg: log.weight_kg, reps: log.reps });
+    });
+    const rows = [...byExercise.entries()]
+      .map(([exerciseId, weeks]) => ({
+        name: nameMap.get(exerciseId) || "Ejercicio",
+        weeks: [...weeks.entries()]
+          .sort((a, b) => (a[0] < b[0] ? 1 : -1))
+          .slice(0, 6),
+      }))
+      .filter((row) => row.weeks.length)
+      .sort((a, b) => a.name.localeCompare(b.name, "es"));
+    host.innerHTML = rows.length
+      ? rows
+          .map((row) => {
+            const cells = row.weeks
+              .map(([week, entry], index) => {
+                const prev = row.weeks[index + 1]?.[1],
+                  delta = prev
+                    ? Number(entry.weight_kg) - Number(prev.weight_kg)
+                    : null,
+                  deltaLabel =
+                    delta == null
+                      ? ""
+                      : delta > 0
+                        ? `<em class="up">↑ ${delta.toFixed(1)} kg</em>`
+                        : delta < 0
+                          ? `<em class="down">↓ ${Math.abs(delta).toFixed(1)} kg</em>`
+                          : `<em class="flat">= kg</em>`;
+                return `<div class="strength-week"><time>${weekLabel(week)}</time><b>${entry.weight_kg} kg × ${entry.reps ?? "—"}</b>${deltaLabel}</div>`;
+              })
+              .join("");
+            return `<article class="strength-row"><h3>${esc(row.name)}</h3><div class="strength-weeks">${cells}</div></article>`;
+          })
+          .join("")
+      : '<p class="client-empty-state">Todavía no hay cargas registradas.</p>';
+  }
+
   const progressPanel = panel("real-progress-panel", "Mi progreso", "chart");
   async function showProgress() {
     openPanel(progressPanel, "progress");
@@ -730,7 +831,8 @@
     ]);
     const latest = measurements?.[0],
       completed = (sessions || []).filter((s) => s.completed_at).length;
-    host.innerHTML = `<div class="client-metric-grid"><article><small>PESO ACTUAL</small><b>${latest?.weight_kg ?? "—"} <em>kg</em></b></article><article><small>GRASA CORPORAL</small><b>${latest?.body_fat_pct ?? "—"}<em>%</em></b></article><article><small>SESIONES COMPLETADAS</small><b>${completed}</b></article></div><section class="client-panel-card"><div class="panel-title"><div><small>SEGUIMIENTO SEMANAL</small><h2>Registrar medidas</h2></div></div><form id="measurement-form" class="client-form-grid"><label>Peso (kg)<input name="weight_kg" type="number" min="20" max="350" step="0.1" value="${latest?.weight_kg ?? ""}" required></label><label>Altura (cm)<input name="height_cm" type="number" min="100" max="240" step="0.1" value="${latest?.height_cm ?? ""}"></label><label>Grasa corporal (%)<input name="body_fat_pct" type="number" min="2" max="70" step="0.1" value="${latest?.body_fat_pct ?? ""}"></label><label>Cintura (cm)<input name="waist_cm" type="number" min="30" max="250" step="0.1" value="${latest?.waist_cm ?? ""}"></label><button class="client-primary" type="submit">Guardar registro semanal</button><p class="form-feedback"></p></form></section><section class="client-panel-card"><div class="panel-title"><div><small>HISTORIAL</small><h2>Últimos registros</h2></div></div><div class="measurement-history">${(measurements || []).map((item) => `<div><time>${new Date(item.recorded_on + "T12:00:00").toLocaleDateString("es-ES")}</time><b>${item.weight_kg ?? "—"} kg</b><span>${item.body_fat_pct ?? "—"}% grasa</span></div>`).join("") || '<p class="client-empty-state">Todavía no hay mediciones.</p>'}</div></section>`;
+    host.innerHTML = `<div class="client-metric-grid"><article><small>PESO ACTUAL</small><b>${latest?.weight_kg ?? "—"} <em>kg</em></b></article><article><small>GRASA CORPORAL</small><b>${latest?.body_fat_pct ?? "—"}<em>%</em></b></article><article><small>SESIONES COMPLETADAS</small><b>${completed}</b></article></div><section class="client-panel-card"><div class="panel-title"><div><small>SEGUIMIENTO SEMANAL</small><h2>Registrar medidas</h2></div></div><form id="measurement-form" class="client-form-grid"><label>Peso (kg)<input name="weight_kg" type="number" min="20" max="350" step="0.1" value="${latest?.weight_kg ?? ""}" required></label><label>Altura (cm)<input name="height_cm" type="number" min="100" max="240" step="0.1" value="${latest?.height_cm ?? ""}"></label><label>Grasa corporal (%)<input name="body_fat_pct" type="number" min="2" max="70" step="0.1" value="${latest?.body_fat_pct ?? ""}"></label><label>Cintura (cm)<input name="waist_cm" type="number" min="30" max="250" step="0.1" value="${latest?.waist_cm ?? ""}"></label><button class="client-primary" type="submit">Guardar registro semanal</button><p class="form-feedback"></p></form></section><section class="client-panel-card"><div class="panel-title"><div><small>HISTORIAL</small><h2>Últimos registros</h2></div></div><div class="measurement-history">${(measurements || []).map((item) => `<div><time>${new Date(item.recorded_on + "T12:00:00").toLocaleDateString("es-ES")}</time><b>${item.weight_kg ?? "—"} kg</b><span>${item.body_fat_pct ?? "—"}% grasa</span></div>`).join("") || '<p class="client-empty-state">Todavía no hay mediciones.</p>'}</div></section><section class="client-panel-card"><div class="panel-title"><div><small>COMPARATIVA SEMANAL</small><h2>Tus cargas por ejercicio</h2></div></div><div class="strength-history" id="strength-history"><p class="panel-loading">Cargando comparativa…</p></div></section>`;
+    renderStrengthHistory(host.querySelector("#strength-history"));
     host.querySelector("#measurement-form").onsubmit = async (event) => {
       event.preventDefault();
       const form = event.currentTarget,
