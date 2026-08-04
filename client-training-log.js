@@ -132,21 +132,53 @@
       : '<p class="training-empty">Todavía no hay cargas registradas.</p>';
   };
 
+  window.openClientRoutine = async function (clientId, clientName) {
+    const { data: routine, error } = await ftSupabase
+      .from("routines")
+      .select("id,name")
+      .eq("client_id", clientId)
+      .in("status", ["active", "draft"])
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) {
+      toast("No se pudo abrir la rutina del cliente.");
+      return;
+    }
+    if (!routine) {
+      toast(
+        `${clientName} todavía no tiene rutina asignada. Asígnale una desde Rutinas.`,
+      );
+      return;
+    }
+    window.openRoutineEditor(routine.id);
+  };
+
   function attachTrainingButtons() {
     document.querySelectorAll("#real-client-rows tr").forEach((row) => {
       const action = row.querySelector(".activation-btn");
-      if (!action || row.querySelector(".view-training")) return;
+      if (!action) return;
       const id = (action.getAttribute("onclick") || "").split("'")[1];
       if (!id) return;
       const name = row.querySelector(".client-cell b")?.textContent || "Cliente";
-      action.insertAdjacentHTML(
-        "afterend",
-        ` <button type="button" class="view-training activation-btn" data-client="${id}" data-name="${esc(name)}">Entrenamientos</button>`,
-      );
+      if (!row.querySelector(".view-training"))
+        action.insertAdjacentHTML(
+          "afterend",
+          ` <button type="button" class="view-training activation-btn" data-client="${id}" data-name="${esc(name)}">Entrenamientos</button>`,
+        );
+      if (!row.querySelector(".edit-client-routine"))
+        action.insertAdjacentHTML(
+          "afterend",
+          ` <button type="button" class="edit-client-routine activation-btn" data-client="${id}" data-name="${esc(name)}">Editar rutina</button>`,
+        );
     });
     document.querySelectorAll(".view-training").forEach((button) => {
       button.onclick = () =>
         window.openClientTraining(button.dataset.client, button.dataset.name);
+    });
+    document.querySelectorAll(".edit-client-routine").forEach((button) => {
+      button.onclick = () =>
+        window.openClientRoutine(button.dataset.client, button.dataset.name);
     });
   }
   const oldLoadClients = window.loadSupabaseClients;
