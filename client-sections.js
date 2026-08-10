@@ -163,8 +163,8 @@
     document.getElementById("session-progress").style.width = "0%";
     document.getElementById("exercise-list").innerHTML =
       `<div class="session-plan-head"><div><span>SESIÓN ${selectedRoutineDay}</span><b>${esc(muscles.join(" · ") || "Entrenamiento completo")}</b></div><small>${routineItems.length} ejercicios</small></div>` +
-      (days.length > 1
-        ? `<div class="session-day-tabs" role="tablist" aria-label="Sesiones de la semana">${days
+      (days.length > 0
+        ? `<div class="session-day-tabs weekly-plan-tabs" role="tablist" aria-label="Entrenamiento semanal">${[1,2,3,4,5]
             .map((day) => {
               const dayItems = allRoutineItems.filter(
                   (item) => (Number(item.day_number) || 1) === day,

@@ -7,6 +7,7 @@ const folderState = { parent: null, folders: [], routines: [] };
 async function loadRoutineFolders() {
   const grid = document.getElementById("folder-grid");
   if (!grid || !window.ftSupabase) return;
+  await ensureBasicWeeklyRoutine();
   const routineQuery = ftSupabase
     .from("routines")
     .select("id,name,folder_id,description")
@@ -109,6 +110,7 @@ async function loadRoutineFolders() {
   document.getElementById("routine-breadcrumbs").textContent =
     folderState.parent ? `Rutinas / ${currentName}` : "Rutinas";
   document.getElementById("routine-back").hidden = !folderState.parent;
+  decorateRoutineWorkspace();
 }
 
 async function openRoutineAssignment(templateId) {
@@ -224,6 +226,60 @@ async function openRoutineAssignment(templateId) {
     node.classList.remove("open");
     toast(`Rutina asignada a ${clientName}`);
   };
+}
+
+const basicWeeklyPlan = [
+  { day: 1, label: "Lunes · Pecho", group: "Pecho", picks: ["barbell bench press", "barbell incline bench press", "cable one arm decline chest fly"] },
+  { day: 2, label: "Martes · Hombro", group: "Hombros", picks: ["dumbbell one arm shoulder press", "cable lateral raise", "barbell rear delt raise"] },
+  { day: 3, label: "Miercoles · Pierna", group: "Piernas", picks: ["barbell bench front squat", "lever horizontal one leg press", "lever lying leg curl"] },
+  { day: 4, label: "Jueves · Espalda", group: "Espalda", picks: ["barbell bent over row", "alternate lateral pulldown", "dumbbell bent over row"] },
+  { day: 5, label: "Viernes · Brazo", group: "Brazos", picks: ["barbell curl", "dumbbell hammer curl", "cable pushdown"] },
+];
+
+async function ensureBasicWeeklyRoutine() {
+  if (!window.ftSupabase || window.basicWeeklyRoutineChecked) return;
+  window.basicWeeklyRoutineChecked = true;
+  const { data: existing } = await ftSupabase.from("routines").select("id").is("client_id", null).eq("name", "Básica semanal").maybeSingle();
+  if (existing?.id) return;
+  const { data: auth } = await ftSupabase.auth.getUser();
+  const { data: routine, error } = await ftSupabase.from("routines").insert({
+    client_id: null,
+    created_by: auth.user?.id || null,
+    name: "Básica semanal",
+    description: "Programa inicial de 5 días · Pecho, hombro, pierna, espalda y brazo · 3 ejercicios por sesión.",
+    source: "trainer",
+    status: "draft",
+  }).select("id").single();
+  if (error || !routine) { window.basicWeeklyRoutineChecked = false; return; }
+  try {
+    const catalog = await fetch("data/ejercicios-es.json?v=2").then((response) => response.json());
+    const rows = [];
+    for (const plan of basicWeeklyPlan) {
+      for (let position = 0; position < plan.picks.length; position += 1) {
+        const wanted = plan.picks[position];
+        const exercise = catalog.find((item) => item.grupo === plan.group && item.nombre.toLowerCase() === wanted);
+        if (!exercise) continue;
+        const { data: saved, error: saveError } = await ftSupabase.from("exercises").insert({
+          name: exercise.nombre, body_group: exercise.grupo, primary_muscle: exercise.objetivo || plan.group,
+          secondary_muscles: exercise.musculos || [], equipment: exercise.equipo,
+          instructions: (exercise.instrucciones || []).join("\n"), media_type: "gif",
+          media_url: new URL(exercise.gif, location.href).href, thumbnail_url: new URL(exercise.imagen, location.href).href,
+          is_custom: false, is_active: true,
+        }).select("id").single();
+        if (!saveError && saved) rows.push({ routine_id: routine.id, exercise_id: saved.id, day_number: plan.day, position: position + 1, target_sets: 3, target_reps_min: 8, target_reps_max: 12, target_rir: 2, rest_seconds: 90 });
+      }
+    }
+    if (rows.length) await ftSupabase.from("routine_exercises").insert(rows);
+  } catch (_) { /* The routine remains editable even if a catalog asset is unavailable. */ }
+}
+
+function decorateRoutineWorkspace() {
+  const explorer = document.getElementById("routine-explorer");
+  if (!explorer || explorer.querySelector(".routine-method-card")) return;
+  const card = document.createElement("section");
+  card.className = "routine-method-card";
+  card.innerHTML = '<div><p class="eyebrow">METODOLOGÍA FT</p><h3>Programa → asignación → seguimiento</h3><p>Trabaja con plantillas reutilizables. Ajusta solo lo necesario para cada cliente y conserva el historial de cada semana.</p></div><div class="routine-method-days"><span>Lun<br><b>Pecho</b></span><span>Mar<br><b>Hombro</b></span><span>Mié<br><b>Pierna</b></span><span>Jue<br><b>Espalda</b></span><span>Vie<br><b>Brazo</b></span></div>';
+  explorer.querySelector(".routine-location")?.before(card);
 }
 
 document.addEventListener("click", (event) => {
