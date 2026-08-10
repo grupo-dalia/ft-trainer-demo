@@ -126,10 +126,12 @@
     const tabs = document.createElement("div");
     tabs.className = "planner-day-tabs";
     const renderTabs = (active) => {
-      const days = [...new Set([...usedDays, active, maxDay + 1])].sort((a, b) => a - b);
-      tabs.innerHTML = days.map((day) => `<button type="button" class="${day === active ? "active" : ""}" data-plan-day="${day}"><b>Sesion ${day}</b><small>${rows.filter((row) => Number(row.querySelector(".routine-exercise-order")?.textContent.match(/\d+/)?.[0]) === day).length} ejercicios</small></button>`).join("");
+      const days = usedDays.length ? usedDays : [1];
+      tabs.innerHTML = days.map((day) => `<button type="button" class="${day === active ? "active" : ""}" data-plan-day="${day}"><b>${["Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado", "Domingo"][day - 1] || `Sesion ${day}`}</b><small>${rows.filter((row) => Number(row.querySelector(".routine-exercise-order")?.textContent.match(/\d+/)?.[0]) === day).length} ejercicios</small></button>`).join("");
       rows.forEach((row) => {
-        row.hidden = Number(row.querySelector(".routine-exercise-order")?.textContent.match(/\d+/)?.[0]) !== active;
+        const matches = Number(row.querySelector(".routine-exercise-order")?.textContent.match(/\d+/)?.[0]) === active;
+        row.hidden = !matches;
+        row.style.setProperty("display", matches ? "grid" : "none", "important");
       });
       dayInput.value = active;
       tabs.querySelectorAll("button").forEach((button) =>

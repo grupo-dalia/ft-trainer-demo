@@ -239,11 +239,36 @@ const basicWeeklyPlan = [
   { day: 5, label: "Viernes · Brazo", group: "Brazos", picks: ["barbell curl", "dumbbell hammer curl", "cable pushdown"] },
 ];
 
+const basicPrescription = {
+  1: [[3, 6, 8, 120], [3, 8, 10, 90], [2, 12, 15, 60]],
+  2: [[3, 8, 10, 90], [3, 12, 15, 60], [3, 12, 15, 60]],
+  3: [[3, 6, 8, 120], [3, 10, 12, 90], [3, 10, 12, 75]],
+  4: [[3, 8, 10, 120], [3, 8, 12, 90], [3, 10, 12, 90]],
+  5: [[3, 8, 10, 75], [3, 10, 12, 60], [3, 10, 12, 60]],
+};
+
+async function applyBasicPrescription(routineId) {
+  const updates = Object.entries(basicPrescription).flatMap(([day, items]) =>
+    items.map(([sets, min, max, rest], index) =>
+      ftSupabase
+        .from("routine_exercises")
+        .update({ target_sets: sets, target_reps_min: min, target_reps_max: max, target_rir: 2, rest_seconds: rest })
+        .eq("routine_id", routineId)
+        .eq("day_number", Number(day))
+        .eq("position", index + 1),
+    ),
+  );
+  await Promise.all(updates);
+}
+
 async function ensureBasicWeeklyRoutine() {
   if (!window.ftSupabase || window.basicWeeklyRoutineChecked) return;
   window.basicWeeklyRoutineChecked = true;
   const { data: existing } = await ftSupabase.from("routines").select("id").is("client_id", null).ilike("name", "Bas% semanal").limit(1).maybeSingle();
-  if (existing?.id) return;
+  if (existing?.id) {
+    await applyBasicPrescription(existing.id);
+    return;
+  }
   const { data: auth } = await ftSupabase.auth.getUser();
   const { data: routine, error } = await ftSupabase.from("routines").insert({
     client_id: null,
@@ -272,7 +297,10 @@ async function ensureBasicWeeklyRoutine() {
         if (!saveError && saved) rows.push({ routine_id: routine.id, exercise_id: saved.id, day_number: plan.day, position: position + 1, target_sets: 3, target_reps_min: 8, target_reps_max: 12, target_rir: 2, rest_seconds: 90 });
       }
     }
-    if (rows.length) await ftSupabase.from("routine_exercises").insert(rows);
+    if (rows.length) {
+      await ftSupabase.from("routine_exercises").insert(rows);
+      await applyBasicPrescription(routine.id);
+    }
   } catch (_) { /* The routine remains editable even if a catalog asset is unavailable. */ }
 }
 
