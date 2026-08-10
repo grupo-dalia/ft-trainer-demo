@@ -4,6 +4,9 @@ pages.routines = () =>
   `${routinePageBase()}<section class="card routine-explorer" id="routine-explorer"><div class="section-head"><div><p class="eyebrow">BIBLIOTECA</p><h2>Rutinas guardadas</h2><p class="muted">Prepara los ejercicios y pulsa <b>Asignar a cliente</b> cuando la plantilla este lista.</p></div><button class="primary" id="new-folder">＋ Nueva carpeta</button></div><div class="routine-steps"><span><b>1</b> Crea la rutina</span><span><b>2</b> Anade ejercicios</span><span><b>3</b> Asignala al cliente</span></div><div class="routine-location" id="routine-location"><button type="button" class="back-button" id="routine-back" aria-label="Volver a la carpeta anterior">←</button><nav class="breadcrumbs" id="routine-breadcrumbs">Rutinas</nav></div><div class="folder-grid" id="folder-grid"><p class="muted">Cargando carpetas…</p></div></section>`;
 const folderState = { parent: null, folders: [], routines: [] };
 
+const routineLibraryPage = pages.routines;
+pages.routines = () => `${routineLibraryPage()}<section class="card routine-quick-start"><div><p class="eyebrow">PROGRAMA RECOMENDADO</p><h2>Basica semanal</h2><p>Plan de inicio de 5 dias: pecho, hombro, pierna, espalda y brazo. Incluye 15 ejercicios listos para asignar.</p></div><div class="routine-quick-actions"><button type="button" class="secondary" id="review-basic-routine">Ver programa</button><button type="button" class="primary" id="assign-basic-routine">Asignar a cliente</button></div></section>`;
+
 async function loadRoutineFolders() {
   const grid = document.getElementById("folder-grid");
   if (!grid || !window.ftSupabase) return;
@@ -282,7 +285,27 @@ function decorateRoutineWorkspace() {
   explorer.querySelector(".routine-location")?.before(card);
 }
 
+async function openBasicRoutine(mode) {
+  window.basicWeeklyRoutineChecked = false;
+  await ensureBasicWeeklyRoutine();
+  const { data: routine, error } = await ftSupabase
+    .from("routines")
+    .select("id")
+    .is("client_id", null)
+    .ilike("name", "Bas% semanal")
+    .limit(1)
+    .maybeSingle();
+  if (error || !routine) {
+    toast("No se pudo preparar Basica semanal. Revisa el acceso a la base de datos.");
+    return;
+  }
+  if (mode === "assign") openRoutineAssignment(routine.id);
+  else openRoutineEditor(routine.id);
+}
+
 document.addEventListener("click", (event) => {
+  if (event.target.id === "review-basic-routine") openBasicRoutine("review");
+  if (event.target.id === "assign-basic-routine") openBasicRoutine("assign");
   if (event.target.id === "new-folder") {
     const name = prompt("Nombre de la carpeta");
     if (name?.trim())
