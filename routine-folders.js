@@ -249,19 +249,19 @@ async function openRoutineAssignment(templateId) {
 }
 
 const basicWeeklyPlan = [
-  { day: 1, label: "Lunes · Pecho", group: "Pecho", picks: ["barbell bench press", "barbell incline bench press", "cable one arm decline chest fly"] },
-  { day: 2, label: "Martes · Hombro", group: "Hombros", picks: ["dumbbell one arm shoulder press", "cable lateral raise", "barbell rear delt raise"] },
-  { day: 3, label: "Miercoles · Pierna", group: "Piernas", picks: ["barbell bench front squat", "lever horizontal one leg press", "lever lying leg curl"] },
-  { day: 4, label: "Jueves · Espalda", group: "Espalda", picks: ["barbell bent over row", "alternate lateral pulldown", "dumbbell bent over row"] },
-  { day: 5, label: "Viernes · Brazo", group: "Brazos", picks: ["barbell curl", "dumbbell hammer curl", "cable pushdown"] },
+  { day: 1, label: "Lunes · Pecho", group: "Pecho", picks: ["barbell bench press", "barbell incline bench press", "assisted chest dip (kneeling)", "cable one arm decline chest fly", "push-up", "cable incline fly"] },
+  { day: 2, label: "Martes · Hombro", group: "Hombros", picks: ["dumbbell one arm shoulder press", "cable lateral raise", "barbell rear delt raise", "cable upright row", "dumbbell front raise", "cable seated rear lateral raise"] },
+  { day: 3, label: "Miercoles · Pierna", group: "Piernas", picks: ["barbell bench front squat", "lever horizontal one leg press", "barbell romanian deadlift", "lever lying leg curl", "lever leg extension", "lever standing calf raise"] },
+  { day: 4, label: "Jueves · Espalda", group: "Espalda", picks: ["barbell bent over row", "alternate lateral pulldown", "cable low seated row", "cable lying extension pullover (with rope attachment)", "dumbbell bent over row", "back extension on exercise ball"] },
+  { day: 5, label: "Viernes · Brazo", group: "Brazos", picks: ["barbell curl", "dumbbell hammer curl", "cable concentration curl", "cable pushdown", "cable overhead triceps extension (rope attachment)", "barbell lying triceps extension skull crusher"] },
 ];
 
 const basicPrescription = {
-  1: [[3, 6, 8, 120], [3, 8, 10, 90], [2, 12, 15, 60]],
-  2: [[3, 8, 10, 90], [3, 12, 15, 60], [3, 12, 15, 60]],
-  3: [[3, 6, 8, 120], [3, 10, 12, 90], [3, 10, 12, 75]],
-  4: [[3, 8, 10, 120], [3, 8, 12, 90], [3, 10, 12, 90]],
-  5: [[3, 8, 10, 75], [3, 10, 12, 60], [3, 10, 12, 60]],
+  1: [[3, 6, 8, 120], [3, 8, 10, 90], [3, 8, 12, 90], [3, 12, 15, 60], [2, 12, 15, 60], [2, 15, 20, 45]],
+  2: [[3, 8, 10, 90], [3, 12, 15, 60], [3, 12, 15, 60], [2, 12, 15, 60], [2, 12, 15, 60], [2, 15, 20, 45]],
+  3: [[3, 6, 8, 120], [3, 10, 12, 90], [3, 8, 10, 120], [3, 10, 12, 75], [2, 12, 15, 60], [3, 12, 15, 60]],
+  4: [[3, 8, 10, 120], [3, 8, 12, 90], [3, 10, 12, 90], [2, 12, 15, 60], [3, 10, 12, 75], [2, 12, 15, 60]],
+  5: [[3, 8, 10, 75], [3, 10, 12, 60], [2, 12, 15, 60], [3, 10, 12, 60], [2, 12, 15, 60], [2, 10, 12, 75]],
 };
 
 async function applyBasicPrescription(routineId) {
@@ -278,12 +278,38 @@ async function applyBasicPrescription(routineId) {
   await Promise.all(updates);
 }
 
+async function rebuildBasicWeeklyRoutine(routineId) {
+  const catalog = await fetch("data/ejercicios-es.json?v=2").then((response) => response.json());
+  const names = basicWeeklyPlan.flatMap((plan) => plan.picks);
+  const { data: stored } = await ftSupabase.from("exercises").select("id,name").in("name", names);
+  const exerciseIds = new Map((stored || []).map((item) => [item.name.toLowerCase(), item.id]));
+  for (const name of names) {
+    if (exerciseIds.has(name)) continue;
+    const exercise = catalog.find((item) => item.nombre.toLowerCase() === name);
+    if (!exercise) continue;
+    const { data: created } = await ftSupabase.from("exercises").insert({
+      name: exercise.nombre, body_group: exercise.grupo, primary_muscle: exercise.objetivo || exercise.grupo,
+      secondary_muscles: exercise.musculos || [], equipment: exercise.equipo, instructions: (exercise.instrucciones || []).join("\n"),
+      media_type: "gif", media_url: new URL(exercise.gif, location.href).href, thumbnail_url: new URL(exercise.imagen, location.href).href,
+      is_custom: false, is_active: true,
+    }).select("id").single();
+    if (created) exerciseIds.set(name, created.id);
+  }
+  await ftSupabase.from("routine_exercises").delete().eq("routine_id", routineId);
+  const rows = basicWeeklyPlan.flatMap((plan) => plan.picks.map((name, index) => ({
+    routine_id: routineId, exercise_id: exerciseIds.get(name), day_number: plan.day, position: index + 1,
+    target_sets: 3, target_reps_min: 8, target_reps_max: 12, target_rir: 2, rest_seconds: 90,
+  })).filter((item) => item.exercise_id));
+  if (rows.length) await ftSupabase.from("routine_exercises").insert(rows);
+  await applyBasicPrescription(routineId);
+}
+
 async function ensureBasicWeeklyRoutine() {
   if (!window.ftSupabase || window.basicWeeklyRoutineChecked) return;
   window.basicWeeklyRoutineChecked = true;
   const { data: existing } = await ftSupabase.from("routines").select("id").is("client_id", null).ilike("name", "Bas% semanal").limit(1).maybeSingle();
   if (existing?.id) {
-    await applyBasicPrescription(existing.id);
+    await rebuildBasicWeeklyRoutine(existing.id);
     return;
   }
   const { data: auth } = await ftSupabase.auth.getUser();
@@ -302,7 +328,7 @@ async function ensureBasicWeeklyRoutine() {
     for (const plan of basicWeeklyPlan) {
       for (let position = 0; position < plan.picks.length; position += 1) {
         const wanted = plan.picks[position];
-        const exercise = catalog.find((item) => item.grupo === plan.group && item.nombre.toLowerCase() === wanted);
+        const exercise = catalog.find((item) => item.nombre.toLowerCase() === wanted);
         if (!exercise) continue;
         const { data: saved, error: saveError } = await ftSupabase.from("exercises").insert({
           name: exercise.nombre, body_group: exercise.grupo, primary_muscle: exercise.objetivo || plan.group,
