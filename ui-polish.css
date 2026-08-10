@@ -64,3 +64,4 @@ body.modal-open .access-modal{pointer-events:auto}
 .login-submit,.request-access,.google-login{font-size:14px!important}.coach-access{font-size:12px!important}
 .workout-top p,.client-card p{font-size:12px!important}.exercise-row b{font-size:15px!important}.exercise-row small{font-size:13px!important}.mobile-nav small{font-size:12px!important}
 @media(max-width:760px){.sidebar{width:min(84vw,310px)}.nav-item{font-size:18px!important}.request-row b{font-size:17px!important}.request-row small{font-size:15px!important}.table td{font-size:16px!important}}
+.client-avatar.has-photo{overflow:hidden;background:#e7eee9}.client-avatar.has-photo img{display:block;width:100%;height:100%;object-fit:cover}

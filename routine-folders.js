@@ -1,7 +1,7 @@
 /* Explorador de rutinas: las carpetas organizan y cada rutina abre su editor. */
 const routinePageBase = pages.routines;
 pages.routines = () =>
-  `${routinePageBase()}<section class="card routine-explorer" id="routine-explorer"><div class="section-head"><div><p class="eyebrow">BIBLIOTECA</p><h2>Rutinas guardadas</h2><p class="muted">Prepara los ejercicios y pulsa <b>Asignar a cliente</b> cuando la plantilla esté lista.</p></div><button class="primary" id="new-folder">＋ Nueva carpeta</button></div><div class="routine-steps"><span><b>1</b> Crea la rutina</span><span><b>2</b> Añade ejercicios</span><span><b>3</b> Asígnala al cliente</span></div><div class="routine-location" id="routine-location"><button type="button" class="back-button" id="routine-back" aria-label="Volver a la carpeta anterior">←</button><nav class="breadcrumbs" id="routine-breadcrumbs">Rutinas</nav></div><div class="folder-grid" id="folder-grid"><p class="muted">Cargando carpetas…</p></div></section>`;
+  `${routinePageBase()}<section class="card routine-explorer" id="routine-explorer"><div class="section-head"><div><p class="eyebrow">BIBLIOTECA</p><h2>Rutinas guardadas</h2><p class="muted">Prepara los ejercicios y pulsa <b>Asignar a cliente</b> cuando la plantilla este lista.</p></div><button class="primary" id="new-folder">＋ Nueva carpeta</button></div><div class="routine-steps"><span><b>1</b> Crea la rutina</span><span><b>2</b> Anade ejercicios</span><span><b>3</b> Asignala al cliente</span></div><div class="routine-location" id="routine-location"><button type="button" class="back-button" id="routine-back" aria-label="Volver a la carpeta anterior">←</button><nav class="breadcrumbs" id="routine-breadcrumbs">Rutinas</nav></div><div class="folder-grid" id="folder-grid"><p class="muted">Cargando carpetas…</p></div></section>`;
 const folderState = { parent: null, folders: [], routines: [] };
 
 async function loadRoutineFolders() {
@@ -44,10 +44,10 @@ async function loadRoutineFolders() {
       ),
       ...folderState.routines.map(
         (routine) =>
-          `<article class="routine-file"><div class="file-icon routine-icon">▤</div><div class="routine-copy"><b>${escapeHtml(routine.name)}</b><small>${escapeHtml(routine.description || "Sin descripción")}</small></div><div class="routine-actions"><button type="button" class="secondary edit-routine" data-routine="${routine.id}">Editar ejercicios</button><button type="button" class="primary assign-routine" data-routine="${routine.id}">Asignar a cliente</button></div><label class="move-control">Carpeta<select class="folder-move" data-routine="${routine.id}" aria-label="Mover rutina"><option value="">Rutinas (raíz)</option>${options}</select></label></article>`,
+          `<article class="routine-file"><div class="file-icon routine-icon">▤</div><div class="routine-copy"><b>${escapeHtml(routine.name)}</b><small>${escapeHtml(routine.description || "Sin descripcion")}</small></div><div class="routine-actions"><button type="button" class="secondary edit-routine" data-routine="${routine.id}">Editar ejercicios</button><button type="button" class="primary assign-routine" data-routine="${routine.id}">Asignar a cliente</button></div><label class="move-control">Carpeta<select class="folder-move" data-routine="${routine.id}" aria-label="Mover rutina"><option value="">Rutinas (raiz)</option>${options}</select></label></article>`,
       ),
     ].join("") ||
-    '<div class="routine-empty"><b>Esta carpeta está vacía</b><p>Crea una rutina o mueve una existente hasta aquí.</p></div>';
+    '<div class="routine-empty"><b>Esta carpeta esta vacia</b><p>Crea una rutina o mueve una existente hasta aqui.</p></div>';
 
   grid
     .querySelectorAll(".edit-routine")
@@ -139,11 +139,11 @@ async function openRoutineAssignment(templateId) {
       .order("full_name"),
   ]);
   if (templateError || itemsError || clientsError) {
-    toast("No se pudo preparar la asignación");
+    toast("No se pudo preparar la asignacion");
     return;
   }
   if (!items?.length) {
-    toast("Añade ejercicios antes de asignar esta rutina");
+    toast("Anade ejercicios antes de asignar esta rutina");
     return;
   }
   if (!clients?.length) {
@@ -157,7 +157,7 @@ async function openRoutineAssignment(templateId) {
     node.className = "admin-form-overlay";
     document.body.appendChild(node);
   }
-  node.innerHTML = `<form class="admin-form assign-routine-form"><button type="button" class="admin-form-close" aria-label="Cerrar">×</button><p class="eyebrow">ASIGNAR PROGRAMACIÓN</p><h2>${escapeHtml(template.name)}</h2><p class="muted">El cliente verá inmediatamente esta rutina y todos sus ejercicios en su aplicación.</p><div class="assignment-summary"><span>▤</span><div><b>${items.length} ejercicios preparados</b><small>La plantilla original se conserva para reutilizarla.</small></div></div><label>Cliente activo<select name="client_id" required><option value="">Selecciona un cliente</option>${clients.map((client) => `<option value="${client.id}">N.º ${client.subscriber_number || "—"} · ${escapeHtml(client.full_name || `${client.first_name || ""} ${client.last_name || ""}`.trim())}${client.phone ? ` · ${escapeHtml(client.phone)}` : ""}</option>`).join("")}</select></label><label class="replace-routine"><input type="checkbox" name="replace_active" checked> Sustituir la rutina activa anterior de este cliente</label><p class="form-feedback" aria-live="polite"></p><button class="primary full" type="submit">Asignar rutina ahora</button></form>`;
+  node.innerHTML = `<form class="admin-form assign-routine-form"><button type="button" class="admin-form-close" aria-label="Cerrar">×</button><p class="eyebrow">ASIGNAR PROGRAMACION</p><h2>${escapeHtml(template.name)}</h2><p class="muted">El cliente vera inmediatamente esta rutina y todos sus ejercicios en su aplicacion.</p><div class="assignment-summary"><span>▤</span><div><b>${items.length} ejercicios preparados</b><small>La plantilla original se conserva para reutilizarla.</small></div></div><label>Cliente activo<select name="client_id" required><option value="">Selecciona un cliente</option>${clients.map((client) => `<option value="${client.id}">N.º ${client.subscriber_number || "—"} · ${escapeHtml(client.full_name || `${client.first_name || ""} ${client.last_name || ""}`.trim())}${client.phone ? ` · ${escapeHtml(client.phone)}` : ""}</option>`).join("")}</select></label><label class="replace-routine"><input type="checkbox" name="replace_active" checked> Sustituir la rutina activa anterior de este cliente</label><p class="form-feedback" aria-live="polite"></p><button class="primary full" type="submit">Asignar rutina ahora</button></form>`;
   node.classList.add("open");
   node.querySelector(".admin-form-close").onclick = () =>
     node.classList.remove("open");
@@ -214,7 +214,7 @@ async function openRoutineAssignment(templateId) {
     if (copyError) {
       await ftSupabase.from("routines").delete().eq("id", assigned.id);
       feedback.textContent =
-        "No se pudieron copiar los ejercicios. No se ha realizado la asignación.";
+        "No se pudieron copiar los ejercicios. No se ha realizado la asignacion.";
       button.disabled = false;
       button.textContent = "Asignar rutina ahora";
       return;
@@ -239,14 +239,14 @@ const basicWeeklyPlan = [
 async function ensureBasicWeeklyRoutine() {
   if (!window.ftSupabase || window.basicWeeklyRoutineChecked) return;
   window.basicWeeklyRoutineChecked = true;
-  const { data: existing } = await ftSupabase.from("routines").select("id").is("client_id", null).eq("name", "Básica semanal").maybeSingle();
+  const { data: existing } = await ftSupabase.from("routines").select("id").is("client_id", null).ilike("name", "Bas% semanal").limit(1).maybeSingle();
   if (existing?.id) return;
   const { data: auth } = await ftSupabase.auth.getUser();
   const { data: routine, error } = await ftSupabase.from("routines").insert({
     client_id: null,
     created_by: auth.user?.id || null,
-    name: "Básica semanal",
-    description: "Programa inicial de 5 días · Pecho, hombro, pierna, espalda y brazo · 3 ejercicios por sesión.",
+    name: "Basica semanal",
+    description: "Programa inicial de 5 dias · Pecho, hombro, pierna, espalda y brazo · 3 ejercicios por sesion.",
     source: "trainer",
     status: "draft",
   }).select("id").single();
@@ -278,7 +278,7 @@ function decorateRoutineWorkspace() {
   if (!explorer || explorer.querySelector(".routine-method-card")) return;
   const card = document.createElement("section");
   card.className = "routine-method-card";
-  card.innerHTML = '<div><p class="eyebrow">METODOLOGÍA FT</p><h3>Programa → asignación → seguimiento</h3><p>Trabaja con plantillas reutilizables. Ajusta solo lo necesario para cada cliente y conserva el historial de cada semana.</p></div><div class="routine-method-days"><span>Lun<br><b>Pecho</b></span><span>Mar<br><b>Hombro</b></span><span>Mié<br><b>Pierna</b></span><span>Jue<br><b>Espalda</b></span><span>Vie<br><b>Brazo</b></span></div>';
+  card.innerHTML = '<div><p class="eyebrow">METODOLOGIA FT</p><h3>Programa → asignacion → seguimiento</h3><p>Trabaja con plantillas reutilizables. Ajusta solo lo necesario para cada cliente y conserva el historial de cada semana.</p></div><div class="routine-method-days"><span>Lun<br><b>Pecho</b></span><span>Mar<br><b>Hombro</b></span><span>Mie<br><b>Pierna</b></span><span>Jue<br><b>Espalda</b></span><span>Vie<br><b>Brazo</b></span></div>';
   explorer.querySelector(".routine-location")?.before(card);
 }
 

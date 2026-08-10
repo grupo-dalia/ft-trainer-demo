@@ -61,7 +61,7 @@
       totalText = document.querySelector(".workout-top b");
     cover.classList.add("is-empty");
     cover.querySelector("h3").innerHTML =
-      "Tu cuota está<br><mark>pendiente de confirmar</mark>";
+      "Tu cuota esta<br><mark>pendiente de confirmar</mark>";
     document.getElementById("done-count").textContent = "0";
     if (totalText) totalText.lastChild.textContent = " de 0 completados";
     document.getElementById("percent").textContent = "0%";
@@ -124,17 +124,17 @@
       totalText = document.querySelector(".workout-top b");
     cover.classList.add("is-empty");
     cover.querySelector("h3").innerHTML =
-      "Tu próxima rutina<br><mark>está en preparación</mark>";
+      "Tu proxima rutina<br><mark>esta en preparacion</mark>";
     document.getElementById("done-count").textContent = "0";
     if (totalText) totalText.lastChild.textContent = " de 0 completados";
     document.getElementById("percent").textContent = "0%";
     document.getElementById("session-progress").style.width = "0%";
     document.getElementById("exercise-list").innerHTML =
-      '<div class="client-empty-state">Fernando todavía no ha activado una rutina para ti.</div>';
+      '<div class="client-empty-state">Fernando todavia no ha activado una rutina para ti.</div>';
     document.getElementById("next-session-title").textContent =
-      "No tienes una sesión programada";
+      "No tienes una sesion programada";
     document.getElementById("next-session-detail").textContent =
-      "Fernando te avisará cuando tu rutina esté lista";
+      "Fernando te avisara cuando tu rutina este lista";
   }
   function renderRoutine() {
     const days = [
@@ -155,14 +155,14 @@
       `${esc(routine.name)}<br><mark>${routine.status === "active" ? "Activa" : "Borrador"}</mark>`;
     document.getElementById("next-session-title").textContent = routine.name;
     document.getElementById("next-session-detail").textContent =
-      `${days.length} ${days.length === 1 ? "sesión" : "sesiones"} · ${allRoutineItems.length} ejercicios · Fernando`;
+      `${days.length} ${days.length === 1 ? "sesion" : "sesiones"} · ${allRoutineItems.length} ejercicios · Fernando`;
     document.getElementById("done-count").textContent = "0";
     document.querySelector(".workout-top b").lastChild.textContent =
       ` de ${routineItems.length} completados`;
     document.getElementById("percent").textContent = "0%";
     document.getElementById("session-progress").style.width = "0%";
     document.getElementById("exercise-list").innerHTML =
-      `<div class="session-plan-head"><div><span>SESIÓN ${selectedRoutineDay}</span><b>${esc(muscles.join(" · ") || "Entrenamiento completo")}</b></div><small>${routineItems.length} ejercicios</small></div>` +
+      `<div class="session-plan-head"><div><span>SESION ${selectedRoutineDay}</span><b>${esc(muscles.join(" · ") || "Entrenamiento completo")}</b></div><small>${routineItems.length} ejercicios</small></div>` +
       (days.length > 0
         ? `<div class="session-day-tabs weekly-plan-tabs" role="tablist" aria-label="Entrenamiento semanal">${[1,2,3,4,5]
             .map((day) => {
@@ -182,7 +182,7 @@
                 ]
                   .slice(0, 2)
                   .join(" + ");
-              return `<button type="button" role="tab" aria-selected="${day === selectedRoutineDay}" class="${day === selectedRoutineDay ? "active" : ""}" data-routine-day="${day}"><span>Día ${day}</span><small>${esc(dayMuscles || "Entrenamiento")}</small></button>`;
+              return `<button type="button" role="tab" aria-selected="${day === selectedRoutineDay}" class="${day === selectedRoutineDay ? "active" : ""}" data-routine-day="${day}"><span>Dia ${day}</span><small>${esc(dayMuscles || "Entrenamiento")}</small></button>`;
             })
             .join("")}</div>`
         : "") +
@@ -194,15 +194,15 @@
                 ? item.target_reps_min
                 : `${item.target_reps_min || "—"}–${item.target_reps_max || "—"}`,
             image = ex.thumbnail_url || "assets/brand/ft-symbol-color.png";
-          return `<button type="button" class="exercise-row live-exercise" data-live-index="${index}"><span class="exercise-thumb"><img src="${esc(image)}" alt="${esc(ex.name)}" loading="lazy"><i>${icon("play")}</i></span><span><b>${esc(ex.name || "Ejercicio")}</b><small>${item.target_sets} series · ${reps} repeticiones${item.target_weight_kg != null ? ` · ${item.target_weight_kg} kg` : ""}</small><em>Ver técnica y registrar</em></span><strong>›</strong></button>`;
+          return `<button type="button" class="exercise-row live-exercise" data-live-index="${index}"><span class="exercise-thumb"><img src="${esc(image)}" alt="${esc(ex.name)}" loading="lazy"><i>${icon("play")}</i></span><span><b>${esc(ex.name || "Ejercicio")}</b><small>${item.target_sets} series · ${reps} repeticiones${item.target_weight_kg != null ? ` · ${item.target_weight_kg} kg` : ""}</small><em>Ver tecnica y registrar</em></span><strong>›</strong></button>`;
         })
         .join("") ||
-        '<div class="client-empty-state">Esta sesión aún no contiene ejercicios.</div>');
+        '<div class="client-empty-state">Esta sesion aun no contiene ejercicios.</div>');
     document.querySelectorAll("[data-routine-day]").forEach((button) => {
       button.onclick = () => {
         const targetDay = Number(button.dataset.routineDay) || 1;
         if (targetDay === selectedRoutineDay) return;
-        if (!confirm(`¿Seguro que quieres empezar el día ${targetDay}?`))
+        if (!confirm(`¿Seguro que quieres empezar el dia ${targetDay}?`))
           return;
         selectedRoutineDay = targetDay;
         routineItems = allRoutineItems.filter(
@@ -297,14 +297,14 @@
     if (gif) {
       gif.src =
         ex.media_url || ex.thumbnail_url || "assets/brand/ft-symbol-color.png";
-      gif.alt = `Demostración de ${ex.name || "ejercicio"}`;
+      gif.alt = `Demostracion de ${ex.name || "ejercicio"}`;
     }
     const tip = document.querySelector(".technique-tip");
     if (tip)
       tip.textContent =
         ex.instructions ||
         item.notes ||
-        "Sigue las indicaciones de Fernando y controla la técnica.";
+        "Sigue las indicaciones de Fernando y controla la tecnica.";
     let logsQuery = db
       .from("set_logs")
       .select("session_id,set_number,reps,weight_kg,created_at")
@@ -420,7 +420,7 @@
       document.getElementById("set-sheet").classList.remove("open");
       toast("Series guardadas correctamente");
     } catch (error) {
-      toast("No se pudo guardar. Comprueba la conexión.");
+      toast("No se pudo guardar. Comprueba la conexion.");
     } finally {
       save.disabled = false;
       save.textContent = "Guardar y completar ✓";
@@ -463,7 +463,7 @@
             ],
           },
           {
-            name: "Jalón al pecho",
+            name: "Jalon al pecho",
             sets: [
               { weight_kg: 50, reps: 12 },
               { weight_kg: 50, reps: 12 },
@@ -624,7 +624,7 @@
 
     ctx.fillStyle = "#fff";
     ctx.font = '25px "Sporter", Arial';
-    ctx.fillText("RESUMEN DE LA SESIÓN", 70, 945);
+    ctx.fillText("RESUMEN DE LA SESION", 70, 945);
     ctx.fillStyle = "#2dac6c";
     ctx.fillRect(70, 967, 940, 2);
     const list = data.exercises.slice(0, 6);
@@ -667,7 +667,7 @@
     ctx.textAlign = "right";
     ctx.fillStyle = "#fff";
     ctx.font = '22px "Sporter", Arial';
-    ctx.fillText("ENTRENA · SUPÉRATE · COMPARTE", 1010, 1805);
+    ctx.fillText("ENTRENA · SUPERATE · COMPARTE", 1010, 1805);
     ctx.fillStyle = "#42b879";
     ctx.font = '18px "Sporter", Arial';
     ctx.fillText("@GYM_FT_TRAINING  ·  #FTTRAINER", 1010, 1846);
@@ -692,7 +692,7 @@
       overlay = document.createElement("div");
       overlay.id = "workout-share-overlay";
       overlay.className = "workout-share-overlay";
-      overlay.innerHTML = `<section class="workout-share-modal" role="dialog" aria-modal="true" aria-labelledby="share-title"><header><div><small>LISTO PARA PUBLICAR</small><h2 id="share-title">Comparte tu entrenamiento</h2></div><button type="button" class="share-close" aria-label="Cerrar">×</button></header><div class="story-preview"><canvas width="1080" height="1920"></canvas></div><p>Imagen vertical optimizada para Instagram Stories. En móvil se abrirá el menú de compartir.</p><div class="share-actions"><button type="button" class="share-native">Compartir ahora</button><button type="button" class="share-download">Descargar Story</button></div></section>`;
+      overlay.innerHTML = `<section class="workout-share-modal" role="dialog" aria-modal="true" aria-labelledby="share-title"><header><div><small>LISTO PARA PUBLICAR</small><h2 id="share-title">Comparte tu entrenamiento</h2></div><button type="button" class="share-close" aria-label="Cerrar">×</button></header><div class="story-preview"><canvas width="1080" height="1920"></canvas></div><p>Imagen vertical optimizada para Instagram Stories. En movil se abrira el menu de compartir.</p><div class="share-actions"><button type="button" class="share-native">Compartir ahora</button><button type="button" class="share-download">Descargar Story</button></div></section>`;
       document.body.appendChild(overlay);
       overlay.querySelector(".share-close").onclick = () =>
         overlay.classList.remove("open");
@@ -758,7 +758,7 @@
       .limit(160);
     if (!sessions?.length) {
       host.innerHTML =
-        '<p class="client-empty-state">Todavía no hay entrenamientos completados.</p>';
+        '<p class="client-empty-state">Todavia no hay entrenamientos completados.</p>';
       return;
     }
     const sessionDate = new Map(sessions.map((s) => [s.id, s.planned_for]));
@@ -827,17 +827,17 @@
             return `<article class="strength-row"><h3>${esc(row.name)}</h3><div class="strength-weeks">${cells}</div></article>`;
           })
           .join("")
-      : '<p class="client-empty-state">Todavía no hay cargas registradas.</p>';
+      : '<p class="client-empty-state">Todavia no hay cargas registradas.</p>';
   }
 
   const progressPanel = panel("real-progress-panel", "Mi progreso", "chart");
   async function showProgress() {
     openPanel(progressPanel, "progress");
     const host = progressPanel.querySelector(".client-panel-content");
-    host.innerHTML = '<div class="panel-loading">Cargando tu evolución…</div>';
+    host.innerHTML = '<div class="panel-loading">Cargando tu evolucion…</div>';
     if (!db) {
       host.innerHTML =
-        '<div class="client-empty-state">Inicia sesión para consultar tu progreso.</div>';
+        '<div class="client-empty-state">Inicia sesion para consultar tu progreso.</div>';
       return;
     }
     const [{ data: measurements }, { data: sessions }] = await Promise.all([
@@ -856,7 +856,9 @@
     ]);
     const latest = measurements?.[0],
       completed = (sessions || []).filter((s) => s.completed_at).length;
-    host.innerHTML = `<div class="client-metric-grid"><article><small>PESO ACTUAL</small><b>${latest?.weight_kg ?? "—"} <em>kg</em></b></article><article><small>GRASA CORPORAL</small><b>${latest?.body_fat_pct ?? "—"}<em>%</em></b></article><article><small>SESIONES COMPLETADAS</small><b>${completed}</b></article></div><section class="client-panel-card"><div class="panel-title"><div><small>SEGUIMIENTO SEMANAL</small><h2>Registrar medidas</h2></div></div><form id="measurement-form" class="client-form-grid"><label>Peso (kg)<input name="weight_kg" type="number" min="20" max="350" step="0.1" value="${latest?.weight_kg ?? ""}" required></label><label>Altura (cm)<input name="height_cm" type="number" min="100" max="240" step="0.1" value="${latest?.height_cm ?? ""}"></label><label>Grasa corporal (%)<input name="body_fat_pct" type="number" min="2" max="70" step="0.1" value="${latest?.body_fat_pct ?? ""}"></label><label>Cintura (cm)<input name="waist_cm" type="number" min="30" max="250" step="0.1" value="${latest?.waist_cm ?? ""}"></label><button class="client-primary" type="submit">Guardar registro semanal</button><p class="form-feedback"></p></form></section><section class="client-panel-card"><div class="panel-title"><div><small>HISTORIAL</small><h2>Últimos registros</h2></div></div><div class="measurement-history">${(measurements || []).map((item) => `<div><time>${new Date(item.recorded_on + "T12:00:00").toLocaleDateString("es-ES")}</time><b>${item.weight_kg ?? "—"} kg</b><span>${item.body_fat_pct ?? "—"}% grasa</span></div>`).join("") || '<p class="client-empty-state">Todavía no hay mediciones.</p>'}</div></section><section class="client-panel-card"><div class="panel-title"><div><small>COMPARATIVA SEMANAL</small><h2>Tus cargas por ejercicio</h2></div></div><div class="strength-history" id="strength-history"><p class="panel-loading">Cargando comparativa…</p></div></section>`;
+    host.innerHTML = `<div class="client-metric-grid"><article><small>PESO ACTUAL</small><b>${latest?.weight_kg ?? "—"} <em>kg</em></b></article><article><small>GRASA CORPORAL</small><b>${latest?.body_fat_pct ?? "—"}<em>%</em></b></article><article><small>SESIONES COMPLETADAS</small><b>${completed}</b></article></div><section class="client-panel-card"><div class="panel-title"><div><small>SEGUIMIENTO SEMANAL</small><h2>Registrar medidas</h2></div></div><form id="measurement-form" class="client-form-grid"><label>Peso (kg)<input name="weight_kg" type="number" min="20" max="350" step="0.1" value="${latest?.weight_kg ?? ""}" required></label><label>Altura (cm)<input name="height_cm" type="number" min="100" max="240" step="0.1" value="${latest?.height_cm ?? ""}"></label><label>Grasa corporal (%)<input name="body_fat_pct" type="number" min="2" max="70" step="0.1" value="${latest?.body_fat_pct ?? ""}"></label><label>Cintura (cm)<input name="waist_cm" type="number" min="30" max="250" step="0.1" value="${latest?.waist_cm ?? ""}"></label><button class="client-primary" type="submit">Guardar registro semanal</button><p class="form-feedback"></p></form></section><section class="client-panel-card"><div class="panel-title"><div><small>HISTORIAL</small><h2>Ultimos registros</h2></div></div><div class="measurement-history">${(measurements || []).map((item) => `<div><time>${new Date(item.recorded_on + "T12:00:00").toLocaleDateString("es-ES")}</time><b>${item.weight_kg ?? "—"} kg</b><span>${item.body_fat_pct ?? "—"}% grasa</span></div>`).join("") || '<p class="client-empty-state">Todavia no hay mediciones.</p>'}</div></section><section class="client-panel-card"><div class="panel-title"><div><small>COMPARATIVA SEMANAL</small><h2>Tus cargas por ejercicio</h2></div></div><div class="strength-history" id="strength-history"><p class="panel-loading">Cargando comparativa…</p></div></section>`;
+    const metricGrid = host.querySelector(".client-metric-grid");
+    if (metricGrid) metricGrid.insertAdjacentHTML("beforeend", `<article><small>ALTURA</small><b>${latest?.height_cm ?? "—"}<em>cm</em></b></article>`);
     renderStrengthHistory(host.querySelector("#strength-history"));
     host.querySelector("#measurement-form").onsubmit = async (event) => {
       event.preventDefault();
@@ -872,7 +874,15 @@
       );
       const result = await db
         .from("measurements")
-        .upsert(payload, { onConflict: "client_id,recorded_on" });
+        .upsert(payload, { onConflict: "client_id,recorded_on" })
+        .select()
+        .single();
+      if (!result.error && payload.height_cm != null) {
+        await db
+          .from("clients")
+          .update({ height_cm: payload.height_cm, updated_at: new Date().toISOString() })
+          .eq("id", clientId);
+      }
       form.querySelector(".form-feedback").textContent = result.error
         ? "No se pudo guardar el registro."
         : "Registro guardado correctamente.";
@@ -887,7 +897,7 @@
     host.innerHTML = '<div class="panel-loading">Cargando tu perfil…</div>';
     if (!db) {
       host.innerHTML =
-        '<div class="client-empty-state">Inicia sesión para consultar tu perfil.</div>';
+        '<div class="client-empty-state">Inicia sesion para consultar tu perfil.</div>';
       return;
     }
     const { data: client, error: profileError } = await db
@@ -896,14 +906,14 @@
       .eq("id", clientId)
       .maybeSingle();
     if (profileError || !client) {
-      host.innerHTML = `<div class="client-empty-state"><b>No hemos podido abrir tu perfil.</b><br>Recarga la página o vuelve a iniciar sesión.</div>`;
+      host.innerHTML = `<div class="client-empty-state"><b>No hemos podido abrir tu perfil.</b><br>Recarga la pagina o vuelve a iniciar sesion.</div>`;
       return;
     }
     const initials = (client?.first_name || "FT").slice(0, 2).toUpperCase(),
       avatarContent = client?.avatar_url
         ? `<img src="${esc(client.avatar_url)}" alt="Foto de perfil">`
         : esc(initials);
-    host.innerHTML = `<section class="client-profile-hero"><span class="client-profile-avatar">${avatarContent}</span><div><h2>${esc(client?.full_name || `${client?.first_name || ""} ${client?.last_name || ""}`.trim() || "Cliente FT")}</h2><p>${esc(client?.email || "")}</p><b>${client?.access_status === "active" ? "Acceso activo" : "Acceso pendiente"}</b></div></section><section class="client-panel-card avatar-card"><div class="panel-title"><div><small>IMAGEN DE PERFIL</small><h2>Tu foto</h2></div></div><label class="avatar-upload"><span>${icon("user")}</span><div><b>Subir una foto</b><small>JPG, PNG o WebP · máximo 5 MB</small></div><input id="avatar-file" type="file" accept="image/jpeg,image/png,image/webp"><strong>Elegir imagen</strong></label><p class="avatar-feedback"></p></section><section class="client-panel-card"><div class="panel-title"><div><small>DATOS PERSONALES</small><h2>Información de contacto</h2></div></div><form id="profile-form" class="client-form-grid"><label>Nombre<input name="first_name" value="${esc(client?.first_name || "")}" required></label><label>Apellidos<input name="last_name" value="${esc(client?.last_name || "")}"></label><label>Teléfono<input name="phone" value="${esc(client?.phone || "")}"></label><button class="client-primary" type="submit">Guardar cambios</button><p class="form-feedback"></p></form></section><button type="button" class="client-logout">${icon("logout")} Cerrar sesión</button>`;
+    host.innerHTML = `<section class="client-profile-hero"><span class="client-profile-avatar">${avatarContent}</span><div><h2>${esc(client?.full_name || `${client?.first_name || ""} ${client?.last_name || ""}`.trim() || "Cliente FT")}</h2><p>${esc(client?.email || "")}</p><b>${client?.access_status === "active" ? "Acceso activo" : "Acceso pendiente"}</b></div></section><section class="client-panel-card avatar-card"><div class="panel-title"><div><small>IMAGEN DE PERFIL</small><h2>Tu foto</h2></div></div><label class="avatar-upload"><span>${icon("user")}</span><div><b>Subir una foto</b><small>JPG, PNG o WebP · maximo 5 MB</small></div><input id="avatar-file" type="file" accept="image/jpeg,image/png,image/webp"><strong>Elegir imagen</strong></label><p class="avatar-feedback"></p></section><section class="client-panel-card"><div class="panel-title"><div><small>DATOS PERSONALES</small><h2>Informacion de contacto</h2></div></div><form id="profile-form" class="client-form-grid"><label>Nombre<input name="first_name" value="${esc(client?.first_name || "")}" required></label><label>Apellidos<input name="last_name" value="${esc(client?.last_name || "")}"></label><label>Telefono<input name="phone" value="${esc(client?.phone || "")}"></label><button class="client-primary" type="submit">Guardar cambios</button><p class="form-feedback"></p></form></section><button type="button" class="client-logout">${icon("logout")} Cerrar sesion</button>`;
     host.querySelector("#avatar-file").onchange = async (event) => {
       const file = event.target.files?.[0],
         feedback = host.querySelector(".avatar-feedback"),
@@ -922,7 +932,7 @@
         path = `${userId}/avatar.${extension}`;
       if (!userId) {
         feedback.textContent =
-          "Tu sesión ha caducado. Vuelve a iniciar sesión.";
+          "Tu sesion ha caducado. Vuelve a iniciar sesion.";
         uploadLabel.classList.remove("uploading");
         return;
       }
@@ -930,7 +940,7 @@
         .from("client-avatars")
         .upload(path, file, { upsert: true, contentType: file.type });
       if (uploaded.error) {
-        feedback.textContent = "No se pudo subir la foto. Inténtalo de nuevo.";
+        feedback.textContent = "No se pudo subir la foto. Intentalo de nuevo.";
         uploadLabel.classList.remove("uploading");
         return;
       }
@@ -947,7 +957,7 @@
       uploadLabel.classList.remove("uploading");
       if (saved.error) {
         feedback.textContent =
-          "La foto subió, pero no se pudo guardar en tu perfil.";
+          "La foto subio, pero no se pudo guardar en tu perfil.";
         return;
       }
       host.querySelector(".client-profile-avatar").innerHTML =

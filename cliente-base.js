@@ -4,14 +4,14 @@ const exercises = [
     detail: "4 series · 8–10 reps · 70 kg",
     image: "media/images/0025-EIeI8Vf.jpg",
     gif: "media/videos/0025-EIeI8Vf.gif",
-    tip: "Retrae las escápulas, apoya bien los pies y baja la barra con control hasta el pecho.",
+    tip: "Retrae las escapulas, apoya bien los pies y baja la barra con control hasta el pecho.",
   },
   {
     name: "Remo con barra",
     detail: "4 series · 10 reps · 55 kg",
     image: "media/images/0027-eZyBC3j.jpg",
     gif: "media/videos/0027-eZyBC3j.gif",
-    tip: "Mantén la espalda neutra y lleva la barra hacia el abdomen sin balancear el tronco.",
+    tip: "Manten la espalda neutra y lleva la barra hacia el abdomen sin balancear el tronco.",
   },
   {
     name: "Press inclinado mancuernas",
@@ -21,11 +21,11 @@ const exercises = [
     tip: "Controla la bajada y evita que los hombros se eleven durante el empuje.",
   },
   {
-    name: "Jalón al pecho",
+    name: "Jalon al pecho",
     detail: "3 series · 12 reps · 50 kg",
     image: "media/images/0198-RVwzP10.jpg",
     gif: "media/videos/0198-RVwzP10.gif",
-    tip: "Inicia el movimiento bajando las escápulas y acerca la barra a la parte alta del pecho.",
+    tip: "Inicia el movimiento bajando las escapulas y acerca la barra a la parte alta del pecho.",
   },
   {
     name: "Elevaciones laterales",
@@ -35,11 +35,11 @@ const exercises = [
     tip: "Eleva guiando con los codos y utiliza un peso que te permita evitar el impulso.",
   },
   {
-    name: "Curl de bíceps",
+    name: "Curl de biceps",
     detail: "3 series · 12 reps · 12 kg",
     image: "media/images/0294-NbVPDMW.jpg",
     gif: "media/videos/0294-NbVPDMW.gif",
-    tip: "Mantén los codos pegados al cuerpo y controla completamente la fase de bajada.",
+    tip: "Manten los codos pegados al cuerpo y controla completamente la fase de bajada.",
   },
 ];
 let completed = 0;
@@ -47,7 +47,7 @@ const list = document.getElementById("exercise-list");
 list.innerHTML = exercises
   .map(
     (e, i) =>
-      `<div class="exercise-row" data-index="${i}"><span class="exercise-thumb"><img src="${e.image}" alt="${e.name}" loading="lazy"><i>▶</i></span><div><b>${e.name}</b><small>${e.detail}</small><em>Ver técnica y registrar</em></div><strong>›</strong></div>`,
+      `<div class="exercise-row" data-index="${i}"><span class="exercise-thumb"><img src="${e.image}" alt="${e.name}" loading="lazy"><i>▶</i></span><div><b>${e.name}</b><small>${e.detail}</small><em>Ver tecnica y registrar</em></div><strong>›</strong></div>`,
   )
   .join("");
 const sheet = document.getElementById("set-sheet"),
@@ -63,7 +63,7 @@ const history = [
 const media = document.createElement("div");
 media.className = "client-exercise-media";
 media.innerHTML =
-  '<img id="sheet-gif" alt="Demostración del ejercicio"><span>DEMOSTRACIÓN</span><small>© Gym visual</small>';
+  '<img id="sheet-gif" alt="Demostracion del ejercicio"><span>DEMOSTRACION</span><small>© Gym visual</small>';
 sheetTitle.parentNode.insertBefore(media, sheetTitle);
 const technique = document.createElement("p");
 technique.className = "technique-tip";
@@ -80,9 +80,9 @@ document.querySelectorAll(".exercise-row").forEach(
       sheetTitle.textContent = exercise.name;
       document.getElementById("sheet-gif").src = exercise.gif;
       document.getElementById("sheet-gif").alt =
-        "Demostración de " + exercise.name;
+        "Demostracion de " + exercise.name;
       technique.textContent = exercise.tip;
-      recordBox.innerHTML = `<div><span>ÚLTIMA VEZ · ${record.date}</span><b>${record.last}</b></div><div><span>RÉCORD PERSONAL</span><b>🏆 ${record.record}</b></div>`;
+      recordBox.innerHTML = `<div><span>ULTIMA VEZ · ${record.date}</span><b>${record.last}</b></div><div><span>RECORD PERSONAL</span><b>🏆 ${record.record}</b></div>`;
       sheet.dataset.index = index;
       sheet.classList.add("open");
     }),

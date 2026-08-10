@@ -52,7 +52,7 @@
     }
     if (!sessions?.length) {
       body.innerHTML =
-        '<p class="training-empty">Todavía no hay entrenamientos completados.</p>';
+        '<p class="training-empty">Todavia no hay entrenamientos completados.</p>';
       return;
     }
     const sessionDate = new Map(sessions.map((s) => [s.id, s.planned_for]));
@@ -129,7 +129,7 @@
             return `<article class="training-row"><h3>${esc(row.name)}</h3><div class="training-weeks">${cells}</div></article>`;
           })
           .join("")
-      : '<p class="training-empty">Todavía no hay cargas registradas.</p>';
+      : '<p class="training-empty">Todavia no hay cargas registradas.</p>';
   };
 
   window.openClientRoutine = async function (clientId, clientName) {
@@ -147,7 +147,7 @@
     }
     if (!routine) {
       toast(
-        `${clientName} todavía no tiene rutina asignada. Asígnale una desde Rutinas.`,
+        `${clientName} todavia no tiene rutina asignada. Asignale una desde Rutinas.`,
       );
       return;
     }

@@ -16,8 +16,8 @@ window.addEventListener("pageshow", (event) => {
     new URLSearchParams(location.search).has("preview")
   ) {
     await load("cliente-base.js?v=2");
-    await load("client-home.js?v=5");
-    await load("client-sections.js?v=11");
+    await load("client-home.js?v=6");
+    await load("client-sections.js?v=12");
     document.body.style.visibility = "visible";
     return;
   }
@@ -46,7 +46,7 @@ window.addEventListener("pageshow", (event) => {
   }
   if (profileError) {
     document.body.innerHTML =
-      '<main style="font-family:sans-serif;padding:32px"><h1>No se pudo comprobar el acceso</h1><p>Recarga la página. Si continúa, vuelve a iniciar sesión.</p><a href="index.html">Volver al acceso</a></main>';
+      '<main style="font-family:sans-serif;padding:32px"><h1>No se pudo comprobar el acceso</h1><p>Recarga la pagina. Si continua, vuelve a iniciar sesion.</p><a href="index.html">Volver al acceso</a></main>';
     document.body.style.visibility = "visible";
     return;
   }
@@ -94,7 +94,7 @@ window.addEventListener("pageshow", (event) => {
   window.ftMembershipActive =
     member.access_status === "active" && membershipIsCurrent;
   await load("cliente-base.js?v=2");
-  await load("client-home.js?v=5");
-  await load("client-sections.js?v=11");
+  await load("client-home.js?v=6");
+  await load("client-sections.js?v=12");
   document.body.style.visibility = "visible";
 })().catch(() => location.replace("index.html"));

@@ -12,7 +12,7 @@
   window.ftApplyClientAvatar = applyAvatar;
 
   if (window.ftSupabase && window.ftClientId) {
-    const [{ data: client }, { data: routines }, { data: sessions }] =
+    const [{ data: client }, { data: routines }, { data: sessions }, { data: measurements }] =
       await Promise.all([
         ftSupabase
           .from("clients")
@@ -34,12 +34,24 @@
             "planned_for",
             new Date(Date.now() - 6 * 86400000).toISOString().slice(0, 10),
           ),
+        ftSupabase
+          .from("measurements")
+          .select("weight_kg,height_cm,body_fat_pct")
+          .eq("client_id", ftClientId)
+          .order("recorded_on", { ascending: false })
+          .limit(1),
       ]);
     const name =
       client?.first_name || client?.full_name?.split(" ")[0] || "deportista";
     first.textContent = name;
     avatar.textContent = name.slice(0, 2).toUpperCase();
     applyAvatar(client?.avatar_url);
+    const latestMeasurement = measurements?.[0];
+    const progressValues = document.querySelectorAll(".progress-stats b");
+    if (progressValues[0] && latestMeasurement?.weight_kg != null)
+      progressValues[0].textContent = `${latestMeasurement.weight_kg} kg`;
+    if (progressValues[1] && latestMeasurement?.body_fat_pct != null)
+      progressValues[1].textContent = `${latestMeasurement.body_fat_pct}%`;
     hasRoutine = Boolean(routines?.[0]);
     if (hasRoutine) {
       document.getElementById("next-session-title").textContent =
@@ -61,7 +73,7 @@
       document.getElementById("week-message").textContent =
         percent >= 80
           ? "¡Vas por buen camino!"
-          : "Cada sesión cuenta. Sigue avanzando.";
+          : "Cada sesion cuenta. Sigue avanzando.";
   }
 
   const session = document.getElementById("routine-session"),
@@ -86,7 +98,7 @@
   const notifications = document.createElement("section");
   notifications.className = "ft-notification-panel";
   notifications.setAttribute("aria-label", "Centro de notificaciones");
-  notifications.innerHTML = `<header><span><svg><use href="#ico-bell" /></svg></span><div><small>FT TRAINER</small><b>Notificaciones</b></div></header><article><i></i><div><b>${hasRoutine ? "Tu rutina está disponible" : "Fernando está preparando tu rutina"}</b><p>${hasRoutine ? "Puedes abrirla y comenzar a registrar tus series." : "Te avisaremos aquí cuando esté lista para entrenar."}</p></div></article>`;
+  notifications.innerHTML = `<header><span><svg><use href="#ico-bell" /></svg></span><div><small>FT TRAINER</small><b>Notificaciones</b></div></header><article><i></i><div><b>${hasRoutine ? "Tu rutina esta disponible" : "Fernando esta preparando tu rutina"}</b><p>${hasRoutine ? "Puedes abrirla y comenzar a registrar tus series." : "Te avisaremos aqui cuando este lista para entrenar."}</p></div></article>`;
   notificationButton.after(notifications);
   notificationButton.onclick = (event) => {
     event.stopPropagation();

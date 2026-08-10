@@ -1,4 +1,4 @@
-/* Planificador FT: creación guiada y navegación por sesiones/músculos. */
+/* Planificador FT: creacion guiada y navegacion por sesiones/musculos. */
 (function () {
   const esc = (value) => escapeHtml(String(value ?? ""));
   const icons = {
@@ -20,22 +20,22 @@
     }
     node.innerHTML = `<form class="admin-form planner-wizard">
       <button type="button" class="admin-form-close" aria-label="Cerrar">×</button>
-      <p class="eyebrow">NUEVA PLANIFICACIÓN</p>
-      <h2>¿Qué quieres preparar?</h2>
-      <p class="muted">Crea una sesión para un día concreto o una programación completa para toda la semana.</p>
+      <p class="eyebrow">NUEVA PLANIFICACION</p>
+      <h2>¿Que quieres preparar?</h2>
+      <p class="muted">Crea una sesion para un dia concreto o una programacion completa para toda la semana.</p>
       <div class="plan-choice-grid">
-        <label class="plan-choice"><input type="radio" name="scope" value="daily" checked><span>${icons.day}<b>Rutina diaria</b><small>Una única sesión organizada por músculos.</small></span></label>
-        <label class="plan-choice"><input type="radio" name="scope" value="weekly"><span>${icons.week}<b>Plan semanal</b><small>Varias sesiones separadas por días y grupos musculares.</small></span></label>
+        <label class="plan-choice"><input type="radio" name="scope" value="daily" checked><span>${icons.day}<b>Rutina diaria</b><small>Una unica sesion organizada por musculos.</small></span></label>
+        <label class="plan-choice"><input type="radio" name="scope" value="weekly"><span>${icons.week}<b>Plan semanal</b><small>Varias sesiones separadas por dias y grupos musculares.</small></span></label>
       </div>
       <div class="admin-fields">
         <label class="wide">Nombre<input name="name" required placeholder="Ej. Fuerza · Semana 1"></label>
-        <label>Objetivo<select name="goal"><option>Fuerza</option><option>Hipertrofia</option><option>Pérdida de grasa</option><option>Movilidad</option><option>Readaptación</option></select></label>
+        <label>Objetivo<select name="goal"><option>Fuerza</option><option>Hipertrofia</option><option>Perdida de grasa</option><option>Movilidad</option><option>Readaptacion</option></select></label>
         <label>Carpeta<select name="folder_id"><option value="">Sin carpeta</option>${(folders || []).map((folder) => `<option value="${folder.id}">${esc(folder.name)}</option>`).join("")}</select></label>
       </div>
-      <div class="planner-days" aria-label="Días de entrenamiento">${["L", "M", "X", "J", "V", "S", "D"].map((day, index) => `<label><input type="checkbox" name="day" value="${index + 1}" ${index < 3 ? "checked" : ""}><span>${day}</span></label>`).join("")}</div>
+      <div class="planner-days" aria-label="Dias de entrenamiento">${["L", "M", "X", "J", "V", "S", "D"].map((day, index) => `<label><input type="checkbox" name="day" value="${index + 1}" ${index < 3 ? "checked" : ""}><span>${day}</span></label>`).join("")}</div>
       <label>Indicaciones generales<textarea name="description" placeholder="Objetivo, nivel, restricciones o notas para el cliente"></textarea></label>
       <p class="form-feedback" aria-live="polite"></p>
-      <button class="primary full" type="submit">Crear y añadir ejercicios →</button>
+      <button class="primary full" type="submit">Crear y anadir ejercicios →</button>
     </form>`;
     node.classList.add("open");
     const form = node.querySelector("form"),
@@ -58,16 +58,16 @@
         feedback = form.querySelector(".form-feedback"),
         button = form.querySelector('[type="submit"]');
       if (scope === "weekly" && !selectedDays.length) {
-        feedback.textContent = "Selecciona al menos un día de entrenamiento.";
+        feedback.textContent = "Selecciona al menos un dia de entrenamiento.";
         return;
       }
       button.disabled = true;
-      button.textContent = "Creando planificación…";
+      button.textContent = "Creando planificacion…";
       const { data: auth } = await ftSupabase.auth.getUser(),
         description = [
           scope === "weekly"
             ? `Plan semanal · ${selectedDays.length} sesiones`
-            : "Rutina diaria · 1 sesión",
+            : "Rutina diaria · 1 sesion",
           String(data.get("goal")),
           String(data.get("description") || "").trim(),
         ]
@@ -87,13 +87,13 @@
           .select("id")
           .single();
       if (error) {
-        feedback.textContent = "No se pudo crear la planificación.";
+        feedback.textContent = "No se pudo crear la planificacion.";
         button.disabled = false;
-        button.textContent = "Crear y añadir ejercicios →";
+        button.textContent = "Crear y anadir ejercicios →";
         return;
       }
       node.classList.remove("open");
-      toast("Planificación creada. Añade ahora cada sesión.");
+      toast("Planificacion creada. Anade ahora cada sesion.");
       render("routines");
       setTimeout(() => openRoutineEditor(created.id), 120);
     };
@@ -112,7 +112,7 @@
       maxDay = Math.max(1, ...usedDays),
       controls = document.createElement("div");
     controls.className = "planner-editor-summary";
-    controls.innerHTML = `<span>${maxDay} ${maxDay === 1 ? "sesión" : "sesiones"}</span><span>${rows.length} ejercicios</span><span>Organizado por día y músculo</span>`;
+    controls.innerHTML = `<span>${maxDay} ${maxDay === 1 ? "sesion" : "sesiones"}</span><span>${rows.length} ejercicios</span><span>Organizado por dia y musculo</span>`;
     header.querySelector("div").appendChild(controls);
     const assignButton = document.createElement("button");
     assignButton.type = "button";
@@ -127,7 +127,7 @@
     tabs.className = "planner-day-tabs";
     const renderTabs = (active) => {
       const days = [...new Set([...usedDays, active, maxDay + 1])].sort((a, b) => a - b);
-      tabs.innerHTML = days.map((day) => `<button type="button" class="${day === active ? "active" : ""}" data-plan-day="${day}"><b>Sesión ${day}</b><small>${rows.filter((row) => Number(row.querySelector(".routine-exercise-order")?.textContent.match(/\d+/)?.[0]) === day).length} ejercicios</small></button>`).join("");
+      tabs.innerHTML = days.map((day) => `<button type="button" class="${day === active ? "active" : ""}" data-plan-day="${day}"><b>Sesion ${day}</b><small>${rows.filter((row) => Number(row.querySelector(".routine-exercise-order")?.textContent.match(/\d+/)?.[0]) === day).length} ejercicios</small></button>`).join("");
       rows.forEach((row) => {
         row.hidden = Number(row.querySelector(".routine-exercise-order")?.textContent.match(/\d+/)?.[0]) !== active;
       });
@@ -142,7 +142,7 @@
     const search = host.querySelector("#routine-exercise-search"),
       searchLabel = search?.closest("label");
     if (search && searchLabel) {
-      const muscles = ["Pecho", "Espalda", "Pierna", "Hombro", "Bíceps", "Tríceps", "Core", "Glúteo"],
+      const muscles = ["Pecho", "Espalda", "Pierna", "Hombro", "Biceps", "Triceps", "Core", "Gluteo"],
         filters = document.createElement("div");
       filters.className = "muscle-filter-grid";
       filters.innerHTML = muscles.map((muscle) => `<button type="button">${muscle}</button>`).join("");
