@@ -106,6 +106,44 @@ async function loadRoutineFolders() {
       loadRoutineFolders();
     };
   });
+  grid.querySelectorAll(".routine-file").forEach((file) => {
+    const routineId = file.querySelector(".assign-routine")?.dataset.routine;
+    if (!routineId || file.querySelector(".delete-routine")) return;
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "secondary delete-routine";
+    button.textContent = "Eliminar";
+    button.onclick = async () => {
+      if (!confirm("Eliminar esta rutina? Las asignaciones de esta plantilla no se veran afectadas.")) return;
+      const { error } = await ftSupabase.from("routines").delete().eq("id", routineId).is("client_id", null);
+      if (error) { toast("No se pudo eliminar la rutina."); return; }
+      toast("Rutina eliminada.");
+      loadRoutineFolders();
+    };
+    file.querySelector(".routine-actions")?.appendChild(button);
+  });
+  grid.querySelectorAll(".folder-card").forEach((card) => {
+    if (card.querySelector(".delete-folder")) return;
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "delete-folder";
+    button.textContent = "Eliminar";
+    button.onclick = async (event) => {
+      event.stopPropagation();
+      const id = card.dataset.folder;
+      const [children, routines] = await Promise.all([
+        ftSupabase.from("routine_folders").select("id", { count: "exact", head: true }).eq("parent_id", id),
+        ftSupabase.from("routines").select("id", { count: "exact", head: true }).eq("folder_id", id),
+      ]);
+      if ((children.count || 0) + (routines.count || 0)) { toast("Vacia la carpeta antes de eliminarla."); return; }
+      if (!confirm("Eliminar esta carpeta vacia?")) return;
+      const { error } = await ftSupabase.from("routine_folders").delete().eq("id", id);
+      if (error) { toast("No se pudo eliminar la carpeta."); return; }
+      toast("Carpeta eliminada.");
+      loadRoutineFolders();
+    };
+    card.querySelector(".card-actions")?.appendChild(button);
+  });
   const currentName = folderState.parent
     ? folderState.folders.find((folder) => folder.id === folderState.parent)
         ?.name

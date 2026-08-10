@@ -23,6 +23,7 @@
       <p class="eyebrow">NUEVA PLANIFICACION</p>
       <h2>¿Que quieres preparar?</h2>
       <p class="muted">Crea una sesion para un dia concreto o una programacion completa para toda la semana.</p>
+      <div class="planner-mode-choice"><label class="plan-choice"><input type="radio" name="mode" value="guided" checked><span><b>Asistente guiado</b><small>Define objetivo, experiencia, dias y grupos musculares.</small></span></label><label class="plan-choice"><input type="radio" name="mode" value="manual"><span><b>Creacion manual</b><small>Abre una rutina vacia y anade ejercicios libremente.</small></span></label></div>
       <div class="plan-choice-grid">
         <label class="plan-choice"><input type="radio" name="scope" value="daily" checked><span>${icons.day}<b>Rutina diaria</b><small>Una unica sesion organizada por musculos.</small></span></label>
         <label class="plan-choice"><input type="radio" name="scope" value="weekly"><span>${icons.week}<b>Plan semanal</b><small>Varias sesiones separadas por dias y grupos musculares.</small></span></label>
@@ -53,6 +54,12 @@
       dayConfig.hidden = !weekly;
       dayConfig.innerHTML = weekly ? `<p><b>Que se trabaja cada dia</b><small>El editor filtrara el catalogo automaticamente.</small></p>${selected.map((day, index) => `<label>${labels[day - 1]}<select name="muscle_${day}">${defaultMuscles.map((muscle) => `<option${muscle === defaultMuscles[index] ? " selected" : ""}>${muscle}</option>`).join("")}</select></label>`).join("")}` : "";
     };
+    const setMode = () => {
+      const guided = form.querySelector('[name="mode"]:checked').value === "guided";
+      node.querySelector(".plan-choice-grid").hidden = !guided;
+      if (guided) renderDayConfig();
+      else { days.classList.remove("show"); dayQuestion.hidden = true; dayConfig.hidden = true; }
+    };
     node.querySelector(".admin-form-close").onclick = () =>
       node.classList.remove("open");
     node.onclick = (event) => {
@@ -67,12 +74,14 @@
         }),
     );
     days.querySelectorAll('input[name="day"]').forEach((input) => (input.onchange = renderDayConfig));
+    form.querySelectorAll('[name="mode"]').forEach((input) => (input.onchange = setMode));
     dayQuestion.hidden = true;
     renderDayConfig();
     form.onsubmit = async (event) => {
       event.preventDefault();
       const data = new FormData(form),
-        scope = String(data.get("scope")),
+        mode = String(data.get("mode")),
+        scope = mode === "manual" ? "manual" : String(data.get("scope")),
         selectedDays = data.getAll("day"),
         feedback = form.querySelector(".form-feedback"),
         button = form.querySelector('[type="submit"]');
@@ -103,7 +112,7 @@
             created_by: auth.user?.id || null,
             source: "trainer",
             status: "draft",
-            coach_reasoning: { scope, experience: String(data.get("experience")), training_days: (scope === "weekly" ? selectedDays : ["1"]).map(Number), day_muscles: dayMuscles },
+            coach_reasoning: { mode, scope, experience: String(data.get("experience")), training_days: (scope === "weekly" ? selectedDays : ["1"]).map(Number), day_muscles: dayMuscles },
           })
           .select("id")
           .single();
