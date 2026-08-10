@@ -162,6 +162,23 @@ async function openRoutineAssignment(templateId) {
   }
   node.innerHTML = `<form class="admin-form assign-routine-form"><button type="button" class="admin-form-close" aria-label="Cerrar">×</button><p class="eyebrow">ASIGNAR PROGRAMACION</p><h2>${escapeHtml(template.name)}</h2><p class="muted">El cliente vera inmediatamente esta rutina y todos sus ejercicios en su aplicacion.</p><div class="assignment-summary"><span>▤</span><div><b>${items.length} ejercicios preparados</b><small>La plantilla original se conserva para reutilizarla.</small></div></div><label>Cliente activo<select name="client_id" required><option value="">Selecciona un cliente</option>${clients.map((client) => `<option value="${client.id}">N.º ${client.subscriber_number || "—"} · ${escapeHtml(client.full_name || `${client.first_name || ""} ${client.last_name || ""}`.trim())}${client.phone ? ` · ${escapeHtml(client.phone)}` : ""}</option>`).join("")}</select></label><label class="replace-routine"><input type="checkbox" name="replace_active" checked> Sustituir la rutina activa anterior de este cliente</label><p class="form-feedback" aria-live="polite"></p><button class="primary full" type="submit">Asignar rutina ahora</button></form>`;
   node.classList.add("open");
+  const clientSelect = node.querySelector('[name="client_id"]');
+  const clientLabel = clientSelect.closest("label");
+  const clientSearch = document.createElement("label");
+  clientSearch.className = "assignment-client-search";
+  clientSearch.innerHTML = '<span>Buscar cliente</span><input type="search" placeholder="Nombre, abonado o telefono" autocomplete="off">';
+  clientLabel.before(clientSearch);
+  const renderClientOptions = (query = "") => {
+    const previous = clientSelect.value;
+    const normalized = query.trim().toLowerCase();
+    const matches = clients.filter((client) => {
+      const text = [client.subscriber_number, client.full_name, client.first_name, client.last_name, client.phone].join(" ").toLowerCase();
+      return !normalized || text.includes(normalized);
+    });
+    clientSelect.innerHTML = `<option value="">${normalized ? `${matches.length} cliente${matches.length === 1 ? "" : "s"} encontrados` : "Selecciona un cliente"}</option>${matches.map((client) => `<option value="${client.id}">N. ${client.subscriber_number || "-"} · ${escapeHtml(client.full_name || `${client.first_name || ""} ${client.last_name || ""}`.trim())}${client.phone ? ` · ${escapeHtml(client.phone)}` : ""}</option>`).join("")}`;
+    if (matches.some((client) => client.id === previous)) clientSelect.value = previous;
+  };
+  clientSearch.querySelector("input").oninput = (event) => renderClientOptions(event.currentTarget.value);
   node.querySelector(".admin-form-close").onclick = () =>
     node.classList.remove("open");
   node.onclick = (event) => {
