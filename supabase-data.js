@@ -24,8 +24,9 @@ function renderClientRows(){
   target.innerHTML=rows.map((client,index)=>{
     const name=(client.full_name||`${client.first_name} ${client.last_name||''}`).trim();
     const initials=(name.split(/\s+/).map(x=>x[0]).join('').slice(0,2)).toUpperCase();
-    const portrait=client.avatar_url?`<img src="${escapeHtml(client.avatar_url)}" alt="Foto de ${escapeHtml(name)}">`:escapeHtml(initials);
+    const portrait=client.avatar_url?'':escapeHtml(initials);
+    const avatarStyle=client.avatar_url?` style="background-image:url('${escapeHtml(client.avatar_url)}')"`:'';
     const active=client.access_status==='active';
-    return `<tr><td><b>#${escapeHtml(client.subscriber_number||'-')}</b></td><td><div class="client-cell"><span class="client-avatar a${index%3+1} ${client.avatar_url?'has-photo':''}">${portrait}</span><div><b>${escapeHtml(name)}</b><small>${escapeHtml(client.phone||'Sin telefono')}</small></div></div></td><td>${escapeHtml(client.phone||'-')}</td><td>${escapeHtml(client.dni||'-')}</td><td><span class="status-dot"></span>${accessLabels[client.access_status]||client.access_status}</td><td><button class="activation-btn ${active?'off':''}" onclick="toggleActivation(this,'${client.id}','${client.access_status}')">${active?'Desactivar':'Activar acceso'}</button></td></tr>`;
+    return `<tr><td><b>#${escapeHtml(client.subscriber_number||'-')}</b></td><td><div class="client-cell"><span class="client-avatar a${index%3+1} ${client.avatar_url?'has-photo':''}"${avatarStyle}>${portrait}</span><div><b>${escapeHtml(name)}</b><small>${escapeHtml(client.phone||'Sin telefono')}</small></div></div></td><td>${escapeHtml(client.phone||'-')}</td><td>${escapeHtml(client.dni||'-')}</td><td><span class="status-dot"></span>${accessLabels[client.access_status]||client.access_status}</td><td><button class="activation-btn ${active?'off':''}" onclick="toggleActivation(this,'${client.id}','${client.access_status}')">${active?'Desactivar':'Activar acceso'}</button></td></tr>`;
   }).join('');
 }

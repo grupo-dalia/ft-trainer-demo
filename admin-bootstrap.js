@@ -37,7 +37,7 @@ if (!session) {
     await load("app.js");
     await load("catalogo.js?v=3");
     await load("admin-features.js?v=4");
-    await load("supabase-data.js?v=4");
+    await load("supabase-data.js?v=5");
     await load("admin-live.js?v=7");
     await load("terms-viewer.js?v=1");
     await load("routine-folders.js?v=7");
