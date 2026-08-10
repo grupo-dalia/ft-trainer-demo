@@ -29,17 +29,30 @@
       </div>
       <div class="admin-fields">
         <label class="wide">Nombre<input name="name" required placeholder="Ej. Fuerza · Semana 1"></label>
-        <label>Objetivo<select name="goal"><option>Fuerza</option><option>Hipertrofia</option><option>Perdida de grasa</option><option>Movilidad</option><option>Readaptacion</option></select></label>
+        <label>Objetivo<select name="goal"><option>Hipertrofia</option><option>Fuerza</option><option>Perdida de grasa</option><option>Movilidad</option><option>Readaptacion</option></select></label>
+        <label>Experiencia<select name="experience"><option value="principiante">Principiante</option><option value="intermedio" selected>Intermedio</option><option value="avanzado">Avanzado</option></select></label>
         <label>Carpeta<select name="folder_id"><option value="">Sin carpeta</option>${(folders || []).map((folder) => `<option value="${folder.id}">${esc(folder.name)}</option>`).join("")}</select></label>
       </div>
-      <div class="planner-days" aria-label="Dias de entrenamiento">${["L", "M", "X", "J", "V", "S", "D"].map((day, index) => `<label><input type="checkbox" name="day" value="${index + 1}" ${index < 3 ? "checked" : ""}><span>${day}</span></label>`).join("")}</div>
+      <p class="planner-days-question">Cuantos dias va a entrenar esta persona?</p><div class="planner-days" aria-label="Dias de entrenamiento">${["L", "M", "X", "J", "V", "S", "D"].map((day, index) => `<label><input type="checkbox" name="day" value="${index + 1}" ${index < 3 ? "checked" : ""}><span>${day}</span></label>`).join("")}</div>
       <label>Indicaciones generales<textarea name="description" placeholder="Objetivo, nivel, restricciones o notas para el cliente"></textarea></label>
       <p class="form-feedback" aria-live="polite"></p>
       <button class="primary full" type="submit">Crear y anadir ejercicios →</button>
     </form>`;
     node.classList.add("open");
     const form = node.querySelector("form"),
-      days = node.querySelector(".planner-days");
+      days = node.querySelector(".planner-days"),
+      dayQuestion = node.querySelector(".planner-days-question"),
+      dayConfig = document.createElement("div");
+    dayConfig.className = "planner-day-config";
+    days.after(dayConfig);
+    const defaultMuscles = ["Pecho", "Hombros", "Piernas", "Espalda", "Brazos", "Core", "Full body"];
+    const labels = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado", "Domingo"];
+    const renderDayConfig = () => {
+      const selected = [...days.querySelectorAll('input[name="day"]:checked')].map((input) => Number(input.value));
+      const weekly = form.querySelector('[name="scope"]:checked').value === "weekly";
+      dayConfig.hidden = !weekly;
+      dayConfig.innerHTML = weekly ? `<p><b>Que se trabaja cada dia</b><small>El editor filtrara el catalogo automaticamente.</small></p>${selected.map((day, index) => `<label>${labels[day - 1]}<select name="muscle_${day}">${defaultMuscles.map((muscle) => `<option${muscle === defaultMuscles[index] ? " selected" : ""}>${muscle}</option>`).join("")}</select></label>`).join("")}` : "";
+    };
     node.querySelector(".admin-form-close").onclick = () =>
       node.classList.remove("open");
     node.onclick = (event) => {
@@ -47,9 +60,15 @@
     };
     form.querySelectorAll('[name="scope"]').forEach(
       (radio) =>
-        (radio.onchange = () =>
-          days.classList.toggle("show", radio.value === "weekly" && radio.checked)),
+        (radio.onchange = () => {
+          days.classList.toggle("show", radio.value === "weekly" && radio.checked);
+          dayQuestion.hidden = !(radio.value === "weekly" && radio.checked);
+          renderDayConfig();
+        }),
     );
+    days.querySelectorAll('input[name="day"]').forEach((input) => (input.onchange = renderDayConfig));
+    dayQuestion.hidden = true;
+    renderDayConfig();
     form.onsubmit = async (event) => {
       event.preventDefault();
       const data = new FormData(form),
@@ -64,6 +83,7 @@
       button.disabled = true;
       button.textContent = "Creando planificacion…";
       const { data: auth } = await ftSupabase.auth.getUser(),
+        dayMuscles = Object.fromEntries((scope === "weekly" ? selectedDays : ["1"]).map((day) => [day, String(data.get(`muscle_${day}`) || "Full body")])),
         description = [
           scope === "weekly"
             ? `Plan semanal · ${selectedDays.length} sesiones`
@@ -83,6 +103,7 @@
             created_by: auth.user?.id || null,
             source: "trainer",
             status: "draft",
+            coach_reasoning: { scope, experience: String(data.get("experience")), training_days: (scope === "weekly" ? selectedDays : ["1"]).map(Number), day_muscles: dayMuscles },
           })
           .select("id")
           .single();
@@ -102,13 +123,19 @@
   const baseEditor = window.openRoutineEditor;
   window.openRoutineEditor = async (id) => {
     await baseEditor(id);
+    const { data: routineConfig } = await ftSupabase
+      .from("routines")
+      .select("coach_reasoning")
+      .eq("id", id)
+      .maybeSingle();
+    const dayMuscles = routineConfig?.coach_reasoning?.day_muscles || {};
     const host = document.getElementById("routine-editor-overlay"),
       header = host?.querySelector(".routine-editor-header"),
       list = host?.querySelector(".routine-exercise-list"),
       dayInput = host?.querySelector('[name="day_number"]');
     if (!header || !list || !dayInput) return;
     const rows = [...list.querySelectorAll(".routine-exercise-row")],
-      usedDays = [...new Set(rows.map((row) => Number(row.querySelector(".routine-exercise-order")?.textContent.match(/\d+/)?.[0]) || 1))].sort((a, b) => a - b),
+      usedDays = [...new Set([...rows.map((row) => Number(row.querySelector(".routine-exercise-order")?.textContent.match(/\d+/)?.[0]) || 1), ...(routineConfig?.coach_reasoning?.training_days || [])])].sort((a, b) => a - b),
       maxDay = Math.max(1, ...usedDays),
       controls = document.createElement("div");
     controls.className = "planner-editor-summary";
@@ -124,6 +151,7 @@
     };
     header.insertBefore(assignButton, header.querySelector(".admin-form-close"));
     const tabs = document.createElement("div");
+    let applyDayFilter = () => {};
     tabs.className = "planner-day-tabs";
     const renderTabs = (active) => {
       const days = usedDays.length ? usedDays : [1];
@@ -137,6 +165,7 @@
       tabs.querySelectorAll("button").forEach((button) =>
         (button.onclick = () => renderTabs(Number(button.dataset.planDay))),
       );
+      applyDayFilter(active);
     };
     list.parentElement.insertBefore(tabs, list);
     renderTabs(usedDays[0] || 1);
@@ -157,6 +186,15 @@
           search.dispatchEvent(new Event("input"));
         };
       });
+      applyDayFilter = (day) => {
+        const muscle = String(dayMuscles[day] || "");
+        if (!muscle || muscle === "Full body") return;
+        const searchTerm = muscle === "Hombros" ? "Hombro" : muscle === "Piernas" ? "Pierna" : muscle;
+        filters.querySelectorAll("button").forEach((item) => item.classList.toggle("active", item.textContent === searchTerm));
+        search.value = searchTerm;
+        search.dispatchEvent(new Event("input"));
+      };
+      applyDayFilter(usedDays[0] || 1);
     }
   };
 })();
