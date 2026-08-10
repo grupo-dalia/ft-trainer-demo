@@ -175,7 +175,7 @@ async function openRoutineAssignment(templateId) {
       .order("position"),
     ftSupabase
       .from("clients")
-      .select("id,subscriber_number,full_name,first_name,last_name,phone")
+      .select("id,subscriber_number,full_name,first_name,last_name,phone,objective")
       .eq("access_status", "active")
       .order("full_name"),
   ]);
@@ -206,17 +206,24 @@ async function openRoutineAssignment(templateId) {
   clientSearch.className = "assignment-client-search";
   clientSearch.innerHTML = '<span>Buscar cliente</span><input type="search" placeholder="Nombre, abonado o telefono" autocomplete="off">';
   clientLabel.before(clientSearch);
+  const clientGroup = document.createElement("label");
+  clientGroup.className = "assignment-client-search";
+  const groups = [...new Set(clients.map((client) => String(client.objective || "").trim()).filter(Boolean))].sort();
+  clientGroup.innerHTML = `<span>Grupo de entrenamiento</span><select><option value="">Todos los clientes</option>${groups.map((group) => `<option>${escapeHtml(group)}</option>`).join("")}</select><label class="assign-group-toggle"><input type="checkbox" name="assign_group"> Asignar a todo el grupo filtrado</label>`;
+  clientSearch.after(clientGroup);
+  let selectedGroup = "";
   const renderClientOptions = (query = "") => {
     const previous = clientSelect.value;
     const normalized = query.trim().toLowerCase();
     const matches = clients.filter((client) => {
       const text = [client.subscriber_number, client.full_name, client.first_name, client.last_name, client.phone].join(" ").toLowerCase();
-      return !normalized || text.includes(normalized);
+      return (!normalized || text.includes(normalized)) && (!selectedGroup || client.objective === selectedGroup);
     });
     clientSelect.innerHTML = `<option value="">${normalized ? `${matches.length} cliente${matches.length === 1 ? "" : "s"} encontrados` : "Selecciona un cliente"}</option>${matches.map((client) => `<option value="${client.id}">N. ${client.subscriber_number || "-"} · ${escapeHtml(client.full_name || `${client.first_name || ""} ${client.last_name || ""}`.trim())}${client.phone ? ` · ${escapeHtml(client.phone)}` : ""}</option>`).join("")}`;
     if (matches.some((client) => client.id === previous)) clientSelect.value = previous;
   };
   clientSearch.querySelector("input").oninput = (event) => renderClientOptions(event.currentTarget.value);
+  clientGroup.querySelector("select").onchange = (event) => { selectedGroup = event.currentTarget.value; renderClientOptions(clientSearch.querySelector("input").value); };
   node.querySelector(".admin-form-close").onclick = () =>
     node.classList.remove("open");
   node.onclick = (event) => {
@@ -229,8 +236,11 @@ async function openRoutineAssignment(templateId) {
       clientId = String(data.get("client_id") || ""),
       button = form.querySelector('[type="submit"]'),
       feedback = form.querySelector(".form-feedback");
-    if (!clientId) {
-      feedback.textContent = "Selecciona un cliente.";
+    const targetClients = data.get("assign_group") === "on" && selectedGroup
+      ? clients.filter((client) => client.objective === selectedGroup)
+      : clients.filter((client) => client.id === clientId);
+    if (!targetClients.length) {
+      feedback.textContent = data.get("assign_group") === "on" ? "Selecciona un grupo con clientes activos." : "Selecciona un cliente.";
       return;
     }
     button.disabled = true;
@@ -240,15 +250,15 @@ async function openRoutineAssignment(templateId) {
       await ftSupabase
         .from("routines")
         .update({ status: "archived" })
-        .eq("client_id", clientId)
+        .in("client_id", targetClients.map((client) => client.id))
         .eq("status", "active");
     const {
         data: { user },
       } = await ftSupabase.auth.getUser(),
       { data: assigned, error: assignError } = await ftSupabase
         .from("routines")
-        .insert({
-          client_id: clientId,
+        .insert(targetClients.map((client) => ({
+          client_id: client.id,
           created_by: user?.id || null,
           name: template.name,
           description: template.description,
@@ -256,33 +266,28 @@ async function openRoutineAssignment(templateId) {
           status: "active",
           week_start: new Date().toISOString().slice(0, 10),
           coach_reasoning: template.coach_reasoning || {},
-        })
-        .select("id")
-        .single();
+        })))
+        .select("id,client_id");
     if (assignError) {
       feedback.textContent = "No se pudo asignar la rutina.";
       button.disabled = false;
       button.textContent = "Asignar rutina ahora";
       return;
     }
-    const copies = items.map((item) => ({ ...item, routine_id: assigned.id })),
+    const copies = (assigned || []).flatMap((routine) => items.map((item) => ({ ...item, routine_id: routine.id }))),
       { error: copyError } = await ftSupabase
         .from("routine_exercises")
         .insert(copies);
     if (copyError) {
-      await ftSupabase.from("routines").delete().eq("id", assigned.id);
+      await ftSupabase.from("routines").delete().in("id", (assigned || []).map((routine) => routine.id));
       feedback.textContent =
         "No se pudieron copiar los ejercicios. No se ha realizado la asignacion.";
       button.disabled = false;
       button.textContent = "Asignar rutina ahora";
       return;
     }
-    const client = clients.find((item) => item.id === clientId),
-      clientName =
-        client?.full_name ||
-        `${client?.first_name || ""} ${client?.last_name || ""}`.trim();
     node.classList.remove("open");
-    toast(`Rutina asignada a ${clientName}`);
+    toast(`Rutina asignada a ${targetClients.length} cliente${targetClients.length === 1 ? "" : "s"}.`);
   };
 }
 
