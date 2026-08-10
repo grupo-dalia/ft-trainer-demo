@@ -47,7 +47,7 @@ if (!session) {
     await load("routine-planner-v2.js?v=4");
     await load("client-import.js?v=2");
     await load("payments-manager.js?v=1");
-    await load("client-training-log.js?v=2");
+    await load("client-training-log.js?v=3");
     document.body.style.visibility = "visible";
   }
 }

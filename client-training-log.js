@@ -1,18 +1,19 @@
-/* Ficha de entrenamientos por cliente: comparativa semanal de cargas, accesible desde Clientes. */
+/* Historial visual por sesiones, accesible desde la ficha de cada cliente. */
 (function () {
   const esc = (value) => escapeHtml(String(value ?? ""));
-  function weekKey(dateStr) {
-    const date = new Date(`${dateStr}T12:00:00`),
-      offset = (date.getDay() + 6) % 7;
-    date.setDate(date.getDate() - offset);
-    return date.toISOString().slice(0, 10);
-  }
-  function weekLabel(week) {
-    return new Date(`${week}T12:00:00`).toLocaleDateString("es-ES", {
+  const sessionDate = (session) =>
+    session.planned_for || session.completed_at?.slice(0, 10) || session.started_at?.slice(0, 10);
+  function dateLabel(value, options = {}) {
+    if (!value) return "Fecha sin registrar";
+    return new Date(`${value.slice(0, 10)}T12:00:00`).toLocaleDateString("es-ES", {
       day: "2-digit",
       month: "short",
+      year: "numeric",
+      ...options,
     });
   }
+  const number = (value) => Number(value || 0);
+  const weightLabel = (value) => `${number(value).toLocaleString("es-ES", { maximumFractionDigits: 1 })} kg`;
   function overlayNode(id) {
     let node = document.getElementById(id);
     if (!node) {
@@ -26,7 +27,7 @@
 
   window.openClientTraining = async function (clientId, clientName) {
     const node = overlayNode("client-training-overlay");
-    node.innerHTML = `<section class="admin-form training-log-form"><button type="button" class="admin-form-close" aria-label="Cerrar">×</button><p class="eyebrow">REGISTROS DE ENTRENAMIENTO</p><h2>${esc(clientName)}</h2><p class="muted">Comparativa semanal de las cargas registradas por el cliente.</p><div class="training-log-body"><p class="training-empty">Cargando entrenamientos…</p></div></section>`;
+    node.innerHTML = `<section class="admin-form training-log-form"><button type="button" class="admin-form-close" aria-label="Cerrar">×</button><div class="training-log-heading"><div><p class="eyebrow">SEGUIMIENTO INDIVIDUAL</p><h2>${esc(clientName)}</h2><p class="muted">Estadisticas y entrenamientos registrados exclusivamente por este cliente.</p></div></div><div class="training-log-body"><p class="training-empty">Cargando entrenamientos...</p></div></section>`;
     node.classList.add("open");
     node.querySelector(".admin-form-close").onclick = () =>
       node.classList.remove("open");
@@ -34,17 +35,13 @@
       if (event.target === node) node.classList.remove("open");
     };
     const body = node.querySelector(".training-log-body");
-    const [{ data: sessions, error: sessionsError }, { data: routines }] =
-      await Promise.all([
-        ftSupabase
-          .from("workout_sessions")
-          .select("id,planned_for")
-          .eq("client_id", clientId)
-          .not("completed_at", "is", null)
-          .order("planned_for", { ascending: false })
-          .limit(160),
-        ftSupabase.from("routines").select("id").eq("client_id", clientId),
-      ]);
+    const { data: sessions, error: sessionsError } = await ftSupabase
+      .from("workout_sessions")
+      .select("id,routine_id,day_number,planned_for,started_at,completed_at,duration_minutes,perceived_effort,notes,routines(name)")
+      .eq("client_id", clientId)
+      .not("completed_at", "is", null)
+      .order("completed_at", { ascending: true })
+      .limit(160);
     if (sessionsError) {
       body.innerHTML =
         '<p class="training-empty">No se pudieron cargar los entrenamientos.</p>';
@@ -55,81 +52,73 @@
         '<p class="training-empty">Todavia no hay entrenamientos completados.</p>';
       return;
     }
-    const sessionDate = new Map(sessions.map((s) => [s.id, s.planned_for]));
-    const { data: logs } = await ftSupabase
+    const { data: logs, error: logsError } = await ftSupabase
       .from("set_logs")
-      .select("session_id,exercise_id,weight_kg,reps")
+      .select("session_id,exercise_id,set_number,weight_kg,reps,rir,pain_level,completed,exercises(name)")
       .in(
         "session_id",
         sessions.map((s) => s.id),
       );
-    const routineIds = (routines || []).map((r) => r.id);
-    const nameMap = new Map();
-    if (routineIds.length) {
-      const { data: items } = await ftSupabase
-        .from("routine_exercises")
-        .select("exercise_id,exercises(name)")
-        .in("routine_id", routineIds);
-      (items || []).forEach((item) =>
-        nameMap.set(item.exercise_id, item.exercises?.name),
-      );
+    if (logsError) {
+      body.innerHTML = '<p class="training-empty">No se pudo cargar el desglose de los entrenamientos.</p>';
+      return;
     }
-    const missing = [
-      ...new Set((logs || []).map((log) => log.exercise_id)),
-    ].filter((id) => !nameMap.has(id));
-    if (missing.length) {
-      const { data: extra } = await ftSupabase
-        .from("exercises")
-        .select("id,name")
-        .in("id", missing);
-      (extra || []).forEach((ex) => nameMap.set(ex.id, ex.name));
+    const logsBySession = new Map(sessions.map((session) => [session.id, []]));
+    (logs || []).filter((log) => log.completed !== false).forEach((log) => logsBySession.get(log.session_id)?.push(log));
+    const ordered = sessions.map((session, index) => ({ ...session, trainingNumber: index + 1, logs: logsBySession.get(session.id) || [] }));
+
+    function exercisesFor(session) {
+      const groups = new Map();
+      session.logs.forEach((log) => {
+        if (!groups.has(log.exercise_id)) groups.set(log.exercise_id, { id: log.exercise_id, name: log.exercises?.name || "Ejercicio", sets: [] });
+        groups.get(log.exercise_id).sets.push(log);
+      });
+      return [...groups.values()].map((exercise) => ({ ...exercise, sets: exercise.sets.sort((a, b) => number(a.set_number) - number(b.set_number)) }));
     }
-    const byExercise = new Map();
-    (logs || []).forEach((log) => {
-      if (log.weight_kg == null) return;
-      const planned = sessionDate.get(log.session_id);
-      if (!planned) return;
-      const week = weekKey(planned);
-      if (!byExercise.has(log.exercise_id))
-        byExercise.set(log.exercise_id, new Map());
-      const weeks = byExercise.get(log.exercise_id),
-        current = weeks.get(week);
-      if (!current || Number(log.weight_kg) > Number(current.weight_kg))
-        weeks.set(week, { weight_kg: log.weight_kg, reps: log.reps });
-    });
-    const rows = [...byExercise.entries()]
-      .map(([exerciseId, weeks]) => ({
-        name: nameMap.get(exerciseId) || "Ejercicio",
-        weeks: [...weeks.entries()]
-          .sort((a, b) => (a[0] < b[0] ? 1 : -1))
-          .slice(0, 8),
-      }))
-      .filter((row) => row.weeks.length)
-      .sort((a, b) => a.name.localeCompare(b.name, "es"));
-    body.innerHTML = rows.length
-      ? rows
-          .map((row) => {
-            const cells = row.weeks
-              .map(([week, entry], index) => {
-                const prev = row.weeks[index + 1]?.[1],
-                  delta = prev
-                    ? Number(entry.weight_kg) - Number(prev.weight_kg)
-                    : null,
-                  deltaLabel =
-                    delta == null
-                      ? ""
-                      : delta > 0
-                        ? `<em class="training-up">↑ ${delta.toFixed(1)} kg</em>`
-                        : delta < 0
-                          ? `<em class="training-down">↓ ${Math.abs(delta).toFixed(1)} kg</em>`
-                          : `<em class="training-flat">= kg</em>`;
-                return `<div class="training-week"><time>${weekLabel(week)}</time><b>${entry.weight_kg} kg × ${entry.reps ?? "—"}</b>${deltaLabel}</div>`;
-              })
-              .join("");
-            return `<article class="training-row"><h3>${esc(row.name)}</h3><div class="training-weeks">${cells}</div></article>`;
-          })
-          .join("")
-      : '<p class="training-empty">Todavia no hay cargas registradas.</p>';
+    const sessionVolume = (session) => session.logs.reduce((sum, log) => sum + number(log.weight_kg) * number(log.reps), 0);
+    function previousExercise(sessionIndex, exerciseId) {
+      for (let index = sessionIndex - 1; index >= 0; index -= 1) {
+        const found = exercisesFor(ordered[index]).find((exercise) => exercise.id === exerciseId);
+        if (found) return found;
+      }
+      return null;
+    }
+    function compactSets(sets) {
+      const grouped = [];
+      sets.forEach((set) => {
+        const key = `${number(set.reps)}|${number(set.weight_kg)}`;
+        const last = grouped[grouped.length - 1];
+        if (last?.key === key) last.count += 1;
+        else grouped.push({ key, count: 1, reps: number(set.reps), weight: number(set.weight_kg) });
+      });
+      return grouped.map((group) => `<span class="training-set-summary"><b>${group.count} series</b><em>${group.reps} rep · ${weightLabel(group.weight)}</em></span>`).join("");
+    }
+    function renderDetail(sessionIndex) {
+      const session = ordered[sessionIndex], exercises = exercisesFor(session), volume = sessionVolume(session);
+      const exerciseCards = exercises.map((exercise) => {
+        const previous = previousExercise(sessionIndex, exercise.id),
+          currentMax = Math.max(...exercise.sets.map((set) => number(set.weight_kg))),
+          previousMax = previous ? Math.max(...previous.sets.map((set) => number(set.weight_kg))) : null,
+          delta = previousMax == null ? null : currentMax - previousMax,
+          progress = delta == null ? '<span class="training-new">Primer registro</span>' : delta > 0 ? `<span class="training-up">+${weightLabel(delta)} desde la anterior</span>` : delta < 0 ? `<span class="training-down">-${weightLabel(Math.abs(delta))} desde la anterior</span>` : '<span class="training-flat">Misma carga que la anterior</span>';
+        return `<article class="training-exercise-card"><header><div><small>EJERCICIO</small><h3>${esc(exercise.name)}</h3></div>${progress}</header><div class="training-set-summaries">${compactSets(exercise.sets)}</div><details><summary>Ver cada serie</summary><div class="training-set-table">${exercise.sets.map((set, index) => `<div><span>Serie ${number(set.set_number) || index + 1}</span><b>${set.reps ?? "--"} rep</b><strong>${weightLabel(set.weight_kg)}</strong>${set.rir == null ? "" : `<em>RIR ${esc(set.rir)}</em>`}</div>`).join("")}</div></details></article>`;
+      }).join("");
+      body.innerHTML = `<button type="button" class="training-back">← Todos los entrenamientos</button><section class="training-detail-hero"><div><p class="eyebrow">ENTRENAMIENTO ${session.trainingNumber}</p><h3>${esc(session.routines?.name || `Sesion ${session.day_number || session.trainingNumber}`)}</h3><span>${dateLabel(sessionDate(session))}${session.day_number ? ` · Dia ${session.day_number}` : ""}</span></div></section><div class="training-session-stats"><article><b>${exercises.length}</b><span>Ejercicios</span></article><article><b>${session.logs.length}</b><span>Series</span></article><article><b>${Math.round(volume).toLocaleString("es-ES")}</b><span>Kg de volumen</span></article><article><b>${session.duration_minutes || "--"}</b><span>Minutos</span></article></div>${session.perceived_effort ? `<p class="training-effort">Esfuerzo percibido: <b>${session.perceived_effort}/10</b></p>` : ""}${exerciseCards || '<p class="training-empty">Esta sesion no tiene series registradas.</p>'}${session.notes ? `<div class="training-session-notes"><b>Notas del cliente</b><p>${esc(session.notes)}</p></div>` : ""}`;
+      body.querySelector(".training-back").onclick = renderList;
+    }
+    function renderList() {
+      const newest = [...ordered].reverse();
+      const monthAgo = new Date(); monthAgo.setDate(monthAgo.getDate() - 30);
+      const recentSessions = ordered.filter((session) => new Date(`${sessionDate(session)}T12:00:00`) >= monthAgo).length,
+        totalSets = ordered.reduce((sum, session) => sum + session.logs.length, 0),
+        totalVolume = ordered.reduce((sum, session) => sum + sessionVolume(session), 0);
+      body.innerHTML = `<div class="training-client-summary"><p class="eyebrow">RESUMEN DE ${esc(clientName)}</p><div><article><b>${ordered.length}</b><span>Entrenamientos</span></article><article><b>${recentSessions}</b><span>Ultimos 30 dias</span></article><article><b>${totalSets}</b><span>Series realizadas</span></article><article><b>${Math.round(totalVolume).toLocaleString("es-ES")}</b><span>Kg acumulados</span></article></div></div><div class="training-history-title"><b>Historial del cliente</b><span>Pulsa un entrenamiento para ver sus ejercicios</span></div><div class="training-session-list">${newest.map((session) => {
+        const exercises = exercisesFor(session), volume = sessionVolume(session), originalIndex = ordered.findIndex((item) => item.id === session.id);
+        return `<button type="button" class="training-session-card" data-session-index="${originalIndex}"><span class="training-session-number">${session.trainingNumber}</span><span class="training-session-copy"><small>ENTRENAMIENTO ${session.trainingNumber}</small><b>${esc(session.routines?.name || `Sesion ${session.day_number || session.trainingNumber}`)}</b><em>${dateLabel(sessionDate(session), { year: undefined })}${session.day_number ? ` · Dia ${session.day_number}` : ""}</em></span><span class="training-session-resume"><b>${exercises.length} ejercicios</b><em>${session.logs.length} series · ${Math.round(volume).toLocaleString("es-ES")} kg</em></span><span class="training-session-arrow">→</span></button>`;
+      }).join("")}</div>`;
+      body.querySelectorAll("[data-session-index]").forEach((button) => button.onclick = () => renderDetail(number(button.dataset.sessionIndex)));
+    }
+    renderList();
   };
 
   window.openClientRoutine = async function (clientId, clientName) {

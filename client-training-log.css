@@ -1,33 +1,35 @@
 .training-log-form {
-  width: min(760px, calc(100% - 28px)) !important;
+  width: min(960px, calc(100% - 28px)) !important;
+  max-height: 94vh;
+  overflow: auto;
 }
 .training-log-body {
   display: grid;
-  gap: 18px;
+  gap: 14px;
   margin-top: 18px;
 }
-.training-row {
-  border-top: 1px solid var(--line);
-  padding-top: 14px;
+.training-client-summary{padding:15px;background:#eef8f3;border-radius:14px}.training-client-summary>.eyebrow{margin:0 0 10px;color:#168452}.training-client-summary>div{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}.training-client-summary article{display:grid;gap:2px;background:#fff;border-radius:10px;padding:11px}.training-client-summary article b{font-size:18px;color:#16442f}.training-client-summary article span{font-size:9px;color:var(--muted);font-weight:700}
+.training-history-title{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:5px}.training-history-title b{font-size:14px}.training-history-title span{font-size:10px;color:var(--muted)}
+.training-session-list{display:grid;gap:9px}
+.training-session-card{width:100%;display:grid;grid-template-columns:48px minmax(180px,1fr) auto 28px;gap:14px;align-items:center;text-align:left;background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;cursor:pointer;transition:.18s ease}
+.training-session-card:hover{border-color:#2dac6c;transform:translateY(-1px);box-shadow:0 8px 20px #163e2c12}
+.training-session-number{width:42px;height:42px;border-radius:12px;background:#1faf69;color:#fff;display:grid;place-items:center;font-size:17px;font-weight:900}
+.training-session-copy,.training-session-resume{display:grid;gap:3px}.training-session-copy small{font-size:8px;color:#19945a;font-weight:900;letter-spacing:.08em}.training-session-copy b{font-size:14px;color:#17271f}.training-session-copy em,.training-session-resume em{font-size:10px;color:var(--muted);font-style:normal}.training-session-resume{text-align:right}.training-session-resume b{font-size:11px}.training-session-arrow{font-size:19px;color:#1faf69}
+.training-back{justify-self:start;border:0;background:#edf7f2;color:#176a43;border-radius:9px;padding:10px 13px;font-size:11px;font-weight:800;cursor:pointer}
+.training-detail-hero{display:flex;justify-content:space-between;gap:16px;padding:18px;border-radius:15px;background:linear-gradient(135deg,#0f3c29,#176442);color:#fff}.training-detail-hero .eyebrow{color:#62dc9d}.training-detail-hero h3{font-size:20px;margin:3px 0}.training-detail-hero span{font-size:11px;color:#cde6d8}
+.training-session-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}.training-session-stats article{display:grid;gap:2px;background:#f5f9f7;border:1px solid var(--line);border-radius:12px;padding:13px}.training-session-stats b{font-size:18px;color:#16442f}.training-session-stats span{font-size:9px;color:var(--muted);font-weight:700}
+.training-exercise-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:15px}.training-exercise-card header{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}.training-exercise-card header small{font-size:8px;color:#19945a;font-weight:900}.training-exercise-card h3{font-size:15px;margin:3px 0;color:#17271f}.training-exercise-card header>span{font-size:9px;font-weight:800;padding:6px 8px;border-radius:999px;background:#f3f6f4;white-space:nowrap}.training-exercise-card header .training-up{color:#16804d;background:#e7f8ef}.training-exercise-card header .training-down{color:#b34337;background:#ffebe8}.training-exercise-card header .training-new{color:#2464a1;background:#eaf3ff}.training-exercise-card header .training-flat{color:#66766e}
+.training-set-summaries{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.training-set-summary{display:grid;gap:2px;min-width:145px;background:#eef8f3;border-radius:10px;padding:10px 12px}.training-set-summary b{font-size:12px;color:#16442f}.training-set-summary em{font-size:10px;color:#63766c;font-style:normal}
+.training-exercise-card details{margin-top:10px}.training-exercise-card summary{font-size:10px;font-weight:800;color:#18764a;cursor:pointer}.training-set-table{display:grid;margin-top:9px;border-top:1px solid var(--line)}.training-set-table>div{display:grid;grid-template-columns:1fr 80px 80px 60px;gap:8px;align-items:center;padding:8px 3px;border-bottom:1px solid var(--line);font-size:10px}.training-set-table span{color:var(--muted)}.training-set-table em{font-style:normal;color:#66766e}
+.training-effort,.training-session-notes{margin:0;padding:12px 14px;background:#fff8e8;border-radius:10px;font-size:11px}.training-session-notes{background:#f5f7f6}.training-session-notes p{margin:5px 0 0;color:var(--muted)}
+.training-empty {
+  padding: 30px;
+  text-align: center;
+  color: var(--muted);
 }
-.training-row:first-child {
-  border-top: 0;
-  padding-top: 0;
-}
-.training-row h3 {
-  font: 700 15px "DM Sans";
-  margin: 0 0 10px;
-  color: #16442f;
-}
-.training-weeks {
-  display: flex;
-  gap: 10px;
-  overflow-x: auto;
-  padding-bottom: 4px;
-}
+@media(max-width:700px){.training-client-summary>div{grid-template-columns:1fr 1fr}.training-history-title{align-items:flex-start;flex-direction:column}.training-session-card{grid-template-columns:42px 1fr 20px}.training-session-resume{grid-column:2;text-align:left}.training-session-arrow{grid-column:3;grid-row:1/3}.training-session-stats{grid-template-columns:1fr 1fr}.training-exercise-card header{display:grid}.training-exercise-card header>span{justify-self:start}.training-set-table>div{grid-template-columns:1fr 65px 65px}.training-set-table em{display:none}}
+/* Legacy selectors kept harmless for cached markup. */
 .training-week {
-  flex: 0 0 auto;
-  min-width: 108px;
   background: #f6faf7;
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -57,10 +59,5 @@
   color: #c23c2e;
 }
 .training-week em.training-flat {
-  color: var(--muted);
-}
-.training-empty {
-  padding: 30px;
-  text-align: center;
   color: var(--muted);
 }
