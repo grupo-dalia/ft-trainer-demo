@@ -7,11 +7,11 @@
   document.querySelector('.request-close').onclick=closeRequest;
   modal.onclick=event=>{if(event.target===modal)closeRequest()};
   await load('vendor/supabase-js.min.js');await load('supabase-config.js?v=2');
-  const client=supabase.createClient(FT_SUPABASE.url,FT_SUPABASE.publishableKey);window.ftSupabase=client;
+  const client=supabase.createClient(FT_SUPABASE.url,FT_SUPABASE.publishableKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});window.ftSupabase=client;
   const googleButton=document.getElementById('google-login');
   try{const settings=await fetch(FT_SUPABASE.url+'/auth/v1/settings',{headers:{apikey:FT_SUPABASE.publishableKey}}).then(response=>response.json());if(!settings?.external?.google){googleButton.disabled=true;googleButton.textContent='Google · pendiente de activar'}}catch{googleButton.disabled=true}
   const routeUser=async user=>{const {data:profile}=await client.from('profiles').select('role').eq('id',user.id).maybeSingle();if(profile?.role==='trainer'||user.email?.toLowerCase()==='ftienda4@gmail.com'){location.href='admin.html?auth=3';return}let {data:member}=await client.from('clients').select('id').eq('user_id',user.id).maybeSingle();if(!member){const {data:linked}=await client.rpc('link_client_identity');if(linked)member=linked}location.href=member?.id?'cliente.html':'pendiente.html'};
-  const {data:{session}}=await client.auth.getSession();if(session&&location.hash)await routeUser(session.user);
+  const {data:{session}}=await client.auth.getSession();if(session)await routeUser(session.user);
   googleButton.onclick=async()=>{const {error}=await client.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.origin+'/'}});if(error)alert('No se pudo iniciar el acceso con Google.')};
   const form=document.getElementById('login-form'),button=form.querySelector('.login-submit'),error=document.createElement('p');error.className='login-error';error.hidden=true;button.before(error);
   form.onsubmit=async event=>{event.preventDefault();error.hidden=true;button.disabled=true;button.textContent='Comprobando acceso…';const email=form.querySelector('input[type="email"]').value.trim().toLowerCase(),password=form.querySelector('input[type="password"]').value;const {data,error:authError}=await client.auth.signInWithPassword({email,password});if(!authError){await routeUser(data.user);return}error.textContent='El correo o la contrasena no son correctos. Si aun no tienes cuenta, pulsa “Solicitar registro”.';error.hidden=false;button.disabled=false;button.textContent='Entrar en mi cuenta →'};

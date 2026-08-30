@@ -26,6 +26,13 @@ window.addEventListener("pageshow", (event) => {
   const client = supabase.createClient(
     FT_SUPABASE.url,
     FT_SUPABASE.publishableKey,
+    {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+      },
+    },
   );
   const {
     data: { session },

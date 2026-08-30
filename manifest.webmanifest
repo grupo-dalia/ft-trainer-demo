@@ -1,0 +1,23 @@
+{
+  "id": "/cliente.html",
+  "name": "FT Trainer · Fernando Tienda Training",
+  "short_name": "FT Trainer",
+  "description": "Rutinas, registros y progreso con Fernando Tienda Training.",
+  "lang": "es",
+  "start_url": "/cliente.html?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "orientation": "portrait-primary",
+  "background_color": "#f5f8f6",
+  "theme_color": "#0b3323",
+  "categories": ["fitness", "health", "sports"],
+  "icons": [
+    { "src": "/assets/pwa/ft-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/assets/pwa/ft-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/assets/pwa/ft-icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Mi rutina", "short_name": "Rutina", "url": "/cliente.html?source=pwa#routine-session", "icons": [{ "src": "/assets/pwa/ft-icon-192.png", "sizes": "192x192" }] }
+  ]
+}
