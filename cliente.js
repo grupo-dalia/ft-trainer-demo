@@ -18,6 +18,7 @@ window.addEventListener("pageshow", (event) => {
     await load("cliente-base.js?v=2");
     await load("client-home.js?v=6");
     await load("client-sections.js?v=12");
+    await load("client-materials.js?v=1");
     document.body.style.visibility = "visible";
     return;
   }
@@ -103,5 +104,6 @@ window.addEventListener("pageshow", (event) => {
   await load("cliente-base.js?v=2");
   await load("client-home.js?v=6");
   await load("client-sections.js?v=12");
+  await load("client-materials.js?v=1");
   document.body.style.visibility = "visible";
 })().catch(() => location.replace("index.html"));
