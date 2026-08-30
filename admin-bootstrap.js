@@ -48,7 +48,7 @@ if (!session) {
     await load("client-import.js?v=3");
     await load("payments-manager.js?v=1");
     await load("client-training-log.js?v=3");
-    await load("trainer-materials-admin.js?v=1");
+    await load("trainer-materials-admin.js?v=2");
     document.body.style.visibility = "visible";
   }
 }
