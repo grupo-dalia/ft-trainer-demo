@@ -61,6 +61,7 @@
     sessionStartedAt = Date.now(),
     selectedItem = null;
   let workoutTimerId = null;
+  let restTimerId = null;
 
   function formatWorkoutTime(milliseconds) {
     const total = Math.max(0, Math.floor(milliseconds / 1000));
@@ -77,6 +78,33 @@
     updateWorkoutClock();
     clearInterval(workoutTimerId);
     workoutTimerId = setInterval(updateWorkoutClock, 1000);
+  }
+
+  function startRestTimer(seconds) {
+    clearInterval(restTimerId);
+    let remaining = Math.max(0, Number(seconds) || 90);
+    const toolbar = document.querySelector(".live-workout-toolbar");
+    let box = toolbar?.querySelector(".live-rest-chip");
+    if (toolbar && !box) {
+      box = document.createElement("button");
+      box.type = "button";
+      box.className = "live-rest-chip";
+      box.innerHTML = `<small>DESCANSO</small><b id="live-rest-time">1:30</b>`;
+      box.onclick = () => { clearInterval(restTimerId); box.remove(); };
+      toolbar.querySelector("button").before(box);
+    }
+    const output = document.getElementById("live-rest-time");
+    if (!output || !box) return;
+    const paint = () => {
+      output.textContent = `${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, "0")}`;
+      if (remaining-- <= 0) {
+        clearInterval(restTimerId);
+        box.classList.add("finished");
+        if (navigator.vibrate) navigator.vibrate([150, 80, 150]);
+      }
+    };
+    paint();
+    restTimerId = setInterval(paint, 1000);
   }
 
   function ensureWorkoutToolbar() {
@@ -399,14 +427,33 @@
       last.innerHTML = `<div><span>SEMANA PASADA</span><b>${previousSets[0] ? `${previousSets[0].weight_kg ?? 0} kg × ${previousSets[0].reps ?? 0}` : "Sin registros"}</b></div><div><span>MEJOR CARGA</span><b>${top ? `${top.weight_kg || 0} kg` : "—"}</b></div>`;
     }
     const sets = sheet.querySelector(".sets");
+    sets.classList.add("hevy-set-table");
     sets.innerHTML =
-      "<div><b>SERIE</b><b>REPS</b><b>PESO</b></div>" +
+      `<div class="hevy-set-head"><b>SET</b><b>ANTERIOR</b><b>KG</b><b>REPS</b><b>RIR</b><b>✓</b></div>` +
       Array.from({ length: item.target_sets || 3 }, (_, index) => {
         const previous = previousSets[index],
           reps = previous?.reps ?? item.target_reps_min ?? "",
           weight = previous?.weight_kg ?? item.target_weight_kg ?? "";
-        return `<label><span>${index + 1}</span><input class="live-reps" value="${reps}" inputmode="numeric" aria-label="Repeticiones serie ${index + 1}"><span><input class="live-weight" value="${weight}" inputmode="decimal" aria-label="Peso serie ${index + 1}"> kg</span></label>`;
-      }).join("");
+        const previousLabel = previous ? `${previous.weight_kg ?? 0} × ${previous.reps ?? 0}` : "—";
+        return `<label class="hevy-set-row"><span class="set-number">${index + 1}</span><small>${previousLabel}</small><input class="live-weight" value="${weight}" inputmode="decimal" aria-label="Peso serie ${index + 1}"><input class="live-reps" value="${reps}" inputmode="numeric" aria-label="Repeticiones serie ${index + 1}"><input class="live-rir" value="${item.target_rir ?? ""}" inputmode="numeric" aria-label="RIR serie ${index + 1}"><input class="live-complete" type="checkbox" checked aria-label="Completar serie ${index + 1}"></label>`;
+      }).join("") + `<button type="button" class="add-live-set">+ Anadir serie</button><div class="exercise-rest-timer" hidden><span>${icon("clock")}</span><div><small>DESCANSO</small><b id="exercise-rest-time">1:30</b></div><button type="button">Omitir</button></div>`;
+    sets.querySelector(".add-live-set").onclick = () => {
+      const rows = sets.querySelectorAll(".hevy-set-row"),
+        lastRow = rows[rows.length - 1],
+        clone = lastRow.cloneNode(true),
+        number = rows.length + 1;
+      clone.querySelector(".set-number").textContent = number;
+      clone.querySelector("small").textContent = "—";
+      clone.querySelectorAll("input").forEach((input) => {
+        input.setAttribute("aria-label", input.getAttribute("aria-label").replace(/\d+$/, number));
+        if (input.type === "checkbox") input.checked = true;
+      });
+      lastRow.after(clone);
+    };
+    sets.querySelector(".exercise-rest-timer button").onclick = () => {
+      clearInterval(restTimerId);
+      sets.querySelector(".exercise-rest-timer").hidden = true;
+    };
     sheet.classList.add("open");
   }
   async function ensureSession() {
@@ -454,6 +501,8 @@
       const currentSession = await ensureSession(),
         reps = [...document.querySelectorAll(".live-reps")],
         weights = [...document.querySelectorAll(".live-weight")],
+        rirs = [...document.querySelectorAll(".live-rir")],
+        checked = [...document.querySelectorAll(".live-complete")],
         logs = reps.map((input, index) => ({
           session_id: currentSession,
           routine_exercise_id: selectedItem.item.id,
@@ -464,8 +513,10 @@
             weights[index].value === ""
               ? null
               : Number(String(weights[index].value).replace(",", ".")),
-          completed: true,
-        }));
+          rir: rirs[index].value === "" ? null : Number(rirs[index].value),
+          completed: checked[index].checked,
+        })).filter((_, index) => checked[index].checked);
+      if (!logs.length) throw new Error("No hay series completadas");
       const { error } = await db
         .from("set_logs")
         .upsert(logs, { onConflict: "session_id,exercise_id,set_number" });
@@ -490,6 +541,7 @@
         toast("¡Entrenamiento completado! Ya puedes compartirlo");
       }
       document.getElementById("set-sheet").classList.remove("open");
+      startRestTimer(selectedItem.item.rest_seconds || 90);
       toast("Series guardadas correctamente");
     } catch (error) {
       toast("No se pudo guardar. Comprueba la conexion.");
