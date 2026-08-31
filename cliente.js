@@ -16,8 +16,8 @@ window.addEventListener("pageshow", (event) => {
     new URLSearchParams(location.search).has("preview")
   ) {
     await load("cliente-base.js?v=2");
-    await load("client-home.js?v=6");
-    await load("client-sections.js?v=12");
+    await load("client-home.js?v=7");
+    await load("client-sections.js?v=13");
     await load("client-materials.js?v=1");
     await load("client-hall-of-fame.js?v=1");
     await load("client-navigation-fix.js?v=1");
@@ -104,8 +104,8 @@ window.addEventListener("pageshow", (event) => {
   window.ftMembershipActive =
     member.access_status === "active" && membershipIsCurrent;
   await load("cliente-base.js?v=2");
-  await load("client-home.js?v=6");
-  await load("client-sections.js?v=12");
+  await load("client-home.js?v=7");
+  await load("client-sections.js?v=13");
   await load("client-materials.js?v=1");
   await load("client-hall-of-fame.js?v=1");
   await load("client-navigation-fix.js?v=1");

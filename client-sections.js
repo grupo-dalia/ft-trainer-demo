@@ -28,8 +28,11 @@
       node.className = "client-section-panel";
       node.innerHTML = `<header><button type="button" class="client-panel-back" aria-label="Volver">←</button><span>${icon(iconName)}</span><div><small>FT TRAINER</small><h1>${title}</h1></div></header><div class="client-panel-content"></div>`;
       document.body.appendChild(node);
-      node.querySelector(".client-panel-back").onclick = () =>
+      node.querySelector(".client-panel-back").onclick = () => {
         node.classList.remove("open");
+        document.body.classList.remove("client-panel-open");
+        setActive("home");
+      };
     }
     return node;
   };
@@ -44,6 +47,7 @@
       .querySelectorAll(".client-section-panel.open")
       .forEach((item) => item.classList.remove("open"));
     node.classList.add("open");
+    document.body.classList.add("client-panel-open");
     setActive(name);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -56,6 +60,72 @@
     sessionId = null,
     sessionStartedAt = Date.now(),
     selectedItem = null;
+  let workoutTimerId = null;
+
+  function formatWorkoutTime(milliseconds) {
+    const total = Math.max(0, Math.floor(milliseconds / 1000));
+    return `${String(Math.floor(total / 3600)).padStart(2, "0")}:${String(Math.floor((total % 3600) / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+  }
+
+  function updateWorkoutClock() {
+    const output = document.getElementById("live-workout-time");
+    if (output) output.textContent = formatWorkoutTime(Date.now() - sessionStartedAt);
+  }
+
+  function startWorkoutClock() {
+    document.body.classList.add("workout-in-progress");
+    updateWorkoutClock();
+    clearInterval(workoutTimerId);
+    workoutTimerId = setInterval(updateWorkoutClock, 1000);
+  }
+
+  function ensureWorkoutToolbar() {
+    const content = document.querySelector(".workout-content");
+    if (!content || content.querySelector(".live-workout-toolbar")) return;
+    const toolbar = document.createElement("div");
+    toolbar.className = "live-workout-toolbar";
+    toolbar.innerHTML = `<div><span>${icon("clock")}</span><small>TIEMPO DE SESION</small><b id="live-workout-time">00:00:00</b></div><button type="button" id="finish-live-workout">Finalizar</button>`;
+    content.prepend(toolbar);
+    toolbar.querySelector("#finish-live-workout").onclick = finishWorkout;
+  }
+
+  async function finishWorkout() {
+    if (!sessionId) {
+      toast("Completa al menos una serie antes de finalizar");
+      return;
+    }
+    if (!confirm("¿Finalizar y guardar este entrenamiento?")) return;
+    const duration = Math.max(1, Math.round((Date.now() - sessionStartedAt) / 60000));
+    const result = await db.from("workout_sessions").update({
+      completed_at: new Date().toISOString(),
+      duration_minutes: duration,
+    }).eq("id", sessionId);
+    if (result.error) {
+      toast("No se pudo finalizar. Comprueba la conexion.");
+      return;
+    }
+    clearInterval(workoutTimerId);
+    document.body.classList.remove("workout-in-progress");
+    toast("Entrenamiento guardado · gran trabajo");
+  }
+
+  function showRoutines() {
+    const node = panel("client-routine-panel", "Entrenar", "dumbbell"),
+      host = node.querySelector(".client-panel-content"),
+      session = document.getElementById("routine-session");
+    if (!host.querySelector(".routine-hub-intro")) {
+      host.innerHTML = `<section class="routine-hub-intro"><div><small>PLAN DE FERNANDO</small><h2>Tu semana de entrenamiento</h2><p>Elige una sesion, revisa los ejercicios y registra cada serie mientras entrenas.</p></div><button type="button" id="begin-live-workout"><span>${icon("play")}</span><b>Iniciar entrenamiento</b><small>Se guardara automaticamente</small></button></section><div class="routine-session-host"></div>`;
+      host.querySelector("#begin-live-workout").onclick = () => {
+        sessionStartedAt = Date.now();
+        startWorkoutClock();
+        ensureWorkoutToolbar();
+        host.querySelector(".routine-session-host").scrollIntoView({ behavior: "smooth", block: "start" });
+      };
+    }
+    host.querySelector(".routine-session-host").appendChild(session);
+    ensureWorkoutToolbar();
+    openPanel(node, "routine");
+  }
   function renderRoutineLocked() {
     const cover = document.querySelector(".workout-cover"),
       totalText = document.querySelector(".workout-top b");
@@ -273,6 +343,7 @@
     sessionStartedAt = session.started_at
       ? new Date(session.started_at).getTime()
       : Date.now();
+    if (!session.completed_at) startWorkoutClock();
     const { data: logs } = await db
       .from("set_logs")
       .select("exercise_id")
@@ -289,6 +360,7 @@
     );
   }
   async function openExercise(item, row) {
+    if (!document.body.classList.contains("workout-in-progress")) startWorkoutClock();
     selectedItem = { item, row };
     const ex = item.exercises || {},
       sheet = document.getElementById("set-sheet");
@@ -999,17 +1071,12 @@
           document
             .querySelectorAll(".client-section-panel.open")
             .forEach((item) => item.classList.remove("open"));
+          document.body.classList.remove("client-panel-open");
           setActive("home");
           window.scrollTo({ top: 0, behavior: "smooth" });
         }
         if (action === "routine") {
-          document
-            .querySelectorAll(".client-section-panel.open")
-            .forEach((item) => item.classList.remove("open"));
-          setActive("routine");
-          document
-            .getElementById("routine-session")
-            .scrollIntoView({ behavior: "smooth" });
+          showRoutines();
         }
         if (action === "progress") showProgress();
         if (action === "profile") showProfile();
@@ -1026,7 +1093,7 @@
     showProgress();
   };
   await loadRoutine();
-  window.ftClientSections = { showProgress, showProfile, loadRoutine };
+  window.ftClientSections = { showProgress, showProfile, showRoutines, loadRoutine };
   let lastRoutineRefresh = Date.now();
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState !== "visible") return;

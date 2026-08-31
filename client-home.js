@@ -76,9 +76,7 @@
           : "Cada sesion cuenta. Sigue avanzando.";
   }
 
-  const session = document.getElementById("routine-session"),
-    scrollRoutine = () =>
-      session.scrollIntoView({ behavior: "smooth", block: "start" }),
+  const scrollRoutine = () => window.ftClientSections?.showRoutines(),
     openProgress = () => document.querySelector(".card-title a")?.click(),
     openCoach = () =>
       document.querySelector(".coach-program-invite button")?.click();
