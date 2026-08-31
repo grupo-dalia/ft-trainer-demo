@@ -1,5 +1,5 @@
 (function () {
-  if ("serviceWorker" in navigator && location.protocol === "https:") window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => {}));
+  if ("serviceWorker" in navigator && location.protocol === "https:") window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js", { scope: "/", updateViaCache: "none" }).then(registration => registration.update()).catch(() => {}));
   const standalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
   if (standalone) document.documentElement.classList.add("is-pwa");
   let installPrompt = null;
