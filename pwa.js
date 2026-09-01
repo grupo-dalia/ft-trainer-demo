@@ -1,5 +1,18 @@
 (function () {
-  if ("serviceWorker" in navigator && location.protocol === "https:") window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js", { scope: "/", updateViaCache: "none" }).then(registration => registration.update()).catch(() => {}));
+  const release = "ft-client-2026-09-01-3";
+  if ("caches" in window && localStorage.getItem("ft-client-release") !== release) {
+    localStorage.setItem("ft-client-release", release);
+    caches.keys().then(keys => Promise.all(keys.filter(key => key.startsWith("ft-trainer-pwa-")).map(key => caches.delete(key))));
+  }
+  if ("serviceWorker" in navigator && location.protocol === "https:") {
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (refreshing) return;
+      refreshing = true;
+      location.reload();
+    });
+    window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js", { scope: "/", updateViaCache: "none" }).then(registration => registration.update()).catch(() => {}));
+  }
   const standalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
   if (standalone) document.documentElement.classList.add("is-pwa");
   let installPrompt = null;
