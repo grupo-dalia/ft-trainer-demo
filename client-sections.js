@@ -1079,6 +1079,13 @@
     host.innerHTML = rows.length
       ? rows
           .map((row) => {
+            const best = row.weeks.reduce((winner, current) => {
+              const entry = current[1], score = Number(entry.weight_kg) * (1 + Number(entry.reps || 0) / 30);
+              return !winner || score > winner.score ? { score, entry } : winner;
+            }, null);
+            const chartWeeks = [...row.weeks].reverse(), chartValues = chartWeeks.map(([,entry]) => Number(entry.weight_kg) * (1 + Number(entry.reps || 0) / 30));
+            const chartMin = Math.min(...chartValues), chartMax = Math.max(...chartValues), chartRange = chartMax-chartMin || 1;
+            const chartPoints = chartValues.map((value,index) => `${12 + index*(176/Math.max(1,chartValues.length-1))},${72-((value-chartMin)/chartRange)*54}`).join(" ");
             const cells = row.weeks
               .map(([week, entry], index) => {
                 const prev = row.weeks[index + 1]?.[1],
@@ -1096,7 +1103,7 @@
                 return `<div class="strength-week"><time>${weekLabel(week)}</time><b>${entry.weight_kg} kg × ${entry.reps ?? "—"}</b>${deltaLabel}</div>`;
               })
               .join("");
-            return `<article class="strength-row"><h3>${esc(row.name)}</h3><div class="strength-weeks">${cells}</div></article>`;
+            return `<article class="strength-row"><div class="strength-heading"><h3>${esc(row.name)}</h3><b>RECORD · ${best.score.toFixed(1)} kg e1RM</b></div><svg class="strength-chart" viewBox="0 0 200 84" preserveAspectRatio="none" aria-label="Grafica de fuerza"><path d="M12 72H188"/><polyline points="${chartPoints}"/></svg><div class="strength-weeks">${cells}</div></article>`;
           })
           .join("")
       : '<p class="client-empty-state">Todavia no hay cargas registradas.</p>';
@@ -1119,7 +1126,7 @@
         '<div class="client-empty-state">Inicia sesion para consultar tu progreso.</div>';
       return;
     }
-    const [{ data: measurements }, { data: sessions }] = await Promise.all([
+    const [{ data: measurements }, { data: sessions }, { data: photos }] = await Promise.all([
       db
         .from("measurements")
         .select("*")
@@ -1132,6 +1139,7 @@
         .eq("client_id", clientId)
         .order("planned_for", { ascending: false })
         .limit(30),
+      db.from("progress_photos").select("id,recorded_on,storage_path,caption").eq("client_id", clientId).order("recorded_on", { ascending: false }).limit(24),
     ]);
     const latest = measurements?.[0],
       completed = (sessions || []).filter((s) => s.completed_at).length;
@@ -1139,7 +1147,19 @@
     const metricGrid = host.querySelector(".client-metric-grid");
     if (metricGrid) metricGrid.insertAdjacentHTML("beforeend", `<article><small>ALTURA</small><b>${latest?.height_cm ?? "—"}<em>cm</em></b></article>`);
     metricGrid?.insertAdjacentHTML("afterend", `<section class="client-panel-card progress-chart-card"><div class="panel-title"><div><small>EVOLUCION</small><h2>Peso corporal</h2></div></div>${measurementChart(measurements,"weight_kg","kg")}</section>`);
+    const photoUrls = await Promise.all((photos || []).map(async (photo) => ({ photo, signed: (await db.storage.from("progress-photos").createSignedUrl(photo.storage_path, 3600)).data?.signedUrl || "" })));
+    metricGrid?.insertAdjacentHTML("afterend", `<section class="client-panel-card progress-photos-card"><div class="panel-title"><div><small>FOTOS DE PROGRESO</small><h2>Tu evolucion visual</h2></div></div><form id="progress-photo-form" class="progress-photo-form"><label>Foto privada<input name="photo" type="file" accept="image/jpeg,image/png,image/webp" required></label><input name="caption" maxlength="80" placeholder="Nota opcional"><button class="client-primary" type="submit">Guardar foto</button><p class="form-feedback"></p></form><div class="progress-photo-grid">${photoUrls.map(({photo,signed}) => `<figure><img src="${esc(signed)}" alt="Foto de progreso"><figcaption><b>${new Date(photo.recorded_on+"T12:00:00").toLocaleDateString("es-ES")}</b><span>${esc(photo.caption || "Progreso")}</span></figcaption></figure>`).join("") || '<p class="client-empty-state">Todavia no has subido fotografias.</p>'}</div></section>`);
     renderStrengthHistory(host.querySelector("#strength-history"));
+    host.querySelector("#progress-photo-form").onsubmit = async (event) => {
+      event.preventDefault(); const form=event.currentTarget,file=form.photo.files?.[0],feedback=form.querySelector(".form-feedback");
+      if(!file || file.size>5242880){ feedback.textContent="Selecciona una foto de menos de 5 MB."; return; }
+      const {data:auth}=await db.auth.getUser(), ext=(file.name.split(".").pop()||"jpg").toLowerCase(), path=`${auth.user.id}/${clientId}/${Date.now()}.${ext}`;
+      feedback.textContent="Subiendo foto…"; const upload=await db.storage.from("progress-photos").upload(path,file,{contentType:file.type});
+      if(upload.error){ feedback.textContent="No se pudo subir la foto."; return; }
+      const saved=await db.from("progress_photos").insert({client_id:clientId,storage_path:path,caption:String(new FormData(form).get("caption")||"").trim()||null});
+      if(saved.error){ await db.storage.from("progress-photos").remove([path]); feedback.textContent="No se pudo guardar la foto."; return; }
+      toast("Foto de progreso guardada"); showProgress();
+    };
     host.querySelector("#measurement-form").onsubmit = async (event) => {
       event.preventDefault();
       const form = event.currentTarget,
