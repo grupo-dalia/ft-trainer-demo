@@ -53,6 +53,7 @@
   };
 
   let routine = null,
+    availableRoutines = [],
     allRoutineItems = [],
     routineItems = [],
     selectedRoutineDay = 1,
@@ -62,6 +63,7 @@
     selectedItem = null;
   let workoutTimerId = null;
   let restTimerId = null;
+  let workoutPausedAt = null;
 
   function formatWorkoutTime(milliseconds) {
     const total = Math.max(0, Math.floor(milliseconds / 1000));
@@ -112,8 +114,21 @@
     if (!content || content.querySelector(".live-workout-toolbar")) return;
     const toolbar = document.createElement("div");
     toolbar.className = "live-workout-toolbar";
-    toolbar.innerHTML = `<div><span>${icon("clock")}</span><small>TIEMPO DE SESION</small><b id="live-workout-time">00:00:00</b></div><button type="button" id="finish-live-workout">Finalizar</button>`;
+    toolbar.innerHTML = `<div><span>${icon("clock")}</span><small>TIEMPO DE SESION</small><b id="live-workout-time">00:00:00</b></div><button type="button" id="pause-live-workout">Pausar</button><button type="button" id="finish-live-workout">Finalizar</button>`;
     content.prepend(toolbar);
+    toolbar.querySelector("#pause-live-workout").onclick = (event) => {
+      if (workoutPausedAt) {
+        sessionStartedAt += Date.now() - workoutPausedAt;
+        workoutPausedAt = null;
+        event.currentTarget.textContent = "Pausar";
+        startWorkoutClock();
+      } else {
+        workoutPausedAt = Date.now();
+        clearInterval(workoutTimerId);
+        event.currentTarget.textContent = "Continuar";
+        toast("Entrenamiento pausado");
+      }
+    };
     toolbar.querySelector("#finish-live-workout").onclick = finishWorkout;
   }
 
@@ -142,17 +157,57 @@
       host = node.querySelector(".client-panel-content"),
       session = document.getElementById("routine-session");
     if (!host.querySelector(".routine-hub-intro")) {
-      host.innerHTML = `<section class="routine-hub-intro"><div><small>PLAN DE FERNANDO</small><h2>Tu semana de entrenamiento</h2><p>Elige una sesion, revisa los ejercicios y registra cada serie mientras entrenas.</p></div><button type="button" id="begin-live-workout"><span>${icon("play")}</span><b>Iniciar entrenamiento</b><small>Se guardara automaticamente</small></button></section><div class="routine-session-host"></div>`;
+      host.innerHTML = `<section class="routine-hub-intro"><div><small>PLAN DE FERNANDO</small><h2>Tu semana de entrenamiento</h2><p>Elige una rutina y registra cada serie mientras entrenas.</p></div><button type="button" id="begin-live-workout"><span>${icon("play")}</span><b>Iniciar entrenamiento</b><small>Se guardara automaticamente</small></button></section><div class="client-workout-actions"><button type="button" data-workout-view="routines">${icon("dumbbell")}<span><b>Mis rutinas</b><small>Planes asignados</small></span></button><button type="button" data-workout-view="history">${icon("calendar")}<span><b>Historial</b><small>Calendario y sesiones</small></span></button><button type="button" data-workout-view="library">${icon("play")}<span><b>Ejercicios</b><small>Biblioteca y tecnica</small></span></button></div><section class="routine-picker"><div class="routine-picker-title"><div><small>MIS RUTINAS</small><h3>Elige tu entrenamiento</h3></div><button type="button" id="start-empty-workout">+ Entrenamiento libre</button></div><div id="client-routine-cards"></div></section><div class="workout-secondary-view" id="workout-secondary-view"></div><div class="routine-session-host"></div>`;
       host.querySelector("#begin-live-workout").onclick = () => {
         sessionStartedAt = Date.now();
         startWorkoutClock();
         ensureWorkoutToolbar();
         host.querySelector(".routine-session-host").scrollIntoView({ behavior: "smooth", block: "start" });
       };
+      host.querySelectorAll("[data-workout-view]").forEach((button) => button.onclick = () => {
+        const view = button.dataset.workoutView;
+        host.querySelectorAll("[data-workout-view]").forEach((item) => item.classList.toggle("active", item === button));
+        host.querySelector(".routine-picker").hidden = view !== "routines";
+        host.querySelector(".routine-session-host").hidden = view !== "routines";
+        host.querySelector("#workout-secondary-view").hidden = view === "routines";
+        if (view === "history") renderWorkoutHistory(host.querySelector("#workout-secondary-view"));
+        if (view === "library") renderClientLibrary(host.querySelector("#workout-secondary-view"));
+      });
+      host.querySelector("#start-empty-workout").onclick = startEmptyWorkout;
     }
     host.querySelector(".routine-session-host").appendChild(session);
     ensureWorkoutToolbar();
+    renderRoutinePicker();
     openPanel(node, "routine");
+  }
+
+  function startEmptyWorkout() {
+    routine = { id: null, name: "Entrenamiento libre", description: "Sesion creada por ti", status: "active" };
+    allRoutineItems = [];
+    routineItems = [];
+    selectedRoutineDay = 1;
+    sessionId = null;
+    completedExerciseIds.clear();
+    renderRoutine();
+    renderRoutinePicker();
+    document.querySelector('[data-workout-view="library"]')?.click();
+    toast("Busca ejercicios y anadelos a tu entrenamiento libre");
+  }
+
+  function renderRoutinePicker() {
+    const host = document.getElementById("client-routine-cards");
+    if (!host) return;
+    host.innerHTML = availableRoutines.length ? availableRoutines.map((item) => `<button type="button" class="client-routine-choice ${item.id === routine?.id ? "active" : ""}" data-select-routine="${item.id}"><span>${icon("dumbbell")}</span><div><b>${esc(item.name)}</b><small>${esc(item.description || item.objective || "Plan de Fernando")}</small></div><strong>${item.id === routine?.id ? "Seleccionada" : "Abrir"}</strong></button>`).join("") : '<div class="client-empty-state">Fernando todavia no te ha asignado rutinas.</div>';
+    host.querySelectorAll("[data-select-routine]").forEach((button) => button.onclick = () => selectRoutine(button.dataset.selectRoutine));
+  }
+
+  async function selectRoutine(id) {
+    if (routine?.id === id) return;
+    routine = availableRoutines.find((item) => item.id === id);
+    sessionId = null;
+    completedExerciseIds.clear();
+    await loadRoutineItems();
+    renderRoutinePicker();
   }
   function renderRoutineLocked() {
     const cover = document.querySelector(".workout-cover"),
@@ -188,20 +243,25 @@
     }
     const { data: routines } = await db
       .from("routines")
-      .select("id,name,description,status,week_start")
+      .select("id,name,description,objective,status,week_start,created_at")
       .eq("client_id", clientId)
       .in("status", ["active", "draft"])
-      .order("created_at", { ascending: false })
-      .limit(1);
-    routine = routines?.[0] || null;
+      .order("created_at", { ascending: false });
+    availableRoutines = routines || [];
+    routine = availableRoutines[0] || null;
     if (!routine) {
       renderRoutineEmpty();
       return;
     }
+    await loadRoutineItems();
+  }
+
+  async function loadRoutineItems() {
+    if (!routine) return;
     const { data: items } = await db
       .from("routine_exercises")
       .select(
-        "id,exercise_id,day_number,position,target_sets,target_reps_min,target_reps_max,target_weight_kg,target_rir,rest_seconds,notes,exercises(name,body_group,primary_muscle,instructions,media_url,thumbnail_url,media_type)",
+        "id,exercise_id,day_number,position,target_sets,target_reps_min,target_reps_max,target_weight_kg,target_rir,rest_seconds,notes,superset_group,exercises(name,body_group,primary_muscle,instructions,media_url,thumbnail_url,media_type)",
       )
       .eq("routine_id", routine.id)
       .order("day_number")
@@ -292,7 +352,7 @@
                 ? item.target_reps_min
                 : `${item.target_reps_min || "—"}–${item.target_reps_max || "—"}`,
             image = ex.thumbnail_url || "assets/brand/ft-symbol-color.png";
-          return `<button type="button" class="exercise-row live-exercise" data-live-index="${index}"><span class="exercise-thumb"><img src="${esc(image)}" alt="${esc(ex.name)}" loading="lazy"><i>${icon("play")}</i></span><span><b>${esc(ex.name || "Ejercicio")}</b><small>${item.target_sets} series · ${reps} repeticiones${item.target_weight_kg != null ? ` · ${item.target_weight_kg} kg` : ""}</small><em>Ver tecnica y registrar</em></span><strong>›</strong></button>`;
+          return `<button type="button" class="exercise-row live-exercise ${item.superset_group ? "superset-exercise" : ""}" data-live-index="${index}" ${item.superset_group ? `data-superset="${item.superset_group}"` : ""}><span class="exercise-thumb"><img src="${esc(image)}" alt="${esc(ex.name)}" loading="lazy"><i>${icon("play")}</i></span><span>${item.superset_group ? `<mark>SUPERSET ${item.superset_group}</mark>` : ""}<b>${esc(ex.name || "Ejercicio")}</b><small>${item.target_sets} series · ${reps} repeticiones${item.target_weight_kg != null ? ` · ${item.target_weight_kg} kg` : ""}</small><em>Ver tecnica y registrar</em></span><strong>›</strong></button>`;
         })
         .join("") ||
         '<div class="client-empty-state">Esta sesion aun no contiene ejercicios.</div>');
@@ -435,14 +495,14 @@
           reps = previous?.reps ?? item.target_reps_min ?? "",
           weight = previous?.weight_kg ?? item.target_weight_kg ?? "";
         const previousLabel = previous ? `${previous.weight_kg ?? 0} × ${previous.reps ?? 0}` : "—";
-        return `<label class="hevy-set-row"><span class="set-number">${index + 1}</span><small>${previousLabel}</small><input class="live-weight" value="${weight}" inputmode="decimal" aria-label="Peso serie ${index + 1}"><input class="live-reps" value="${reps}" inputmode="numeric" aria-label="Repeticiones serie ${index + 1}"><input class="live-rir" value="${item.target_rir ?? ""}" inputmode="numeric" aria-label="RIR serie ${index + 1}"><input class="live-complete" type="checkbox" checked aria-label="Completar serie ${index + 1}"></label>`;
+        return `<label class="hevy-set-row"><select class="live-set-type" aria-label="Tipo de serie ${index + 1}"><option value="normal">${index + 1}</option><option value="warmup">W</option><option value="drop">D</option><option value="failure">F</option></select><small>${previousLabel}</small><input class="live-weight" value="${weight}" inputmode="decimal" aria-label="Peso serie ${index + 1}"><input class="live-reps" value="${reps}" inputmode="numeric" aria-label="Repeticiones serie ${index + 1}"><input class="live-rir" value="${item.target_rir ?? ""}" inputmode="numeric" aria-label="RIR serie ${index + 1}"><input class="live-complete" type="checkbox" checked aria-label="Completar serie ${index + 1}"></label>`;
       }).join("") + `<button type="button" class="add-live-set">+ Anadir serie</button><div class="exercise-rest-timer" hidden><span>${icon("clock")}</span><div><small>DESCANSO</small><b id="exercise-rest-time">1:30</b></div><button type="button">Omitir</button></div>`;
     sets.querySelector(".add-live-set").onclick = () => {
       const rows = sets.querySelectorAll(".hevy-set-row"),
         lastRow = rows[rows.length - 1],
         clone = lastRow.cloneNode(true),
         number = rows.length + 1;
-      clone.querySelector(".set-number").textContent = number;
+      clone.querySelector('.live-set-type option[value="normal"]').textContent = number;
       clone.querySelector("small").textContent = "—";
       clone.querySelectorAll("input").forEach((input) => {
         input.setAttribute("aria-label", input.getAttribute("aria-label").replace(/\d+$/, number));
@@ -459,13 +519,9 @@
   async function ensureSession() {
     if (sessionId) return sessionId;
     const today = new Date().toISOString().slice(0, 10),
-      existing = await db
-        .from("workout_sessions")
-        .select("id,started_at")
-        .eq("client_id", clientId)
-        .eq("routine_id", routine.id)
-        .eq("planned_for", today)
-        .maybeSingle();
+      existingQuery = db.from("workout_sessions").select("id,started_at")
+        .eq("client_id", clientId).eq("planned_for", today),
+      existing = routine?.id ? await existingQuery.eq("routine_id", routine.id).maybeSingle() : { data: null };
     if (existing.data?.id) {
       sessionId = existing.data.id;
       sessionStartedAt = existing.data.started_at
@@ -478,7 +534,7 @@
       .from("workout_sessions")
       .insert({
         client_id: clientId,
-        routine_id: routine.id,
+        routine_id: routine?.id || null,
         day_number: selectedItem.item.day_number,
         planned_for: today,
         started_at: startedAt,
@@ -502,10 +558,11 @@
         reps = [...document.querySelectorAll(".live-reps")],
         weights = [...document.querySelectorAll(".live-weight")],
         rirs = [...document.querySelectorAll(".live-rir")],
+        types = [...document.querySelectorAll(".live-set-type")],
         checked = [...document.querySelectorAll(".live-complete")],
         logs = reps.map((input, index) => ({
           session_id: currentSession,
-          routine_exercise_id: selectedItem.item.id,
+          routine_exercise_id: selectedItem.item.id || null,
           exercise_id: selectedItem.item.exercise_id,
           set_number: index + 1,
           reps: Number(input.value) || null,
@@ -514,6 +571,7 @@
               ? null
               : Number(String(weights[index].value).replace(",", ".")),
           rir: rirs[index].value === "" ? null : Number(rirs[index].value),
+          set_type: types[index].value,
           completed: checked[index].checked,
         })).filter((_, index) => checked[index].checked);
       if (!logs.length) throw new Error("No hay series completadas");
@@ -860,6 +918,96 @@
 
   window.ftWorkoutShare = { open: openWorkoutShare };
 
+  async function renderWorkoutHistory(host) {
+    host.innerHTML = '<div class="panel-loading">Cargando historial…</div>';
+    const { data: sessions, error } = await db.from("workout_sessions")
+      .select("id,routine_id,day_number,planned_for,started_at,completed_at,duration_minutes,notes,routines(name)")
+      .eq("client_id", clientId).order("planned_for", { ascending: false }).limit(100);
+    if (error) { host.innerHTML = '<div class="client-empty-state">No se pudo cargar el historial.</div>'; return; }
+    const ids = (sessions || []).map((item) => item.id);
+    let logs = [];
+    if (ids.length) {
+      const result = await db.from("set_logs").select("session_id,weight_kg,reps,completed").in("session_id", ids);
+      logs = result.data || [];
+    }
+    const stats = new Map();
+    logs.forEach((set) => {
+      const value = stats.get(set.session_id) || { sets: 0, volume: 0 };
+      if (set.completed) { value.sets += 1; value.volume += Number(set.weight_kg || 0) * Number(set.reps || 0); }
+      stats.set(set.session_id, value);
+    });
+    const doneDates = new Set((sessions || []).filter((item) => item.completed_at).map((item) => item.planned_for));
+    const now = new Date(), year = now.getFullYear(), month = now.getMonth(), first = new Date(year, month, 1), days = new Date(year, month + 1, 0).getDate(), offset = (first.getDay() + 6) % 7;
+    const calendar = `${Array.from({length: offset}, () => '<i></i>').join("")}${Array.from({length: days}, (_, index) => { const day = index + 1, iso = `${year}-${String(month + 1).padStart(2,"0")}-${String(day).padStart(2,"0")}`; return `<button type="button" class="${doneDates.has(iso) ? "trained" : ""}" data-history-date="${iso}">${day}</button>`; }).join("")}`;
+    host.innerHTML = `<section class="history-calendar client-panel-card"><div class="panel-title"><div><small>CONSTANCIA</small><h2>${now.toLocaleDateString("es-ES", {month:"long",year:"numeric"})}</h2></div><b>${doneDates.size} entrenamientos</b></div><div class="calendar-week"><span>L</span><span>M</span><span>X</span><span>J</span><span>V</span><span>S</span><span>D</span></div><div class="calendar-days">${calendar}</div></section><section class="client-panel-card"><div class="panel-title"><div><small>DIARIO DE ENTRENAMIENTO</small><h2>Sesiones recientes</h2></div></div><div class="client-session-history">${(sessions || []).map((item) => { const stat = stats.get(item.id) || {sets:0,volume:0}; return `<article data-session-date="${item.planned_for}"><span class="history-status ${item.completed_at ? "done" : "open"}">${item.completed_at ? "✓" : "…"}</span><div><small>${new Date(`${item.planned_for}T12:00:00`).toLocaleDateString("es-ES", {weekday:"short",day:"numeric",month:"short"})}</small><b>${esc(item.routines?.name || "Entrenamiento libre")}</b><em>${stat.sets} series · ${Math.round(stat.volume).toLocaleString("es-ES")} kg · ${item.duration_minutes || "—"} min</em></div>${item.routine_id ? `<button type="button" data-repeat-routine="${item.routine_id}">Repetir</button>` : ""}</article>`; }).join("") || '<div class="client-empty-state">Todavia no has completado entrenamientos.</div>'}</div></section>`;
+    host.querySelectorAll("[data-history-date]").forEach((button) => button.onclick = () => {
+      host.querySelectorAll("[data-session-date]").forEach((item) => item.hidden = item.dataset.sessionDate !== button.dataset.historyDate);
+    });
+    host.querySelectorAll("[data-repeat-routine]").forEach((button) => button.onclick = async () => {
+      await selectRoutine(button.dataset.repeatRoutine);
+      host.closest(".client-panel-content").querySelector('[data-workout-view="routines"]').click();
+      toast("Rutina preparada para repetir");
+    });
+  }
+
+  let clientExerciseLibrary = null;
+  async function renderClientLibrary(host) {
+    host.innerHTML = '<div class="panel-loading">Cargando ejercicios…</div>';
+    if (!clientExerciseLibrary) {
+      const { data } = await db.from("exercises").select("id,name,body_group,primary_muscle,equipment,instructions,media_url,thumbnail_url,media_type").eq("is_active", true).order("name").limit(1000);
+      clientExerciseLibrary = (data || []).map((item) => ({ id:item.id, nombre_es:item.name, grupo:item.primary_muscle || item.body_group, equipo:item.equipment || "Sin material", imagen:item.thumbnail_url || item.media_url || "assets/brand/ft-symbol-color.png", gif:item.media_url || item.thumbnail_url, instrucciones:item.instructions ? [item.instructions] : [], database:item }));
+    }
+    host.innerHTML = `<section class="client-panel-card client-library"><div class="panel-title"><div><small>BIBLIOTECA FT</small><h2>Ejercicios y tecnica</h2></div><button type="button" id="create-client-exercise">+ Crear ejercicio</button></div><div class="client-library-tools"><input id="client-exercise-search" placeholder="Buscar ejercicio o musculo…"><select id="client-exercise-group"><option value="">Todos los grupos</option>${[...new Set(clientExerciseLibrary.map((item) => item.grupo).filter(Boolean))].sort().map((group) => `<option>${esc(group)}</option>`).join("")}</select></div><div class="client-library-results"></div></section>`;
+    const paint = () => {
+      const query = host.querySelector("#client-exercise-search").value.toLocaleLowerCase("es").normalize("NFD").replace(/[\u0300-\u036f]/g,""), group = host.querySelector("#client-exercise-group").value;
+      const items = clientExerciseLibrary.filter((item) => (!group || item.grupo === group) && `${item.nombre_es || item.nombre} ${item.grupo} ${item.equipo}`.toLocaleLowerCase("es").normalize("NFD").replace(/[\u0300-\u036f]/g,"").includes(query)).slice(0,80);
+      host.querySelector(".client-library-results").innerHTML = items.map((item) => `<button type="button" class="client-library-exercise"><img src="${esc(item.imagen)}" alt=""><span><b>${esc(item.nombre_es || item.nombre)}</b><small>${esc(item.grupo)} · ${esc(item.equipo)}</small></span><strong>›</strong></button>`).join("") || '<div class="client-empty-state">No se encontraron ejercicios.</div>';
+      host.querySelectorAll(".client-library-exercise").forEach((button, index) => button.onclick = () => openLibraryExercise(items[index]));
+    };
+    host.querySelector("#client-exercise-search").oninput = paint;
+    host.querySelector("#client-exercise-group").onchange = paint;
+    host.querySelector("#create-client-exercise").onclick = openCustomExerciseForm;
+    paint();
+  }
+
+  function openCustomExerciseForm() {
+    const overlay = document.createElement("div");
+    overlay.className = "client-exercise-preview custom-exercise-modal";
+    overlay.innerHTML = `<section><button type="button" class="exercise-preview-close">×</button><small>EJERCICIO PERSONALIZADO</small><h2>Crear ejercicio</h2><form><label>Nombre<input name="name" required></label><label>Grupo muscular<input name="muscle" required placeholder="Pecho, espalda, piernas…"></label><label>Material<input name="equipment" placeholder="Barra, mancuerna, maquina…"></label><label>Indicaciones<textarea name="instructions" rows="4"></textarea></label><button type="submit" class="client-add-exercise">Guardar ejercicio</button><p class="form-feedback"></p></form></section>`;
+    document.body.appendChild(overlay);
+    overlay.querySelector(".exercise-preview-close").onclick = () => overlay.remove();
+    overlay.querySelector("form").onsubmit = async (event) => {
+      event.preventDefault();
+      const form = event.currentTarget, data = new FormData(form), feedback = form.querySelector(".form-feedback"), { data: auth } = await db.auth.getUser();
+      const result = await db.from("exercises").insert({ created_by:auth.user?.id, name:String(data.get("name")).trim(), body_group:String(data.get("muscle")).trim(), primary_muscle:String(data.get("muscle")).trim(), equipment:String(data.get("equipment")).trim() || null, instructions:String(data.get("instructions")).trim() || null, is_custom:true, is_active:true }).select().single();
+      if (result.error) { feedback.textContent = "No se pudo crear el ejercicio."; return; }
+      clientExerciseLibrary = null;
+      overlay.remove();
+      renderClientLibrary(document.getElementById("workout-secondary-view"));
+      toast("Ejercicio personalizado creado");
+    };
+  }
+
+  function openLibraryExercise(exercise) {
+    const overlay = document.createElement("div");
+    overlay.className = "client-exercise-preview";
+    overlay.innerHTML = `<section><button type="button" class="exercise-preview-close">×</button><img src="${esc(exercise.gif || exercise.imagen)}" alt="Demostracion de ${esc(exercise.nombre_es || exercise.nombre)}"><small>${esc(exercise.grupo)} · ${esc(exercise.equipo)}</small><h2>${esc(exercise.nombre_es || exercise.nombre)}</h2><ol>${(exercise.instrucciones || []).map((step) => `<li>${esc(step)}</li>`).join("") || '<li>Consulta las indicaciones de Fernando antes de realizar el ejercicio.</li>'}</ol><button type="button" class="client-add-exercise">+ Anadir al entrenamiento</button></section>`;
+    document.body.appendChild(overlay);
+    overlay.querySelector("button").onclick = () => overlay.remove();
+    overlay.querySelector(".client-add-exercise").onclick = () => {
+      const source = exercise.database;
+      if (!source) return;
+      const item = { id:null, exercise_id:source.id, day_number:selectedRoutineDay || 1, position:routineItems.length + 1, target_sets:3, target_reps_min:8, target_reps_max:12, target_weight_kg:null, target_rir:2, rest_seconds:90, notes:"", exercises:source };
+      routineItems.push(item);
+      allRoutineItems.push(item);
+      renderRoutine();
+      overlay.remove();
+      document.querySelector('[data-workout-view="routines"]')?.click();
+      toast(`${source.name} anadido al entrenamiento`);
+    };
+    overlay.onclick = (event) => { if (event.target === overlay) overlay.remove(); };
+  }
+
   function weekKey(dateStr) {
     const date = new Date(`${dateStr}T12:00:00`),
       offset = (date.getDay() + 6) % 7;
@@ -955,6 +1103,13 @@
   }
 
   const progressPanel = panel("real-progress-panel", "Mi progreso", "chart");
+  function measurementChart(items, key, unit) {
+    const values = [...(items || [])].reverse().filter((item) => item[key] != null);
+    if (values.length < 2) return '<div class="client-empty-state">Registra al menos dos medidas para ver la grafica.</div>';
+    const numbers = values.map((item) => Number(item[key])), min = Math.min(...numbers), max = Math.max(...numbers), range = max - min || 1;
+    const points = numbers.map((value, index) => `${30 + index * (640 / Math.max(1, numbers.length - 1))},${170 - ((value - min) / range) * 120}`).join(" ");
+    return `<div class="measurement-chart"><div><b>${numbers[numbers.length - 1]} ${unit}</b><span>${numbers[0]} → ${numbers[numbers.length - 1]} ${unit}</span></div><svg viewBox="0 0 700 200" preserveAspectRatio="none" aria-label="Evolucion"><path d="M30 170 H670"/><polyline points="${points}"/></svg><div>${values.map((item) => `<small>${new Date(`${item.recorded_on}T12:00:00`).toLocaleDateString("es-ES", {day:"2-digit",month:"short"})}</small>`).join("")}</div></div>`;
+  }
   async function showProgress() {
     openPanel(progressPanel, "progress");
     const host = progressPanel.querySelector(".client-panel-content");
@@ -983,6 +1138,7 @@
     host.innerHTML = `<div class="client-metric-grid"><article><small>PESO ACTUAL</small><b>${latest?.weight_kg ?? "—"} <em>kg</em></b></article><article><small>GRASA CORPORAL</small><b>${latest?.body_fat_pct ?? "—"}<em>%</em></b></article><article><small>SESIONES COMPLETADAS</small><b>${completed}</b></article></div><section class="client-panel-card"><div class="panel-title"><div><small>SEGUIMIENTO SEMANAL</small><h2>Registrar medidas</h2></div></div><form id="measurement-form" class="client-form-grid"><label>Peso (kg)<input name="weight_kg" type="number" min="20" max="350" step="0.1" value="${latest?.weight_kg ?? ""}" required></label><label>Altura (cm)<input name="height_cm" type="number" min="100" max="240" step="0.1" value="${latest?.height_cm ?? ""}"></label><label>Grasa corporal (%)<input name="body_fat_pct" type="number" min="2" max="70" step="0.1" value="${latest?.body_fat_pct ?? ""}"></label><label>Cintura (cm)<input name="waist_cm" type="number" min="30" max="250" step="0.1" value="${latest?.waist_cm ?? ""}"></label><button class="client-primary" type="submit">Guardar registro semanal</button><p class="form-feedback"></p></form></section><section class="client-panel-card"><div class="panel-title"><div><small>HISTORIAL</small><h2>Ultimos registros</h2></div></div><div class="measurement-history">${(measurements || []).map((item) => `<div><time>${new Date(item.recorded_on + "T12:00:00").toLocaleDateString("es-ES")}</time><b>${item.weight_kg ?? "—"} kg</b><span>${item.body_fat_pct ?? "—"}% grasa</span></div>`).join("") || '<p class="client-empty-state">Todavia no hay mediciones.</p>'}</div></section><section class="client-panel-card"><div class="panel-title"><div><small>COMPARATIVA SEMANAL</small><h2>Tus cargas por ejercicio</h2></div></div><div class="strength-history" id="strength-history"><p class="panel-loading">Cargando comparativa…</p></div></section>`;
     const metricGrid = host.querySelector(".client-metric-grid");
     if (metricGrid) metricGrid.insertAdjacentHTML("beforeend", `<article><small>ALTURA</small><b>${latest?.height_cm ?? "—"}<em>cm</em></b></article>`);
+    metricGrid?.insertAdjacentHTML("afterend", `<section class="client-panel-card progress-chart-card"><div class="panel-title"><div><small>EVOLUCION</small><h2>Peso corporal</h2></div></div>${measurementChart(measurements,"weight_kg","kg")}</section>`);
     renderStrengthHistory(host.querySelector("#strength-history"));
     host.querySelector("#measurement-form").onsubmit = async (event) => {
       event.preventDefault();
@@ -1037,7 +1193,7 @@
       avatarContent = client?.avatar_url
         ? `<img src="${esc(client.avatar_url)}" alt="Foto de perfil">`
         : esc(initials);
-    host.innerHTML = `<section class="client-profile-hero"><span class="client-profile-avatar">${avatarContent}</span><div><h2>${esc(client?.full_name || `${client?.first_name || ""} ${client?.last_name || ""}`.trim() || "Cliente FT")}</h2><p>${esc(client?.email || "")}</p><b>${client?.access_status === "active" ? "Acceso activo" : "Acceso pendiente"}</b></div></section><section class="client-panel-card avatar-card"><div class="panel-title"><div><small>IMAGEN DE PERFIL</small><h2>Tu foto</h2></div></div><label class="avatar-upload"><span>${icon("user")}</span><div><b>Subir una foto</b><small>JPG, PNG o WebP · maximo 5 MB</small></div><input id="avatar-file" type="file" accept="image/jpeg,image/png,image/webp"><strong>Elegir imagen</strong></label><p class="avatar-feedback"></p></section><section class="client-panel-card"><div class="panel-title"><div><small>DATOS PERSONALES</small><h2>Informacion de contacto</h2></div></div><form id="profile-form" class="client-form-grid"><label>Nombre<input name="first_name" value="${esc(client?.first_name || "")}" required></label><label>Apellidos<input name="last_name" value="${esc(client?.last_name || "")}"></label><label>Telefono<input name="phone" value="${esc(client?.phone || "")}"></label><button class="client-primary" type="submit">Guardar cambios</button><p class="form-feedback"></p></form></section><button type="button" class="client-logout">${icon("logout")} Cerrar sesion</button>`;
+    host.innerHTML = `<section class="client-profile-hero"><span class="client-profile-avatar">${avatarContent}</span><div><h2>${esc(client?.full_name || `${client?.first_name || ""} ${client?.last_name || ""}`.trim() || "Cliente FT")}</h2><p>${esc(client?.email || "")}</p><b>${client?.access_status === "active" ? "Acceso activo" : "Acceso pendiente"}</b></div></section><section class="client-panel-card avatar-card"><div class="panel-title"><div><small>IMAGEN DE PERFIL</small><h2>Tu foto</h2></div></div><label class="avatar-upload"><span>${icon("user")}</span><div><b>Subir una foto</b><small>JPG, PNG o WebP · maximo 5 MB</small></div><input id="avatar-file" type="file" accept="image/jpeg,image/png,image/webp"><strong>Elegir imagen</strong></label><p class="avatar-feedback"></p></section><section class="client-panel-card"><div class="panel-title"><div><small>DATOS PERSONALES</small><h2>Informacion de contacto</h2></div></div><form id="profile-form" class="client-form-grid"><label>Nombre<input name="first_name" value="${esc(client?.first_name || "")}" required></label><label>Apellidos<input name="last_name" value="${esc(client?.last_name || "")}"></label><label>Telefono<input name="phone" value="${esc(client?.phone || "")}"></label><label>Privacidad<select name="profile_visibility"><option value="private" ${client?.profile_visibility !== "gym" ? "selected" : ""}>Perfil privado</option><option value="gym" ${client?.profile_visibility === "gym" ? "selected" : ""}>Visible en comunidad FT</option></select></label><button class="client-primary" type="submit">Guardar cambios</button><p class="form-feedback"></p></form></section><button type="button" class="client-logout">${icon("logout")} Cerrar sesion</button>`;
     host.querySelector("#avatar-file").onchange = async (event) => {
       const file = event.target.files?.[0],
         feedback = host.querySelector(".avatar-feedback"),
@@ -1102,6 +1258,7 @@
             last_name: last,
             full_name: `${first} ${last}`.trim(),
             phone: String(data.get("phone")).trim(),
+            profile_visibility: String(data.get("profile_visibility") || "private"),
             updated_at: new Date().toISOString(),
           })
           .eq("id", clientId);
