@@ -197,3 +197,24 @@ body.ft-client-home #exercise-motion-media{width:100%;padding:8px}
 body.ft-client-home #exercise-motion-media a{display:block;font:400 12px "DM Sans";padding:8px;color:#176443}
 body.ft-client-home .client-exercise-media:has(#exercise-motion-media){height:auto!important;min-height:180px}
 body.ft-client-home .history-show-all,body.ft-client-home [data-repeat-routine]{background:#54e39c16!important;color:#54e39c!important;border:1px solid #54e39c35!important;border-radius:9px;padding:10px 14px;font:600 12px "DM Sans"!important;cursor:pointer}
+/* Keep intrinsic text widths from widening the mobile viewport. */
+html:has(body.ft-client-home){overflow-x:clip}
+body.ft-client-home{width:100%;max-width:100%;overflow-x:clip}
+body.ft-client-home .client-section-panel{width:100%;max-width:100%;overflow-x:hidden;overscroll-behavior-x:none}
+body.ft-client-home .client-panel-content{width:100%;min-width:0;box-sizing:border-box}
+body.ft-client-home .client-panel-content :is(section,article,.panel-title,.panel-title>div,.workout-secondary-view,.client-session-history){min-width:0;max-width:100%}
+body.ft-client-home .panel-title{flex-wrap:wrap;gap:12px}
+body.ft-client-home .panel-title h2{white-space:normal;overflow-wrap:anywhere}
+body.ft-client-home .calendar-week,body.ft-client-home .calendar-days{grid-template-columns:repeat(7,minmax(0,1fr));width:100%;min-width:0}
+body.ft-client-home .calendar-days>button,body.ft-client-home .calendar-days>i{min-width:0;width:100%;padding:0}
+body.ft-client-home .client-session-history>article{grid-template-columns:38px minmax(0,1fr) auto}
+body.ft-client-home .client-session-history article>div{min-width:0;overflow-wrap:anywhere}
+body.ft-client-home .client-section-panel>header>div{min-width:0}
+body.ft-client-home .client-section-panel>header h1{overflow-wrap:anywhere}
+@media(max-width:480px){
+ body.ft-client-home .history-calendar .panel-title h2{font-size:clamp(12px,3.7vw,17px)!important;line-height:1.8!important}
+ body.ft-client-home .client-panel-content .panel-title h2{max-width:100%;font-size:clamp(12px,3.7vw,17px)!important;line-height:1.8!important}
+ body.ft-client-home .calendar-week,body.ft-client-home .calendar-days{gap:5px}
+ body.ft-client-home .client-session-history>article{gap:8px}
+ body.ft-client-home .history-session-detail p{flex-wrap:wrap}
+}
