@@ -11,6 +11,7 @@
   };
   window.ftApplyClientAvatar = applyAvatar;
 
+  try {
   if (window.ftSupabase && window.ftClientId) {
     const [{ data: client }, { data: routines }, { data: sessions }, { data: measurements }] =
       await Promise.all([
@@ -40,7 +41,7 @@
           .eq("client_id", ftClientId)
           .order("recorded_on", { ascending: false })
           .limit(1),
-      ]);
+      ].map(async query => { const result = await query; if(result.error) throw result.error; return result; }));
     const name =
       client?.first_name || client?.full_name?.split(" ")[0] || "deportista";
     first.textContent = name;
@@ -75,6 +76,8 @@
           ? "¡Vas por buen camino!"
           : "Cada sesion cuenta. Sigue avanzando.";
   }
+
+  } catch(error) { document.getElementById("week-message").textContent="No se pudo actualizar el resumen. Recarga para reintentar."; }
 
   const scrollRoutine = () => window.ftClientSections?.showRoutines(),
     openProgress = () => document.querySelector(".card-title a")?.click(),

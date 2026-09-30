@@ -44,7 +44,7 @@ const exercises = [
 ];
 let completed = 0;
 const list = document.getElementById("exercise-list");
-list.innerHTML = exercises
+list.innerHTML = (window.ftSupabase ? [] : exercises)
   .map(
     (e, i) =>
       `<div class="exercise-row" data-index="${i}"><span class="exercise-thumb"><img src="${e.image}" alt="${e.name}" loading="lazy"><i>▶</i></span><div><b>${e.name}</b><small>${e.detail}</small><em>Ver tecnica y registrar</em></div><strong>›</strong></div>`,

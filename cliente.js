@@ -15,12 +15,12 @@ window.addEventListener("pageshow", (event) => {
     ["127.0.0.1", "localhost"].includes(location.hostname) &&
     new URLSearchParams(location.search).has("preview")
   ) {
-    await load("cliente-base.js?v=2");
-    await load("client-home.js?v=7");
-    await load("client-sections.js?v=17");
-    await load("client-materials.js?v=1");
-    await load("client-hall-of-fame.js?v=1");
-    await load("client-navigation-fix.js?v=1");
+    await load("cliente-base.js?v=3");
+    await load("client-home.js?v=8");
+    await load("client-sections.js?v=19");
+    await load("client-materials.js?v=2");
+    await load("client-hall-of-fame.js?v=2");
+    await load("client-navigation-fix.js?v=2");
     document.body.style.visibility = "visible";
     return;
   }
@@ -30,6 +30,15 @@ window.addEventListener("pageshow", (event) => {
     FT_SUPABASE.url,
     FT_SUPABASE.publishableKey,
     {
+      global: { fetch: async (input, options = {}) => {
+        const controller = new AbortController();
+        const abort = () => controller.abort();
+        if (options.signal?.aborted) abort();
+        else options.signal?.addEventListener("abort", abort, { once: true });
+        const timer = setTimeout(abort, 20000);
+        try { return await fetch(input, { ...options, signal: controller.signal }); }
+        finally { clearTimeout(timer); options.signal?.removeEventListener("abort", abort); }
+      } },
       auth: {
         persistSession: true,
         autoRefreshToken: true,
@@ -103,11 +112,15 @@ window.addEventListener("pageshow", (event) => {
   window.ftClientId = member.id;
   window.ftMembershipActive =
     member.access_status === "active" && membershipIsCurrent;
-  await load("cliente-base.js?v=2");
-  await load("client-home.js?v=7");
-  await load("client-sections.js?v=17");
-  await load("client-materials.js?v=1");
-  await load("client-hall-of-fame.js?v=1");
-  await load("client-navigation-fix.js?v=1");
+  await load("cliente-base.js?v=3");
+  await load("client-home.js?v=8");
+  await load("client-sections.js?v=19");
+  await load("client-materials.js?v=2");
+  await load("client-hall-of-fame.js?v=2");
+  await load("client-navigation-fix.js?v=2");
   document.body.style.visibility = "visible";
-})().catch(() => location.replace("index.html"));
+})().catch(() => {
+  document.body.style.visibility = "visible";
+  document.body.innerHTML = '<main style="font-family:sans-serif;padding:32px"><h1>No se pudo cargar la app</h1><p>Comprueba la conexion y vuelve a intentarlo.</p><button type="button" id="retry-client">Reintentar</button> <a href="index.html">Volver al acceso</a></main>';
+  document.getElementById("retry-client").onclick = () => location.reload();
+});

@@ -20,6 +20,11 @@
     node.classList.add("show");
     setTimeout(() => node.classList.remove("show"), 2400);
   };
+  window.ftClientToast = toast;
+  function showLoadError(host, retry) {
+    host.innerHTML = '<div class="client-empty-state">No se pudieron cargar los datos. Comprueba la conexion.<button type="button">Reintentar</button></div>';
+    host.querySelector("button").onclick = retry;
+  }
   const panel = (id, title, iconName) => {
     let node = document.getElementById(id);
     if (!node) {
@@ -64,18 +69,53 @@
   let workoutTimerId = null;
   let restTimerId = null;
   let workoutPausedAt = null;
+  let sessionCompleted = false;
+  function resetSession() {
+    sessionId = null;
+    sessionCompleted = false;
+    completedExerciseIds.clear();
+    document.querySelector(".live-rest-chip")?.remove();
+    const pauseButton = document.getElementById("pause-live-workout");
+    if (pauseButton) pauseButton.textContent = "Pausar";
+    sessionStartedAt = Date.now();
+    workoutPausedAt = null;
+    clearInterval(workoutTimerId);
+    clearInterval(restTimerId);
+    document.body.classList.remove("workout-in-progress");
+  }
+
+  async function checkedQuery(query) {
+    let timer;
+    try {
+      const result = await Promise.race([query, new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error("La consulta ha tardado demasiado")), 15000);
+      })]);
+      if (result.error) throw result.error;
+      return result.data || [];
+    } finally { clearTimeout(timer); }
+  }
 
   function formatWorkoutTime(milliseconds) {
     const total = Math.max(0, Math.floor(milliseconds / 1000));
     return `${String(Math.floor(total / 3600)).padStart(2, "0")}:${String(Math.floor((total % 3600) / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
   }
 
+  function localDate(date = new Date()) {
+    return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,"0")}-${String(date.getDate()).padStart(2,"0")}`;
+  }
+
+  function elapsedWorkoutTime() {
+    return Math.max(0, (workoutPausedAt || Date.now()) - sessionStartedAt);
+  }
+
   function updateWorkoutClock() {
     const output = document.getElementById("live-workout-time");
-    if (output) output.textContent = formatWorkoutTime(Date.now() - sessionStartedAt);
+    if (output) output.textContent = formatWorkoutTime(elapsedWorkoutTime());
   }
 
   function startWorkoutClock() {
+    if (!document.body.classList.contains("workout-in-progress") && !sessionId) sessionStartedAt = Date.now();
+    if (workoutPausedAt) return;
     document.body.classList.add("workout-in-progress");
     updateWorkoutClock();
     clearInterval(workoutTimerId);
@@ -84,7 +124,9 @@
 
   function startRestTimer(seconds) {
     clearInterval(restTimerId);
-    let remaining = Math.max(0, Number(seconds) || 90);
+    let remaining = Math.max(0, Number(seconds) || 0);
+    document.querySelector(".live-rest-chip")?.remove();
+    if (!remaining) return;
     const toolbar = document.querySelector(".live-workout-toolbar");
     let box = toolbar?.querySelector(".live-rest-chip");
     if (toolbar && !box) {
@@ -123,7 +165,7 @@
         event.currentTarget.textContent = "Pausar";
         startWorkoutClock();
       } else {
-        workoutPausedAt = Date.now();
+        workoutPausedAt = workoutPausedAt || Date.now();
         clearInterval(workoutTimerId);
         event.currentTarget.textContent = "Continuar";
         toast("Entrenamiento pausado");
@@ -133,12 +175,13 @@
   }
 
   async function finishWorkout() {
+    if (sessionCompleted) { toast("Este entrenamiento ya esta guardado"); return; }
     if (!sessionId) {
       toast("Completa al menos una serie antes de finalizar");
       return;
     }
     if (!confirm("¿Finalizar y guardar este entrenamiento?")) return;
-    const duration = Math.max(1, Math.round((Date.now() - sessionStartedAt) / 60000));
+    const duration = Math.max(1, Math.round((elapsedWorkoutTime()) / 60000));
     const result = await db.from("workout_sessions").update({
       completed_at: new Date().toISOString(),
       duration_minutes: duration,
@@ -149,6 +192,9 @@
     }
     clearInterval(workoutTimerId);
     document.body.classList.remove("workout-in-progress");
+    clearInterval(restTimerId);
+    sessionCompleted = true;
+    workoutPausedAt = workoutPausedAt || Date.now();
     toast("Entrenamiento guardado · gran trabajo");
   }
 
@@ -157,9 +203,9 @@
       host = node.querySelector(".client-panel-content"),
       session = document.getElementById("routine-session");
     if (!host.querySelector(".routine-hub-intro")) {
-      host.innerHTML = `<section class="routine-hub-intro"><div><small>PLAN DE FERNANDO</small><h2>Tu semana de entrenamiento</h2><p>Elige una rutina y registra cada serie mientras entrenas.</p></div><button type="button" id="begin-live-workout"><span>${icon("play")}</span><b>Iniciar entrenamiento</b><small>Se guardara automaticamente</small></button></section><div class="client-workout-actions"><button type="button" data-workout-view="routines">${icon("dumbbell")}<span><b>Mis rutinas</b><small>Planes asignados</small></span></button><button type="button" data-workout-view="history">${icon("calendar")}<span><b>Historial</b><small>Calendario y sesiones</small></span></button><button type="button" data-workout-view="library">${icon("play")}<span><b>Ejercicios</b><small>Biblioteca y tecnica</small></span></button></div><section class="routine-picker"><div class="routine-picker-title"><div><small>MIS RUTINAS</small><h3>Elige tu entrenamiento</h3></div><button type="button" id="start-empty-workout">+ Entrenamiento libre</button></div><div id="client-routine-cards"></div></section><div class="workout-secondary-view" id="workout-secondary-view"></div><div class="routine-session-host"></div>`;
+      host.innerHTML = `<section class="routine-hub-intro"><div><small>PLAN DE FERNANDO</small><h2>Tu semana de entrenamiento</h2><p>Elige una rutina y registra cada serie mientras entrenas.</p></div><button type="button" id="begin-live-workout"><span>${icon("play")}</span><b>Iniciar entrenamiento</b><small>Guarda cada ejercicio al terminar</small></button></section><div class="client-workout-actions"><button type="button" data-workout-view="routines">${icon("dumbbell")}<span><b>Mis rutinas</b><small>Planes asignados</small></span></button><button type="button" data-workout-view="history">${icon("calendar")}<span><b>Historial</b><small>Calendario y sesiones</small></span></button><button type="button" data-workout-view="library">${icon("play")}<span><b>Ejercicios</b><small>Biblioteca y tecnica</small></span></button></div><section class="routine-picker"><div class="routine-picker-title"><div><small>MIS RUTINAS</small><h3>Elige tu entrenamiento</h3></div><button type="button" id="start-empty-workout">+ Entrenamiento libre</button></div><div id="client-routine-cards"></div></section><div class="workout-secondary-view" id="workout-secondary-view"></div><div class="routine-session-host"></div>`;
       host.querySelector("#begin-live-workout").onclick = () => {
-        sessionStartedAt = Date.now();
+        if (sessionCompleted) { resetSession(); renderRoutine(); }
         startWorkoutClock();
         ensureWorkoutToolbar();
         host.querySelector(".routine-session-host").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -178,6 +224,7 @@
     host.querySelector(".routine-session-host").appendChild(session);
     ensureWorkoutToolbar();
     renderRoutinePicker();
+    host.querySelector('[data-workout-view="routines"]').click();
     openPanel(node, "routine");
   }
 
@@ -186,8 +233,7 @@
     allRoutineItems = [];
     routineItems = [];
     selectedRoutineDay = 1;
-    sessionId = null;
-    completedExerciseIds.clear();
+    resetSession();
     renderRoutine();
     renderRoutinePicker();
     document.querySelector('[data-workout-view="library"]')?.click();
@@ -202,12 +248,11 @@
   }
 
   async function selectRoutine(id) {
-    if (routine?.id === id) return;
+    if (routine?.id === id && sessionId && !sessionCompleted) return;
     routine = availableRoutines.find((item) => item.id === id);
-    sessionId = null;
-    completedExerciseIds.clear();
-    await loadRoutineItems();
-    renderRoutinePicker();
+    resetSession();
+    try { await loadRoutineItems(); renderRoutinePicker(); }
+    catch(error) { showLoadError(document.getElementById("exercise-list"), () => selectRoutine(id)); }
   }
   function renderRoutineLocked() {
     const cover = document.querySelector(".workout-cover"),
@@ -241,31 +286,34 @@
       }
       return;
     }
-    const { data: routines } = await db
+    try {
+    const routines = await checkedQuery(db
       .from("routines")
       .select("id,name,description,objective,status,week_start,created_at")
       .eq("client_id", clientId)
       .in("status", ["active", "draft"])
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false }));
     availableRoutines = routines || [];
-    routine = availableRoutines[0] || null;
+    resetSession();
+    routine = availableRoutines.find(item => item.id === routine?.id) || availableRoutines[0] || null;
     if (!routine) {
       renderRoutineEmpty();
       return;
     }
     await loadRoutineItems();
+    } catch (error) { showLoadError(document.getElementById("exercise-list"), loadRoutine); const cards=document.getElementById("client-routine-cards"); if(cards) showLoadError(cards, loadRoutine); }
   }
 
   async function loadRoutineItems() {
     if (!routine) return;
-    const { data: items } = await db
+    const items = await checkedQuery(db
       .from("routine_exercises")
       .select(
         "id,exercise_id,day_number,position,target_sets,target_reps_min,target_reps_max,target_weight_kg,target_rir,rest_seconds,notes,superset_group,exercises(name,body_group,primary_muscle,instructions,media_url,thumbnail_url,media_type)",
       )
       .eq("routine_id", routine.id)
       .order("day_number")
-      .order("position");
+      .order("position"));
     allRoutineItems = items || [];
     const routineDays = [
       ...new Set(allRoutineItems.map((item) => Number(item.day_number) || 1)),
@@ -276,6 +324,7 @@
     );
     renderRoutine();
     await restoreTodaySession();
+    renderRoutinePicker();
   }
   function renderRoutineEmpty() {
     const cover = document.querySelector(".workout-cover"),
@@ -322,7 +371,7 @@
     document.getElementById("exercise-list").innerHTML =
       `<div class="session-plan-head"><div><span>SESION ${selectedRoutineDay}</span><b>${esc(muscles.join(" · ") || "Entrenamiento completo")}</b></div><small>${routineItems.length} ejercicios</small></div>` +
       (days.length > 0
-        ? `<div class="session-day-tabs weekly-plan-tabs" role="tablist" aria-label="Entrenamiento semanal">${[1,2,3,4,5]
+        ? `<div class="session-day-tabs weekly-plan-tabs" role="tablist" aria-label="Entrenamiento semanal">${days
             .map((day) => {
               const dayItems = allRoutineItems.filter(
                   (item) => (Number(item.day_number) || 1) === day,
@@ -362,6 +411,7 @@
         if (targetDay === selectedRoutineDay) return;
         if (!confirm(`¿Seguro que quieres empezar el dia ${targetDay}?`))
           return;
+        resetSession();
         selectedRoutineDay = targetDay;
         routineItems = allRoutineItems.filter(
           (item) => (Number(item.day_number) || 1) === selectedRoutineDay,
@@ -372,6 +422,7 @@
             completedExerciseIds.has(item.exercise_id),
           ).length,
         );
+        restoreTodaySession();
       };
     });
     document
@@ -417,14 +468,17 @@
   }
 
   async function restoreTodaySession() {
-    if (!db || !clientId || !routine) return;
-    const today = new Date().toISOString().slice(0, 10),
+    if (!db || !clientId || !routine?.id) return;
+    const today = localDate(),
       { data: session } = await db
         .from("workout_sessions")
         .select("id,started_at,completed_at,duration_minutes")
         .eq("client_id", clientId)
         .eq("routine_id", routine.id)
+        .eq("day_number", selectedRoutineDay)
         .eq("planned_for", today)
+        .is("completed_at", null)
+        .order("started_at", { ascending: false }).limit(1)
         .maybeSingle();
     if (!session) return;
     sessionId = session.id;
@@ -435,8 +489,9 @@
     const { data: logs } = await db
       .from("set_logs")
       .select("exercise_id")
+      .eq("completed", true)
       .eq("session_id", sessionId);
-    const completedIds = new Set((logs || []).map((log) => log.exercise_id));
+    const completedIds = new Set(allRoutineItems.filter(item => (logs || []).filter(log => log.exercise_id === item.exercise_id).length >= (item.target_sets || 3)).map(item => item.exercise_id));
     completedExerciseIds = completedIds;
     document.querySelectorAll(".live-exercise").forEach((row, index) => {
       if (!completedIds.has(routineItems[index]?.exercise_id)) return;
@@ -448,6 +503,7 @@
     );
   }
   async function openExercise(item, row) {
+    if (sessionCompleted) { resetSession(); renderRoutine(); row = [...document.querySelectorAll(".live-exercise")][routineItems.indexOf(item)]; }
     if (!document.body.classList.contains("workout-in-progress")) startWorkoutClock();
     selectedItem = { item, row };
     const ex = item.exercises || {},
@@ -465,38 +521,47 @@
         ex.instructions ||
         item.notes ||
         "Sigue las indicaciones de Fernando y controla la tecnica.";
+    let recentLogs = [], currentLogs = [], bestLogs = [], recordsFailed = false;
+    try {
     let logsQuery = db
       .from("set_logs")
-      .select("session_id,set_number,reps,weight_kg,created_at")
+      .select("session_id,set_number,reps,weight_kg,rir,set_type,created_at,workout_sessions!inner(client_id)")
+      .eq("workout_sessions.client_id", clientId)
+      .eq("completed", true)
       .eq("exercise_id", item.exercise_id)
       .order("created_at", { ascending: false })
-      .limit(60);
+      ;
     if (sessionId) logsQuery = logsQuery.neq("session_id", sessionId);
-    const { data: recentLogs } = await logsQuery;
+    recentLogs = await checkedQuery(logsQuery);
+    bestLogs = await checkedQuery(db.from("set_logs").select("weight_kg,workout_sessions!inner(client_id)").eq("workout_sessions.client_id", clientId).eq("exercise_id", item.exercise_id).eq("completed", true).not("weight_kg", "is", null).order("weight_kg", { ascending: false }).limit(1));
+    if (sessionId) currentLogs = await checkedQuery(db.from("set_logs").select("set_number,reps,weight_kg,rir,set_type,completed").eq("session_id", sessionId).eq("exercise_id", item.exercise_id).order("set_number"));
+    } catch (error) { recordsFailed = true; toast("No se pudieron cargar los registros anteriores"); }
     const previousSessionId = recentLogs?.[0]?.session_id,
       previousSets = (recentLogs || [])
         .filter((log) => log.session_id === previousSessionId)
         .sort((a, b) => a.set_number - b.set_number);
     const last = document.querySelector(".last-record");
     if (last) {
-      const top = (recentLogs || []).reduce(
+      const top = bestLogs.reduce(
         (best, set) =>
-          Number(set.weight_kg) > Number(best?.weight_kg || 0) ? set : best,
+          set.weight_kg != null && (!best || Number(set.weight_kg) > Number(best.weight_kg)) ? set : best,
         null,
       );
-      last.innerHTML = `<div><span>SEMANA PASADA</span><b>${previousSets[0] ? `${previousSets[0].weight_kg ?? 0} kg × ${previousSets[0].reps ?? 0}` : "Sin registros"}</b></div><div><span>MEJOR CARGA</span><b>${top ? `${top.weight_kg || 0} kg` : "—"}</b></div>`;
+      last.innerHTML = `<div><span>ULTIMA SESION</span><b>${previousSets[0] ? `${previousSets[0].weight_kg ?? 0} kg × ${previousSets[0].reps ?? 0}` : recordsFailed ? "No se pudieron cargar" : "Sin registros"}</b></div><div><span>MEJOR CARGA</span><b>${top ? `${top.weight_kg || 0} kg` : "—"}</b></div>`;
     }
     const sets = sheet.querySelector(".sets");
     sets.classList.add("hevy-set-table");
     sets.innerHTML =
       `<div class="hevy-set-head"><b>SET</b><b>ANTERIOR</b><b>KG</b><b>REPS</b><b>RIR</b><b>✓</b></div>` +
-      Array.from({ length: item.target_sets || 3 }, (_, index) => {
+      Array.from({ length: Math.max(item.target_sets || 3, ...currentLogs.map(log => log.set_number)) }, (_, index) => {
         const previous = previousSets[index],
-          reps = previous?.reps ?? item.target_reps_min ?? "",
-          weight = previous?.weight_kg ?? item.target_weight_kg ?? "";
+          current = currentLogs.find(log => log.set_number === index + 1),
+          reps = current?.reps ?? "",
+          weight = current?.weight_kg ?? "";
         const previousLabel = previous ? `${previous.weight_kg ?? 0} × ${previous.reps ?? 0}` : "—";
-        return `<label class="hevy-set-row"><select class="live-set-type" aria-label="Tipo de serie ${index + 1}"><option value="normal">${index + 1}</option><option value="warmup">W</option><option value="drop">D</option><option value="failure">F</option></select><small>${previousLabel}</small><input class="live-weight" value="${weight}" inputmode="decimal" aria-label="Peso serie ${index + 1}"><input class="live-reps" value="${reps}" inputmode="numeric" aria-label="Repeticiones serie ${index + 1}"><input class="live-rir" value="${item.target_rir ?? ""}" inputmode="numeric" aria-label="RIR serie ${index + 1}"><input class="live-complete" type="checkbox" checked aria-label="Completar serie ${index + 1}"></label>`;
+        return `<label class="hevy-set-row"><select class="live-set-type" aria-label="Tipo de serie ${index + 1}"><option value="normal">${index + 1}</option><option value="warmup">W</option><option value="drop">D</option><option value="failure">F</option></select><small>${previousLabel}</small><input class="live-weight" value="${weight}" inputmode="decimal" aria-label="Peso serie ${index + 1}"><input class="live-reps" placeholder="${item.target_reps_min ?? ""}–${item.target_reps_max ?? ""}" value="${reps}" inputmode="numeric" aria-label="Repeticiones serie ${index + 1}"><input class="live-rir" value="${current?.rir ?? ""}" inputmode="numeric" aria-label="RIR serie ${index + 1}"><input class="live-complete" type="checkbox" ${current?.completed ? "checked" : ""} aria-label="Completar serie ${index + 1}"></label>`;
       }).join("") + `<button type="button" class="add-live-set">+ Anadir serie</button><div class="exercise-rest-timer" hidden><span>${icon("clock")}</span><div><small>DESCANSO</small><b id="exercise-rest-time">1:30</b></div><button type="button">Omitir</button></div>`;
+    sets.querySelectorAll(".live-set-type").forEach((select, index) => { select.value = currentLogs.find(log => log.set_number === index + 1)?.set_type || "normal"; });
     sets.querySelector(".add-live-set").onclick = () => {
       const rows = sets.querySelectorAll(".hevy-set-row"),
         lastRow = rows[rows.length - 1],
@@ -506,7 +571,8 @@
       clone.querySelector("small").textContent = "—";
       clone.querySelectorAll("input").forEach((input) => {
         input.setAttribute("aria-label", input.getAttribute("aria-label").replace(/\d+$/, number));
-        if (input.type === "checkbox") input.checked = true;
+        if (input.type === "checkbox") input.checked = false;
+        else input.value = "";
       });
       lastRow.after(clone);
     };
@@ -514,14 +580,17 @@
       clearInterval(restTimerId);
       sets.querySelector(".exercise-rest-timer").hidden = true;
     };
+    save.disabled = recordsFailed;
     sheet.classList.add("open");
   }
   async function ensureSession() {
+    if (sessionCompleted) resetSession();
     if (sessionId) return sessionId;
-    const today = new Date().toISOString().slice(0, 10),
+    const today = localDate(),
       existingQuery = db.from("workout_sessions").select("id,started_at")
         .eq("client_id", clientId).eq("planned_for", today),
-      existing = routine?.id ? await existingQuery.eq("routine_id", routine.id).maybeSingle() : { data: null };
+      existing = routine?.id ? await existingQuery.eq("routine_id", routine.id).eq("day_number", selectedRoutineDay).is("completed_at", null).order("started_at", { ascending: false }).limit(1).maybeSingle() : { data: null };
+    if (existing.error) throw existing.error;
     if (existing.data?.id) {
       sessionId = existing.data.id;
       sessionStartedAt = existing.data.started_at
@@ -529,7 +598,7 @@
         : Date.now();
       return sessionId;
     }
-    const startedAt = new Date().toISOString();
+    const startedAt = new Date(sessionStartedAt).toISOString();
     const created = await db
       .from("workout_sessions")
       .insert({
@@ -554,6 +623,15 @@
     save.disabled = true;
     save.textContent = "Guardando…";
     try {
+      const completedRows = [...document.querySelectorAll(".hevy-set-row")].filter(row => row.querySelector(".live-complete").checked);
+      if (completedRows.some(row => {
+        const reps = Number(row.querySelector(".live-reps").value), weight = row.querySelector(".live-weight").value.trim().replace(",", "."), rir = row.querySelector(".live-rir").value.trim();
+        return !Number.isInteger(reps) || reps < 1 || reps > 1000 || (weight !== "" && (!Number.isFinite(Number(weight)) || Number(weight) < 0 || Number(weight) > 99999)) || (rir !== "" && (!Number.isInteger(Number(rir)) || Number(rir) < 0 || Number(rir) > 10));
+      })) {
+        toast("Revisa las repeticiones, el peso y el RIR de las series marcadas");
+        return;
+      }
+      if (!completedRows.length && !sessionId) { toast("Marca al menos una serie realizada"); return; }
       const currentSession = await ensureSession(),
         reps = [...document.querySelectorAll(".live-reps")],
         weights = [...document.querySelectorAll(".live-weight")],
@@ -573,33 +651,39 @@
           rir: rirs[index].value === "" ? null : Number(rirs[index].value),
           set_type: types[index].value,
           completed: checked[index].checked,
-        })).filter((_, index) => checked[index].checked);
-      if (!logs.length) throw new Error("No hay series completadas");
+        })).map(log => log.completed ? log : {...log, reps:null, weight_kg:null, rir:null});
       const { error } = await db
         .from("set_logs")
         .upsert(logs, { onConflict: "session_id,exercise_id,set_number" });
       if (error) throw error;
-      selectedItem.row.classList.add("done");
-      selectedItem.row.querySelector("strong").textContent = "✓";
-      completedExerciseIds.add(selectedItem.item.exercise_id);
+      const exerciseComplete = logs.filter(log => log.completed).length >= (selectedItem.item.target_sets || 3);
+      selectedItem.row.classList.toggle("done", exerciseComplete);
+      selectedItem.row.querySelector("strong").textContent = exerciseComplete ? "✓" : "›";
+      if (exerciseComplete) completedExerciseIds.add(selectedItem.item.exercise_id);
+      else completedExerciseIds.delete(selectedItem.item.exercise_id);
       const done = document.querySelectorAll(".live-exercise.done").length,
         { total } = updateWorkoutProgress(done),
         duration = Math.max(
           1,
-          Math.round((Date.now() - sessionStartedAt) / 60000),
+          Math.round((elapsedWorkoutTime()) / 60000),
         );
-      if (done === total) {
-        await db
+      if (done === total && exerciseComplete) {
+        const finished = await db
           .from("workout_sessions")
           .update({
             completed_at: new Date().toISOString(),
             duration_minutes: duration,
           })
           .eq("id", currentSession);
+        if (finished.error) throw finished.error;
+        sessionCompleted = true;
+        workoutPausedAt = Date.now();
+        clearInterval(workoutTimerId);
+        document.body.classList.remove("workout-in-progress");
         toast("¡Entrenamiento completado! Ya puedes compartirlo");
       }
       document.getElementById("set-sheet").classList.remove("open");
-      startRestTimer(selectedItem.item.rest_seconds || 90);
+      if (!sessionCompleted) startRestTimer(selectedItem.item.rest_seconds ?? 90);
       toast("Series guardadas correctamente");
     } catch (error) {
       toast("No se pudo guardar. Comprueba la conexion.");
@@ -664,7 +748,7 @@
     }
     const duration = Math.max(
       1,
-      Math.round((Date.now() - sessionStartedAt) / 60000),
+      Math.round((elapsedWorkoutTime()) / 60000),
     );
     let logs = [];
     if (db && sessionId) {
@@ -672,6 +756,7 @@
         .from("set_logs")
         .select("exercise_id,set_number,reps,weight_kg")
         .eq("session_id", sessionId)
+        .eq("completed", true)
         .order("set_number");
       logs = result.data || [];
     }
@@ -889,7 +974,7 @@
       const blob = await canvasBlob(canvas);
       return new File(
         [blob],
-        `ft-entrenamiento-${new Date().toISOString().slice(0, 10)}.png`,
+        `ft-entrenamiento-${localDate()}.png`,
         { type: "image/png" },
       );
     };
@@ -920,15 +1005,15 @@
 
   async function renderWorkoutHistory(host) {
     host.innerHTML = '<div class="panel-loading">Cargando historial…</div>';
-    const { data: sessions, error } = await db.from("workout_sessions")
+    try {
+    if (!db || !clientId) throw new Error("Sesion no disponible");
+    const sessions = await checkedQuery(db.from("workout_sessions")
       .select("id,routine_id,day_number,planned_for,started_at,completed_at,duration_minutes,notes,routines(name)")
-      .eq("client_id", clientId).order("planned_for", { ascending: false }).limit(100);
-    if (error) { host.innerHTML = '<div class="client-empty-state">No se pudo cargar el historial.</div>'; return; }
+      .eq("client_id", clientId).order("planned_for", { ascending: false }).limit(100));
     const ids = (sessions || []).map((item) => item.id);
     let logs = [];
     if (ids.length) {
-      const result = await db.from("set_logs").select("session_id,weight_kg,reps,completed").in("session_id", ids);
-      logs = result.data || [];
+      logs = await checkedQuery(db.from("set_logs").select("session_id,weight_kg,reps,completed").in("session_id", ids));
     }
     const stats = new Map();
     logs.forEach((set) => {
@@ -939,22 +1024,29 @@
     const doneDates = new Set((sessions || []).filter((item) => item.completed_at).map((item) => item.planned_for));
     const now = new Date(), year = now.getFullYear(), month = now.getMonth(), first = new Date(year, month, 1), days = new Date(year, month + 1, 0).getDate(), offset = (first.getDay() + 6) % 7;
     const calendar = `${Array.from({length: offset}, () => '<i></i>').join("")}${Array.from({length: days}, (_, index) => { const day = index + 1, iso = `${year}-${String(month + 1).padStart(2,"0")}-${String(day).padStart(2,"0")}`; return `<button type="button" class="${doneDates.has(iso) ? "trained" : ""}" data-history-date="${iso}">${day}</button>`; }).join("")}`;
-    host.innerHTML = `<section class="history-calendar client-panel-card"><div class="panel-title"><div><small>CONSTANCIA</small><h2>${now.toLocaleDateString("es-ES", {month:"long",year:"numeric"})}</h2></div><b>${doneDates.size} entrenamientos</b></div><div class="calendar-week"><span>L</span><span>M</span><span>X</span><span>J</span><span>V</span><span>S</span><span>D</span></div><div class="calendar-days">${calendar}</div></section><section class="client-panel-card"><div class="panel-title"><div><small>DIARIO DE ENTRENAMIENTO</small><h2>Sesiones recientes</h2></div></div><div class="client-session-history">${(sessions || []).map((item) => { const stat = stats.get(item.id) || {sets:0,volume:0}; return `<article data-session-date="${item.planned_for}"><span class="history-status ${item.completed_at ? "done" : "open"}">${item.completed_at ? "✓" : "…"}</span><div><small>${new Date(`${item.planned_for}T12:00:00`).toLocaleDateString("es-ES", {weekday:"short",day:"numeric",month:"short"})}</small><b>${esc(item.routines?.name || "Entrenamiento libre")}</b><em>${stat.sets} series · ${Math.round(stat.volume).toLocaleString("es-ES")} kg · ${item.duration_minutes || "—"} min</em></div>${item.routine_id ? `<button type="button" data-repeat-routine="${item.routine_id}">Repetir</button>` : ""}</article>`; }).join("") || '<div class="client-empty-state">Todavia no has completado entrenamientos.</div>'}</div></section>`;
+    host.innerHTML = `<section class="history-calendar client-panel-card"><div class="panel-title"><div><small>CONSTANCIA</small><h2>${now.toLocaleDateString("es-ES", {month:"long",year:"numeric"})}</h2></div><b>${(sessions || []).filter(item => item.completed_at && String(item.planned_for).startsWith(`${year}-${String(month + 1).padStart(2,"0")}`)).length} entrenamientos</b></div><div class="calendar-week"><span>L</span><span>M</span><span>X</span><span>J</span><span>V</span><span>S</span><span>D</span></div><div class="calendar-days">${calendar}</div></section><section class="client-panel-card"><div class="panel-title"><div><small>DIARIO DE ENTRENAMIENTO</small><h2>Sesiones recientes</h2></div></div><div class="client-session-history">${(sessions || []).map((item) => { const stat = stats.get(item.id) || {sets:0,volume:0}; return `<article data-session-date="${item.planned_for}"><span class="history-status ${item.completed_at ? "done" : "open"}">${item.completed_at ? "✓" : "…"}</span><div><small>${new Date(`${item.planned_for}T12:00:00`).toLocaleDateString("es-ES", {weekday:"short",day:"numeric",month:"short"})}</small><b>${esc(item.routines?.name || "Entrenamiento libre")}</b><em>${stat.sets} series · ${Math.round(stat.volume).toLocaleString("es-ES")} kg · ${item.duration_minutes || "—"} min</em></div>${item.routine_id ? `<button type="button" data-repeat-routine="${item.routine_id}">Repetir</button>` : ""}</article>`; }).join("") || '<div class="client-empty-state">Todavia no has completado entrenamientos.</div>'}</div></section>`;
     host.querySelectorAll("[data-history-date]").forEach((button) => button.onclick = () => {
       host.querySelectorAll("[data-session-date]").forEach((item) => item.hidden = item.dataset.sessionDate !== button.dataset.historyDate);
     });
     host.querySelectorAll("[data-repeat-routine]").forEach((button) => button.onclick = async () => {
+      resetSession();
+      routine = null;
       await selectRoutine(button.dataset.repeatRoutine);
       host.closest(".client-panel-content").querySelector('[data-workout-view="routines"]').click();
       toast("Rutina preparada para repetir");
     });
+    } catch (error) {
+      host.innerHTML = '<div class="client-empty-state">No se pudo cargar el historial. Comprueba la conexion.<button type="button">Reintentar</button></div>';
+      host.querySelector("button").onclick = () => renderWorkoutHistory(host);
+    }
   }
 
   let clientExerciseLibrary = null;
   async function renderClientLibrary(host) {
+    try {
     host.innerHTML = '<div class="panel-loading">Cargando ejercicios…</div>';
     if (!clientExerciseLibrary) {
-      const { data } = await db.from("exercises").select("id,name,body_group,primary_muscle,equipment,instructions,media_url,thumbnail_url,media_type").eq("is_active", true).order("name").limit(1000);
+      const data = await checkedQuery(db.from("exercises").select("id,name,body_group,primary_muscle,equipment,instructions,media_url,thumbnail_url,media_type").eq("is_active", true).order("name").limit(1000));
       clientExerciseLibrary = (data || []).map((item) => ({ id:item.id, nombre_es:item.name, grupo:item.primary_muscle || item.body_group, equipo:item.equipment || "Sin material", imagen:item.thumbnail_url || item.media_url || "assets/brand/ft-symbol-color.png", gif:item.media_url || item.thumbnail_url, instrucciones:item.instructions ? [item.instructions] : [], database:item }));
     }
     host.innerHTML = `<section class="client-panel-card client-library"><div class="panel-title"><div><small>BIBLIOTECA FT</small><h2>Ejercicios y tecnica</h2></div><button type="button" id="create-client-exercise">+ Crear ejercicio</button></div><div class="client-library-tools"><input id="client-exercise-search" placeholder="Buscar ejercicio o musculo…"><select id="client-exercise-group"><option value="">Todos los grupos</option>${[...new Set(clientExerciseLibrary.map((item) => item.grupo).filter(Boolean))].sort().map((group) => `<option>${esc(group)}</option>`).join("")}</select></div><div class="client-library-results"></div></section>`;
@@ -968,6 +1060,7 @@
     host.querySelector("#client-exercise-group").onchange = paint;
     host.querySelector("#create-client-exercise").onclick = openCustomExerciseForm;
     paint();
+    } catch(error) { showLoadError(host, () => renderClientLibrary(host)); }
   }
 
   function openCustomExerciseForm() {
@@ -991,15 +1084,31 @@
   function openLibraryExercise(exercise) {
     const overlay = document.createElement("div");
     overlay.className = "client-exercise-preview";
-    overlay.innerHTML = `<section><button type="button" class="exercise-preview-close">×</button><img src="${esc(exercise.gif || exercise.imagen)}" alt="Demostracion de ${esc(exercise.nombre_es || exercise.nombre)}"><small>${esc(exercise.grupo)} · ${esc(exercise.equipo)}</small><h2>${esc(exercise.nombre_es || exercise.nombre)}</h2><ol>${(exercise.instrucciones || []).map((step) => `<li>${esc(step)}</li>`).join("") || '<li>Consulta las indicaciones de Fernando antes de realizar el ejercicio.</li>'}</ol><button type="button" class="client-add-exercise">+ Anadir al entrenamiento</button></section>`;
+    overlay.innerHTML = `<section><button type="button" class="exercise-preview-close">×</button><img src="${esc(exercise.gif || exercise.imagen)}" alt="Demostracion de ${esc(exercise.nombre_es || exercise.nombre)}"><small>${esc(exercise.grupo)} · ${esc(exercise.equipo)}</small><h2>${esc(exercise.nombre_es || exercise.nombre)}</h2><ol>${(exercise.instrucciones || []).map((step) => `<li>${esc(step)}</li>`).join("") || '<li>Consulta las indicaciones de Fernando antes de realizar el ejercicio.</li>'}</ol><form class="client-exercise-config"><label>Destino<select name="destination"><option value="current">Entrenamiento actual</option><option value="free">Nuevo entrenamiento libre</option></select></label><div class="client-form-grid"><label>Dia<input name="day" type="number" min="1" max="14" value="${selectedRoutineDay || 1}" required></label><label>Posicion<input name="position" type="number" min="1" value="${routineItems.length + 1}" required></label><label>Series<input name="sets" type="number" min="1" max="20" value="3" required></label><label>Repeticiones minimas<input name="min" type="number" min="1" max="100" value="8" required></label><label>Repeticiones maximas<input name="max" type="number" min="1" max="100" value="12" required></label><label>Descanso (segundos)<input name="rest" type="number" min="0" max="900" value="90" required></label></div><p class="form-feedback" aria-live="polite"></p><button type="submit" class="client-add-exercise">+ Anadir al entrenamiento</button></form></section>`;
     document.body.appendChild(overlay);
     overlay.querySelector("button").onclick = () => overlay.remove();
-    overlay.querySelector(".client-add-exercise").onclick = () => {
-      const source = exercise.database;
+    overlay.querySelector("form").onsubmit = (event) => {
+      event.preventDefault();
+      const form = event.currentTarget, data = new FormData(form), source = exercise.database;
       if (!source) return;
-      const item = { id:null, exercise_id:source.id, day_number:selectedRoutineDay || 1, position:routineItems.length + 1, target_sets:3, target_reps_min:8, target_reps_max:12, target_weight_kg:null, target_rir:2, rest_seconds:90, notes:"", exercises:source };
-      routineItems.push(item);
-      allRoutineItems.push(item);
+      const min = Number(data.get("min")), max = Number(data.get("max"));
+      if (max < min) { form.querySelector(".form-feedback").textContent = "El maximo de repeticiones debe ser igual o mayor que el minimo."; return; }
+      if (data.get("destination") === "free" || !routine) {
+        resetSession();
+        routine = { id: null, name: "Entrenamiento libre", status: "active" };
+        allRoutineItems = [];
+      }
+      const day = Number(data.get("day"));
+      const sameDay = allRoutineItems.filter(item => item.day_number === day);
+      if (sameDay.some(item => item.exercise_id === source.id)) {
+        form.querySelector(".form-feedback").textContent = "Este ejercicio ya esta incluido en este dia."; return;
+      }
+      const item = { id:null, exercise_id:source.id, day_number:day, target_sets:Number(data.get("sets")), target_reps_min:min, target_reps_max:max, target_weight_kg:null, target_rir:null, rest_seconds:Number(data.get("rest")), notes:"", exercises:source };
+      sameDay.splice(Math.min(Number(data.get("position")) - 1, sameDay.length), 0, item);
+      sameDay.forEach((entry, index) => entry.position = index + 1);
+      allRoutineItems = [...allRoutineItems.filter(entry => entry.day_number !== day), ...sameDay];
+      selectedRoutineDay = day;
+      routineItems = sameDay;
       renderRoutine();
       overlay.remove();
       document.querySelector('[data-workout-view="routines"]')?.click();
@@ -1037,6 +1146,7 @@
     const { data: logs } = await db
       .from("set_logs")
       .select("session_id,exercise_id,weight_kg,reps")
+      .eq("completed", true)
       .in(
         "session_id",
         sessions.map((s) => s.id),
@@ -1126,7 +1236,8 @@
         '<div class="client-empty-state">Inicia sesion para consultar tu progreso.</div>';
       return;
     }
-    const [{ data: measurements }, { data: sessions }, { data: photos }] = await Promise.all([
+    try {
+    const results = await Promise.all([
       db
         .from("measurements")
         .select("*")
@@ -1140,20 +1251,23 @@
         .order("planned_for", { ascending: false })
         .limit(30),
       db.from("progress_photos").select("id,recorded_on,storage_path,caption").eq("client_id", clientId).order("recorded_on", { ascending: false }).limit(24),
-    ]);
+    ].map(checkedQuery));
+    const [measurements, sessions, photos] = results;
     const latest = measurements?.[0],
       completed = (sessions || []).filter((s) => s.completed_at).length;
-    host.innerHTML = `<div class="client-metric-grid"><article><small>PESO ACTUAL</small><b>${latest?.weight_kg ?? "—"} <em>kg</em></b></article><article><small>GRASA CORPORAL</small><b>${latest?.body_fat_pct ?? "—"}<em>%</em></b></article><article><small>SESIONES COMPLETADAS</small><b>${completed}</b></article></div><section class="client-panel-card"><div class="panel-title"><div><small>SEGUIMIENTO SEMANAL</small><h2>Registrar medidas</h2></div></div><form id="measurement-form" class="client-form-grid"><label>Peso (kg)<input name="weight_kg" type="number" min="20" max="350" step="0.1" value="${latest?.weight_kg ?? ""}" required></label><label>Altura (cm)<input name="height_cm" type="number" min="100" max="240" step="0.1" value="${latest?.height_cm ?? ""}"></label><label>Grasa corporal (%)<input name="body_fat_pct" type="number" min="2" max="70" step="0.1" value="${latest?.body_fat_pct ?? ""}"></label><label>Cintura (cm)<input name="waist_cm" type="number" min="30" max="250" step="0.1" value="${latest?.waist_cm ?? ""}"></label><button class="client-primary" type="submit">Guardar registro semanal</button><p class="form-feedback"></p></form></section><section class="client-panel-card"><div class="panel-title"><div><small>HISTORIAL</small><h2>Ultimos registros</h2></div></div><div class="measurement-history">${(measurements || []).map((item) => `<div><time>${new Date(item.recorded_on + "T12:00:00").toLocaleDateString("es-ES")}</time><b>${item.weight_kg ?? "—"} kg</b><span>${item.body_fat_pct ?? "—"}% grasa</span></div>`).join("") || '<p class="client-empty-state">Todavia no hay mediciones.</p>'}</div></section><section class="client-panel-card"><div class="panel-title"><div><small>COMPARATIVA SEMANAL</small><h2>Tus cargas por ejercicio</h2></div></div><div class="strength-history" id="strength-history"><p class="panel-loading">Cargando comparativa…</p></div></section>`;
+    host.innerHTML = `<div class="client-metric-grid"><article><small>PESO ACTUAL</small><b>${latest?.weight_kg ?? "—"} <em>kg</em></b></article><article><small>GRASA CORPORAL</small><b>${latest?.body_fat_pct ?? "—"}<em>%</em></b></article><article><small>SESIONES COMPLETADAS RECIENTES</small><b>${completed}</b></article></div><section class="client-panel-card"><div class="panel-title"><div><small>SEGUIMIENTO SEMANAL</small><h2>Registrar medidas</h2></div></div><form id="measurement-form" class="client-form-grid"><label>Peso (kg)<input name="weight_kg" type="number" min="20" max="350" step="0.1" value="${latest?.weight_kg ?? ""}" required></label><label>Altura (cm)<input name="height_cm" type="number" min="100" max="240" step="0.1" value="${latest?.height_cm ?? ""}"></label><label>Grasa corporal (%)<input name="body_fat_pct" type="number" min="2" max="70" step="0.1" value="${latest?.body_fat_pct ?? ""}"></label><label>Cintura (cm)<input name="waist_cm" type="number" min="30" max="250" step="0.1" value="${latest?.waist_cm ?? ""}"></label><button class="client-primary" type="submit">Guardar registro semanal</button><p class="form-feedback"></p></form></section><section class="client-panel-card"><div class="panel-title"><div><small>HISTORIAL</small><h2>Ultimos registros</h2></div></div><div class="measurement-history">${(measurements || []).map((item) => `<div><time>${new Date(item.recorded_on + "T12:00:00").toLocaleDateString("es-ES")}</time><b>${item.weight_kg ?? "—"} kg</b><span>${item.body_fat_pct ?? "—"}% grasa</span></div>`).join("") || '<p class="client-empty-state">Todavia no hay mediciones.</p>'}</div></section><section class="client-panel-card"><div class="panel-title"><div><small>COMPARATIVA SEMANAL</small><h2>Tus cargas por ejercicio</h2></div></div><div class="strength-history" id="strength-history"><p class="panel-loading">Cargando comparativa…</p></div></section>`;
     const metricGrid = host.querySelector(".client-metric-grid");
     if (metricGrid) metricGrid.insertAdjacentHTML("beforeend", `<article><small>ALTURA</small><b>${latest?.height_cm ?? "—"}<em>cm</em></b></article>`);
     metricGrid?.insertAdjacentHTML("afterend", `<section class="client-panel-card progress-chart-card"><div class="panel-title"><div><small>EVOLUCION</small><h2>Peso corporal</h2></div></div>${measurementChart(measurements,"weight_kg","kg")}</section>`);
     const photoUrls = await Promise.all((photos || []).map(async (photo) => ({ photo, signed: (await db.storage.from("progress-photos").createSignedUrl(photo.storage_path, 3600)).data?.signedUrl || "" })));
     metricGrid?.insertAdjacentHTML("afterend", `<section class="client-panel-card progress-photos-card"><div class="panel-title"><div><small>FOTOS DE PROGRESO</small><h2>Tu evolucion visual</h2></div></div><form id="progress-photo-form" class="progress-photo-form"><label>Foto privada<input name="photo" type="file" accept="image/jpeg,image/png,image/webp" required></label><input name="caption" maxlength="80" placeholder="Nota opcional"><button class="client-primary" type="submit">Guardar foto</button><p class="form-feedback"></p></form><div class="progress-photo-grid">${photoUrls.map(({photo,signed}) => `<figure><img src="${esc(signed)}" alt="Foto de progreso"><figcaption><b>${new Date(photo.recorded_on+"T12:00:00").toLocaleDateString("es-ES")}</b><span>${esc(photo.caption || "Progreso")}</span></figcaption></figure>`).join("") || '<p class="client-empty-state">Todavia no has subido fotografias.</p>'}</div></section>`);
-    renderStrengthHistory(host.querySelector("#strength-history"));
+    renderStrengthHistory(host.querySelector("#strength-history")).catch(() => showLoadError(host.querySelector("#strength-history"), showProgress));
     host.querySelector("#progress-photo-form").onsubmit = async (event) => {
       event.preventDefault(); const form=event.currentTarget,file=form.photo.files?.[0],feedback=form.querySelector(".form-feedback");
-      if(!file || file.size>5242880){ feedback.textContent="Selecciona una foto de menos de 5 MB."; return; }
-      const {data:auth}=await db.auth.getUser(), ext=(file.name.split(".").pop()||"jpg").toLowerCase(), path=`${auth.user.id}/${clientId}/${Date.now()}.${ext}`;
+      if(!file || !["image/jpeg","image/png","image/webp"].includes(file.type) || file.size>5242880){ feedback.textContent="Selecciona una foto de menos de 5 MB."; return; }
+      const {data:auth}=await db.auth.getUser();
+      if (!auth?.user) { feedback.textContent="Tu sesion ha caducado. Vuelve a iniciar sesion."; return; }
+      const ext={"image/jpeg":"jpg","image/png":"png","image/webp":"webp"}[file.type], path=`${auth.user.id}/${clientId}/${Date.now()}.${ext}`;
       feedback.textContent="Subiendo foto…"; const upload=await db.storage.from("progress-photos").upload(path,file,{contentType:file.type});
       if(upload.error){ feedback.textContent="No se pudo subir la foto."; return; }
       const saved=await db.from("progress_photos").insert({client_id:clientId,storage_path:path,caption:String(new FormData(form).get("caption")||"").trim()||null});
@@ -1166,7 +1280,7 @@
         data = new FormData(form),
         payload = {
           client_id: clientId,
-          recorded_on: new Date().toISOString().slice(0, 10),
+          recorded_on: localDate(),
         };
       ["weight_kg", "height_cm", "body_fat_pct", "waist_cm"].forEach(
         (key) =>
@@ -1188,6 +1302,7 @@
         : "Registro guardado correctamente.";
       if (!result.error) setTimeout(showProgress, 500);
     };
+    } catch(error) { showLoadError(host, showProgress); }
   }
 
   const profilePanel = panel("client-profile-panel", "Mi perfil", "user");
@@ -1200,12 +1315,13 @@
         '<div class="client-empty-state">Inicia sesion para consultar tu perfil.</div>';
       return;
     }
-    const { data: client, error: profileError } = await db
+    let client;
+    try { client = await checkedQuery(db
       .from("clients")
       .select("*")
       .eq("id", clientId)
-      .maybeSingle();
-    if (profileError || !client) {
+      .maybeSingle()); } catch(error) { showLoadError(host, showProfile); return; }
+    if (!client || Array.isArray(client)) {
       host.innerHTML = `<div class="client-empty-state"><b>No hemos podido abrir tu perfil.</b><br>Recarga la pagina o vuelve a iniciar sesion.</div>`;
       return;
     }
@@ -1219,7 +1335,7 @@
       const link=button.dataset.profileLink;
       if(link === "progress") showProgress();
       else if(link === "hall") window.ftHallOfFame?.open?.();
-      else { showRoutine(); setTimeout(() => document.querySelector(`[data-workout-view="${link}"]`)?.click(),120); }
+      else { showRoutines(); document.querySelector(`[data-workout-view="${link}"]`)?.click(); }
     });
     host.querySelector("#avatar-file").onchange = async (event) => {
       const file = event.target.files?.[0],
@@ -1328,11 +1444,12 @@
     event.preventDefault();
     showProgress();
   };
-  await loadRoutine();
   window.ftClientSections = { showProgress, showProfile, showRoutines, loadRoutine };
+  await loadRoutine();
   let lastRoutineRefresh = Date.now();
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState !== "visible") return;
+    if (sessionId && !sessionCompleted) return;
     if (Date.now() - lastRoutineRefresh < 15000) return;
     lastRoutineRefresh = Date.now();
     loadRoutine();

@@ -7,8 +7,7 @@
   }
   function run(action) {
     if (action === "routine") {
-      closePanels(); activate("routine");
-      document.getElementById("routine-session")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      window.ftClientSections?.showRoutines?.();
     } else if (action === "progress") window.ftClientSections?.showProgress?.();
     else if (action === "profile") window.ftClientSections?.showProfile?.();
     else if (action === "materials") window.ftClientMaterials?.show?.();
