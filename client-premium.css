@@ -1,3 +1,5 @@
+@font-face{font-family:"Clean Sports";src:url("assets/fonts/clean-sports.otf") format("opentype");font-display:swap}
+@font-face{font-family:"Sporter";src:url("assets/fonts/sporter.ttf") format("truetype");font-display:swap}
 /* FT athlete interface. Shared tokens keep home, training and records consistent. */
 :root{--ft-bg:#0c1012;--ft-card:#171d20;--ft-raised:#20282c;--ft-line:#ffffff12;--ft-text:#f2f5f3;--ft-muted:#a1b0ae;--ft-accent:#54e39c;--ft-shadow:0 10px 28px #0003;--app-bg:var(--ft-bg);--app-card:var(--ft-card);--app-ink:var(--ft-text);--app-muted:var(--ft-muted)}
 html{background:var(--ft-bg);color-scheme:dark}
@@ -27,7 +29,7 @@ body.ft-client-home{background:var(--ft-bg)!important;color:var(--ft-text)!impor
 .ft-client-home .ft-training-hero:before,.ft-client-home .ft-training-hero:after{display:none!important}
 .ft-client-home .ft-training-copy{position:relative;z-index:1;max-width:400px;padding:0!important}
 .ft-client-home .ft-training-copy>span{font:700 10px "DM Sans"!important;letter-spacing:.17em;color:var(--ft-accent)!important}
-.ft-client-home .ft-training-copy h1{font:600 clamp(38px,7vw,62px)/1.03 "Oswald",sans-serif!important;font-style:normal!important;letter-spacing:-.015em!important;color:#fff!important;text-transform:uppercase;margin:14px 0!important}
+.ft-client-home .ft-training-copy h1{font:600 clamp(38px,7vw,62px)/1.03 "Clean Sports",sans-serif!important;font-style:normal!important;letter-spacing:-.015em!important;color:#fff!important;text-transform:uppercase;margin:14px 0!important}
 .ft-client-home .ft-training-copy p{font:400 13px/1.5 "DM Sans"!important;color:#c6d2cc!important;margin:0 0 19px!important}
 .ft-client-home #start-training{display:inline-flex!important;align-items:center;justify-content:space-between;gap:26px;background:var(--ft-accent)!important;color:#0d2518!important;border:0!important;border-radius:10px!important;padding:13px 18px!important;font:800 13px "DM Sans"!important;box-shadow:0 4px 20px #54e39c18}
 .ft-client-home .ft-next-session{min-height:90px!important;margin:0 0 26px!important;padding:16px!important;gap:14px!important;background:var(--ft-card)!important;border:1px solid var(--ft-line)!important;border-left:3px solid var(--ft-accent)!important;border-radius:14px!important;box-shadow:var(--ft-shadow)!important;color:var(--ft-text)!important}
@@ -35,7 +37,7 @@ body.ft-client-home{background:var(--ft-bg)!important;color:var(--ft-text)!impor
 .ft-client-home .ft-next-session small{color:var(--ft-muted)!important;font-size:9px!important;letter-spacing:.14em!important}
 .ft-client-home .ft-next-session b{color:var(--ft-text)!important;-webkit-text-fill-color:var(--ft-text);font:700 15px/1.35 "DM Sans"!important;margin:3px 0!important}
 .ft-client-home .ft-next-session em{color:var(--ft-muted)!important;font-size:11px!important;line-height:1.5!important}
-.ft-client-home .ft-section>h2{font:600 23px "Oswald"!important;letter-spacing:.03em!important;text-transform:uppercase!important;color:var(--ft-text);margin:0 0 14px!important}
+.ft-client-home .ft-section>h2{font:600 23px "Clean Sports"!important;letter-spacing:.03em!important;text-transform:uppercase!important;color:var(--ft-text);margin:0 0 14px!important}
 .ft-client-home .ft-quick-grid{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:9px!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
 .ft-client-home .ft-quick-grid button:nth-child(n){display:flex!important;flex-direction:column!important;align-items:flex-start!important;justify-content:space-between!important;grid-column:auto!important;gap:15px!important;min-height:108px!important;padding:15px 12px!important;background:var(--ft-card)!important;border:1px solid var(--ft-line)!important;border-radius:13px!important;box-shadow:0 4px 14px #0002!important;color:var(--ft-text)!important}
 .ft-client-home .ft-quick-grid button i{height:29px!important;width:29px!important;border-radius:0!important;background:transparent!important;color:var(--ft-accent)!important;padding:0!important}
@@ -46,15 +48,15 @@ body.ft-client-home{background:var(--ft-bg)!important;color:var(--ft-text)!impor
 .ft-client-home .ft-week-goal>div:first-child{min-width:0;flex:1}
 .ft-client-home .ft-week-goal span{font:700 10px "DM Sans"!important;letter-spacing:.12em!important;color:var(--ft-muted)!important}
 .ft-client-home .ft-week-goal p{font:400 13px/1.7 "DM Sans"!important;color:#c7d1cc!important}
-.ft-client-home #week-completed{font:600 32px "Oswald"!important;color:var(--ft-accent)!important}
+.ft-client-home #week-completed{font:600 32px "Clean Sports"!important;color:var(--ft-accent)!important}
 .ft-client-home .ft-week-goal small{font-size:11px!important;color:var(--ft-muted)!important}
 .ft-client-home .ft-goal-bar{height:5px!important;background:#ffffff0c!important;border-radius:5px;margin:12px 0}
 .ft-client-home .ft-goal-bar i{background:var(--ft-accent)!important}
 .ft-client-home .ft-goal-ring{display:none!important}
 .ft-client-home .ft-tip-card{background:var(--ft-card)!important;border:1px solid var(--ft-line)!important;border-radius:16px!important;box-shadow:none!important;padding:22px!important}
-.ft-client-home .ft-tip-card h2{font:600 23px "Oswald"!important;color:var(--ft-text)!important}
+.ft-client-home .ft-tip-card h2{font:600 23px "Clean Sports"!important;color:var(--ft-text)!important}
 .ft-client-home .ft-tip-card p{color:var(--ft-muted)!important;font:400 13px/1.6 "DM Sans"!important}
-.ft-client-home .ft-coach-tip{background:var(--ft-card)!important;border:1px solid var(--ft-line)!important;border-left:2px solid var(--ft-accent)!important;border-radius:15px!important;box-shadow:none!important;padding:20px!important}.ft-client-home .ft-coach-tip h2{font:600 24px "Oswald"!important;color:var(--ft-text)!important}.ft-client-home .ft-coach-tip small{color:var(--ft-accent)!important}.ft-client-home .ft-coach-tip p{color:var(--ft-muted)!important;font:400 12px/1.6 "DM Sans"!important}.ft-client-home .ft-tip-symbol{display:none!important}
+.ft-client-home .ft-coach-tip{background:var(--ft-card)!important;border:1px solid var(--ft-line)!important;border-left:2px solid var(--ft-accent)!important;border-radius:15px!important;box-shadow:none!important;padding:20px!important}.ft-client-home .ft-coach-tip h2{font:600 24px "Clean Sports"!important;color:var(--ft-text)!important}.ft-client-home .ft-coach-tip small{color:var(--ft-accent)!important}.ft-client-home .ft-coach-tip p{color:var(--ft-muted)!important;font:400 12px/1.6 "DM Sans"!important}.ft-client-home .ft-tip-symbol{display:none!important}
 .ft-client-home .ft-bottom-nav{position:fixed!important;left:50%!important;transform:translateX(-50%)!important;bottom:max(10px,env(safe-area-inset-bottom))!important;display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:4px!important;width:calc(100% - 28px)!important;max-width:480px!important;min-height:66px!important;height:66px!important;padding:6px!important;border:1px solid #ffffff16!important;border-radius:19px!important;background:#182021f5!important;box-shadow:0 12px 40px #0009!important;backdrop-filter:blur(18px);z-index:95}
 .ft-client-home .ft-bottom-nav button:nth-child(n){display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:4px!important;width:auto!important;min-height:0!important;height:52px!important;padding:5px!important;border:0!important;border-radius:12px!important;background:transparent!important;color:#8e9e99!important;box-shadow:none!important}
 .ft-client-home .ft-bottom-nav button[data-client-nav="materials"]{display:none!important}
@@ -67,7 +69,7 @@ body.ft-client-home{background:var(--ft-bg)!important;color:var(--ft-text)!impor
 /* Training, history, profile and community share the same surfaces. */
 .ft-client-home .client-section-panel{background:var(--ft-bg)!important;color:var(--ft-text)!important}
 .ft-client-home .client-section-panel>header{background:#0c1012f5!important;border-bottom:1px solid var(--ft-line)!important;box-shadow:none!important;gap:14px!important;min-height:calc(78px + env(safe-area-inset-top))!important;padding:calc(12px + env(safe-area-inset-top)) 20px 12px!important}
-.ft-client-home .client-section-panel>header h1{font:600 29px/1.15 "Oswald"!important;text-transform:uppercase!important;letter-spacing:.015em!important;color:var(--ft-text)!important}
+.ft-client-home .client-section-panel>header h1{font:600 29px/1.15 "Clean Sports"!important;text-transform:uppercase!important;letter-spacing:.015em!important;color:var(--ft-text)!important}
 .ft-client-home .client-section-panel>header small{font:700 9px "DM Sans"!important;letter-spacing:.16em!important;color:var(--ft-accent)!important}
 .ft-client-home .client-panel-back{height:43px!important;min-height:43px!important;width:43px!important;min-width:43px!important;flex-basis:43px!important;border:1px solid var(--ft-line)!important;border-radius:12px!important;background:var(--ft-card)!important;color:var(--ft-text)!important}
 .ft-client-home .client-panel-content{max-width:1000px!important;margin:auto!important;padding:20px 20px 120px!important}
@@ -85,7 +87,7 @@ body.ft-client-home{background:var(--ft-bg)!important;color:var(--ft-text)!impor
 .ft-client-home .client-workout-actions>button small{display:none!important}
 .ft-client-home .routine-picker{background:transparent!important;border:0!important;padding:0!important;box-shadow:none!important;margin:0 0 20px!important}
 .ft-client-home .routine-picker-title{display:flex;align-items:center;justify-content:space-between;gap:14px}
-.ft-client-home .routine-picker-title h3{font:600 25px/1.2 "Oswald"!important;text-transform:uppercase!important;letter-spacing:0!important;margin:0 0 14px!important}
+.ft-client-home .routine-picker-title h3{font:600 25px/1.2 "Clean Sports"!important;text-transform:uppercase!important;letter-spacing:0!important;margin:0 0 14px!important}
 .ft-client-home .routine-picker-title small{display:none!important}
 .ft-client-home #start-empty-workout{padding:9px 11px!important;max-width:110px;min-height:44px;border-radius:9px!important;border:1px solid #54e39c30!important;background:#54e39c08!important;color:var(--ft-accent)!important;font:600 10px/1.4 "DM Sans"!important;letter-spacing:0!important}
 .ft-client-home .client-routine-choice{background:var(--ft-card)!important;border:1px solid var(--ft-line)!important;border-radius:13px!important;box-shadow:0 5px 20px #0002!important;padding:14px!important;gap:10px!important}
@@ -98,7 +100,7 @@ body.ft-client-home{background:var(--ft-bg)!important;color:var(--ft-text)!impor
 .ft-client-home .routine-session-host .workout-content{padding:18px 14px!important;background:transparent!important}
 .ft-client-home .workout-top p{font:600 9px "DM Sans"!important;color:var(--ft-muted)!important;letter-spacing:.08em!important}
 .ft-client-home .workout-top b{font:600 13px "DM Sans"!important;color:var(--ft-text)!important}
-.ft-client-home #percent{font:500 26px "Oswald"!important;color:var(--ft-accent)!important}
+.ft-client-home #percent{font:500 26px "Clean Sports"!important;color:var(--ft-accent)!important}
 .ft-client-home .session-progress{height:4px!important;background:#ffffff0a!important}
 .ft-client-home #session-progress{background:var(--ft-accent)!important}
 .ft-client-home .session-plan-head{margin:20px 0 12px!important}
@@ -121,7 +123,7 @@ body.ft-client-home{background:var(--ft-bg)!important;color:var(--ft-text)!impor
 .ft-client-home .client-empty-state b{color:var(--ft-text)!important;font-size:15px!important}
 .ft-client-home .membership-notice{background:#2b2519;border:1px solid #d9b97128;border-radius:13px;padding:18px;display:grid;gap:9px}.membership-notice small{color:#d9b971;letter-spacing:.1em;font-size:9px}.membership-notice b{font-size:15px}.membership-notice p{margin:0;font-size:12px;line-height:1.6;color:#c4b9a2}
 .ft-client-home .client-panel-card,.ft-client-home .client-metric-grid article,.ft-client-home .client-material-card,.ft-client-home .profile-dashboard button{background:var(--ft-card)!important;border:1px solid var(--ft-line)!important;border-radius:15px!important;box-shadow:var(--ft-shadow)!important;color:var(--ft-text)!important}
-.ft-client-home .client-panel-card h2,.ft-client-home .client-profile-hero h2{font:600 25px "Oswald"!important;color:var(--ft-text)!important}
+.ft-client-home .client-panel-card h2,.ft-client-home .client-profile-hero h2{font:600 25px "Clean Sports"!important;color:var(--ft-text)!important}
 .ft-client-home .client-panel-card small,.ft-client-home .client-metric-grid small,.ft-client-home .profile-dashboard small{color:var(--ft-muted)!important}
 .ft-client-home .client-profile-hero{background:linear-gradient(110deg,#21392c,#171d20)!important;border:1px solid #54e39c20!important;box-shadow:var(--ft-shadow)!important;color:var(--ft-text)!important;border-radius:17px!important}
 .ft-client-home .client-profile-hero p{color:var(--ft-muted)!important}.ft-client-home .client-profile-hero b{background:#54e39c12!important;color:var(--ft-accent)!important}
@@ -132,13 +134,13 @@ body.ft-client-home{background:var(--ft-bg)!important;color:var(--ft-text)!impor
 .ft-client-home .client-session-history small,.ft-client-home .client-session-history em,.ft-client-home .hof-person small,.ft-client-home .hof-mark small{color:var(--ft-muted)!important}
 .ft-client-home .calendar-days button{background:#20292a!important;color:var(--ft-muted)!important;border:0!important}.ft-client-home .calendar-days .trained{background:#54e39c!important;color:#0d281a!important}.ft-client-home .calendar-week{color:var(--ft-muted)!important}
 .ft-client-home .hof-hero{background:radial-gradient(ellipse at top right,#32704c,#12251c 65%)!important;border:1px solid #54e39c30!important;border-radius:18px!important;box-shadow:var(--ft-shadow);padding:24px!important;position:relative}
-.ft-client-home .hof-hero h2{font:600 34px/1.1 "Oswald"!important;text-transform:uppercase;letter-spacing:-.01em;color:#fff!important}.ft-client-home .hof-hero p{font:400 12px/1.65 "DM Sans"!important;max-width:270px;color:#b2c9bc!important}.ft-client-home .hof-hero small{color:var(--ft-accent)!important;font-size:9px!important;letter-spacing:.1em}.ft-client-home .hof-trophy{font-size:40px!important;filter:grayscale(.3)}
+.ft-client-home .hof-hero h2{font:600 34px/1.1 "Clean Sports"!important;text-transform:uppercase;letter-spacing:-.01em;color:#fff!important}.ft-client-home .hof-hero p{font:400 12px/1.65 "DM Sans"!important;max-width:270px;color:#b2c9bc!important}.ft-client-home .hof-hero small{color:var(--ft-accent)!important;font-size:9px!important;letter-spacing:.1em}.ft-client-home .hof-trophy{font-size:40px!important;filter:grayscale(.3)}
 .ft-client-home .hof-privacy{font-size:11px!important;color:var(--ft-muted)!important;line-height:1.7!important}.ft-client-home .hof-join label{font-size:13px!important}
 .ft-client-home .ft-notification-panel{background:var(--ft-card)!important;color:var(--ft-text)!important;border:1px solid var(--ft-line)!important;box-shadow:0 12px 40px #0008}.ft-client-home .ft-notification-panel p{color:var(--ft-muted)!important}
 
 /* Last workout is part of the routine, not hidden behind another tab. */
 .routine-recent-history{margin:20px 0;padding:17px;background:linear-gradient(135deg,#1d3025,#131d19);border:1px solid #54e39c24;border-radius:13px}
-.routine-history-heading{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}.routine-history-heading small{color:var(--ft-accent);font:700 9px "DM Sans";letter-spacing:.11em}.routine-history-heading h3{margin:5px 0 0;font:500 23px "Oswald";color:var(--ft-text)}.routine-history-heading svg{width:24px!important;height:24px!important;color:var(--ft-accent)}
+.routine-history-heading{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}.routine-history-heading small{color:var(--ft-accent);font:700 9px "DM Sans";letter-spacing:.11em}.routine-history-heading h3{margin:5px 0 0;font:500 23px "Clean Sports";color:var(--ft-text)}.routine-history-heading svg{width:24px!important;height:24px!important;color:var(--ft-accent)}
 .routine-recent-history>p{color:var(--ft-muted);font:400 12px/1.7 "DM Sans"}
 .routine-history-session{border-top:1px solid #ffffff0d;padding:10px 0}.routine-history-session:last-child{padding-bottom:0}.routine-history-session summary{display:flex;align-items:center;justify-content:space-between;cursor:pointer;list-style:none;gap:8px}.routine-history-session summary::-webkit-details-marker{display:none}.routine-history-session summary div{display:grid;gap:4px}.routine-history-session summary b{font:700 13px "DM Sans";color:var(--ft-text)}.routine-history-session summary small{font:400 10px "DM Sans";color:var(--ft-muted)}.routine-history-session summary>span{font:700 8px "DM Sans";letter-spacing:.1em;color:var(--ft-accent);background:#54e39c12;border-radius:5px;padding:5px 7px}
 .routine-history-exercises article{margin-top:13px}.routine-history-exercises article>b{font:600 11px/1.5 "DM Sans";color:#d7e6dc}.routine-history-exercises article>div{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}.routine-history-exercises article span{background:#0b151180;border:1px solid #ffffff0d;border-radius:6px;padding:6px 8px;font:400 11px "DM Sans";color:#c8d8cc}.routine-history-exercises article small{font-size:8px;color:#859d8d;margin-right:4px}.routine-history-exercises article strong{color:var(--ft-accent);font-weight:700}
@@ -146,7 +148,7 @@ body.ft-client-home{background:var(--ft-bg)!important;color:var(--ft-text)!impor
 /* A numeric result is always entered by the athlete. */
 .ft-client-home .set-sheet{background:#000b!important;backdrop-filter:blur(6px)}
 .ft-client-home .sheet-inner{background:var(--ft-card)!important;color:var(--ft-text)!important;border:1px solid #ffffff18!important;border-radius:22px 22px 0 0!important;padding:22px 16px calc(22px + env(safe-area-inset-bottom))!important;box-shadow:0 -20px 60px #0005}
-.ft-client-home #sheet-title{font:600 27px/1.2 "Oswald"!important;letter-spacing:0!important;color:var(--ft-text)!important}
+.ft-client-home #sheet-title{font:600 27px/1.2 "Clean Sports"!important;letter-spacing:0!important;color:var(--ft-text)!important}
 .ft-client-home .sheet-close,.ft-client-home .exercise-preview-close{background:#283431!important;color:var(--ft-text)!important;border:1px solid var(--ft-line)!important;border-radius:10px!important;min-height:40px;min-width:40px}
 .ft-client-home .client-exercise-media{background:#eef1ed!important;border-radius:12px!important;overflow:hidden}.ft-client-home #sheet-gif{max-height:210px!important;object-fit:contain}
 .ft-client-home .technique-tip{background:#54e39c09!important;border-left:2px solid var(--ft-accent)!important;color:#b6c8bd!important;font:400 12px/1.6 "DM Sans"!important}
@@ -169,3 +171,13 @@ body.ft-client-home{background:var(--ft-bg)!important;color:var(--ft-text)!impor
 @media(prefers-reduced-motion:reduce){.ft-client-home *{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
 
 body.ft-client-home [hidden][hidden][hidden]{display:none!important}
+
+body.ft-client-home #start-training,body.ft-client-home #save-set,body.ft-client-home .add-live-set,body.ft-client-home .ft-quick-grid button b{font-family:"Sporter","DM Sans",sans-serif!important;font-weight:400!important;font-size:16px!important;letter-spacing:.045em!important}
+body.ft-client-home .ft-bottom-nav button small{font-family:"Sporter","DM Sans",sans-serif!important;font-size:12px!important;font-weight:400!important}
+body.ft-client-home .hevy-set-row select{padding:0 2px!important;appearance:none!important;text-align:center!important}/* Optical scale for the original display face, whose glyphs exceed its em box. */
+body.ft-client-home .ft-training-copy h1{font-size:24px!important;line-height:1.65!important;font-weight:400!important;letter-spacing:.015em!important;margin:16px 0 18px!important}
+body.ft-client-home .ft-section>h2,body.ft-client-home .ft-coach-tip h2,body.ft-client-home .ft-tip-card h2{font-size:17px!important;line-height:1.8!important;font-weight:400!important}
+body.ft-client-home .client-section-panel>header h1{font-size:22px!important;line-height:1.7!important;font-weight:400!important}
+body.ft-client-home .routine-picker h3,body.ft-client-home .routine-recent-history h3,body.ft-client-home .client-panel-card h2,body.ft-client-home .sheet-inner h2{font-size:16px!important;line-height:1.8!important;font-weight:400!important}
+body.ft-client-home #week-completed{font-family:"DM Sans",sans-serif!important}
+@media(min-width:761px){body.ft-client-home .ft-training-copy h1{font-size:36px!important;line-height:1.6!important}}
