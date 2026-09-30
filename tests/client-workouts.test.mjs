@@ -117,15 +117,16 @@ test('new sets are blank and unchecked, with previous performance visible', asyn
   const sets = {innerHTML:'',classList:{add(){}},querySelector:()=>({}),querySelectorAll:()=>[]};
   const record = {innerHTML:''};
   const sheet = {querySelector:()=>sets,classList:{add(){}}};
-  const db=database([{data:[{session_id:'old',set_number:1,reps:10,weight_kg:40}]},{data:[{weight_kg:60}]}]);
+  const db=database([{data:[{session_id:'old',set_number:1,reps:10,weight_kg:40}]},{data:[{weight_kg:60,reps:6}]}]);
   const context=vm.createContext({db,clientId:'c1',sessionId:null,sessionCompleted:false,selectedItem:null,save:{},setTimeout,clearTimeout,toast(){},icon:()=>'',
     document:{body:{classList:{contains:()=>true}},getElementById:id=>id==='set-sheet'?sheet:id==='sheet-title'?{}:null,querySelector:selector=>selector==='.last-record'?record:null}});
   vm.runInContext(checked+extract('  async function openExercise', '  async function ensureSession'),context);
   await vm.runInContext('openExercise({exercise_id:"e1",target_sets:3,target_reps_min:8,target_reps_max:12,exercises:{}}, {})',context);
   assert.match(record.innerHTML,/40 kg × 10/);
-  assert.match(record.innerHTML,/60 kg/);
+  assert.match(record.innerHTML,/60 kg × 6/);
+  assert.ok(db.calls[1].operations.some(op=>op[0]==='select' && op[1].includes('reps')));
   assert.match(sets.innerHTML,/OBJETIVO · 8–12 REPS/);
-  assert.match(sets.innerHTML,/type="number" min="1" max="1000" step="1" placeholder="—" value=""/);
+  assert.match(sets.innerHTML,/type="number" min="1" max="1000" step="1" placeholder="8–12" value=""/);
   assert.doesNotMatch(sets.innerHTML,/type="checkbox" checked/);
   assert.ok(db.calls[0].operations.some(op=>op[0]==='eq' && op[1]==='workout_sessions.client_id' && op[2]==='c1'));
 });

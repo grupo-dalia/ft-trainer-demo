@@ -590,7 +590,7 @@
       ;
     if (sessionId) logsQuery = logsQuery.neq("session_id", sessionId);
     recentLogs = await checkedQuery(logsQuery);
-    bestLogs = await checkedQuery(db.from("set_logs").select("weight_kg,workout_sessions!inner(client_id)").eq("workout_sessions.client_id", clientId).eq("exercise_id", item.exercise_id).eq("completed", true).not("weight_kg", "is", null).order("weight_kg", { ascending: false }).limit(1));
+    bestLogs = await checkedQuery(db.from("set_logs").select("weight_kg,reps,workout_sessions!inner(client_id)").eq("workout_sessions.client_id", clientId).eq("exercise_id", item.exercise_id).eq("completed", true).not("weight_kg", "is", null).order("weight_kg", { ascending: false }).order("reps", { ascending: false, nullsFirst: false }).limit(1));
     if (sessionId) currentLogs = await checkedQuery(db.from("set_logs").select("set_number,reps,weight_kg,rir,set_type,completed").eq("session_id", sessionId).eq("exercise_id", item.exercise_id).order("set_number"));
     } catch (error) { recordsFailed = true; toast("No se pudieron cargar los registros anteriores"); }
     const previousSessionId = recentLogs?.[0]?.session_id,
@@ -604,7 +604,7 @@
           set.weight_kg != null && (!best || Number(set.weight_kg) > Number(best.weight_kg)) ? set : best,
         null,
       );
-      last.innerHTML = `<div><span>ULTIMA SESION</span><b>${previousSets[0] ? `${previousSets[0].weight_kg ?? 0} kg × ${previousSets[0].reps ?? 0}` : recordsFailed ? "No se pudieron cargar" : "Sin registros"}</b></div><div><span>MEJOR CARGA</span><b>${top ? `${top.weight_kg || 0} kg` : "—"}</b></div>`;
+      last.innerHTML = `<div><span>ULTIMA SESION</span><b>${previousSets[0] ? `${previousSets[0].weight_kg ?? 0} kg × ${previousSets[0].reps ?? 0}` : recordsFailed ? "No se pudieron cargar" : "Sin registros"}</b></div><div><span>MEJOR CARGA</span><b>${top ? `${top.weight_kg || 0} kg${top.reps != null ? ` × ${top.reps}` : ""}` : "—"}</b></div>`;
     }
     const sets = sheet.querySelector(".sets");
     sets.classList.add("hevy-set-table");
@@ -616,7 +616,7 @@
           reps = current?.reps ?? "",
           weight = current?.weight_kg ?? "";
         const previousLabel = previous ? `${previous.weight_kg ?? 0} × ${previous.reps ?? 0}` : "—";
-        return `<label class="hevy-set-row"><select class="live-set-type" aria-label="Tipo de serie ${index + 1}"><option value="normal">${index + 1}</option><option value="warmup">W</option><option value="drop">D</option><option value="failure">F</option></select><small>${previousLabel}</small><input class="live-weight" value="${weight}" inputmode="decimal" aria-label="Peso serie ${index + 1}"><input class="live-reps" type="number" min="1" max="1000" step="1" placeholder="—" value="${reps}" inputmode="numeric" aria-label="Repeticiones serie ${index + 1}"><input class="live-rir" value="${current?.rir ?? ""}" inputmode="numeric" aria-label="RIR serie ${index + 1}"><input class="live-complete" type="checkbox" ${current?.completed ? "checked" : ""} aria-label="Completar serie ${index + 1}"></label>`;
+        return `<label class="hevy-set-row"><select class="live-set-type" aria-label="Tipo de serie ${index + 1}"><option value="normal">${index + 1}</option><option value="warmup">W</option><option value="drop">D</option><option value="failure">F</option></select><small>${previousLabel}</small><input class="live-weight" value="${weight}" inputmode="decimal" aria-label="Peso serie ${index + 1}"><input class="live-reps" type="number" min="1" max="1000" step="1" placeholder="${item.target_reps_min ?? "—"}${item.target_reps_max && item.target_reps_max !== item.target_reps_min ? `–${item.target_reps_max}` : ""}" value="${reps}" inputmode="numeric" aria-label="Repeticiones serie ${index + 1}"><input class="live-rir" value="${current?.rir ?? ""}" inputmode="numeric" aria-label="RIR serie ${index + 1}"><input class="live-complete" type="checkbox" ${current?.completed ? "checked" : ""} aria-label="Completar serie ${index + 1}"></label>`;
       }).join("") + `<button type="button" class="add-live-set">+ Anadir serie</button><div class="exercise-rest-timer" hidden><span>${icon("clock")}</span><div><small>DESCANSO</small><b id="exercise-rest-time">1:30</b></div><button type="button">Omitir</button></div>`;
     sets.querySelectorAll(".live-set-type").forEach((select, index) => { select.value = currentLogs.find(log => log.set_number === index + 1)?.set_type || "normal"; });
     sets.querySelector(".add-live-set").onclick = () => {

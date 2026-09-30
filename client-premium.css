@@ -181,3 +181,5 @@ body.ft-client-home .client-section-panel>header h1{font-size:22px!important;lin
 body.ft-client-home .routine-picker h3,body.ft-client-home .routine-recent-history h3,body.ft-client-home .client-panel-card h2,body.ft-client-home .sheet-inner h2{font-size:16px!important;line-height:1.8!important;font-weight:400!important}
 body.ft-client-home #week-completed{font-family:"DM Sans",sans-serif!important}
 @media(min-width:761px){body.ft-client-home .ft-training-copy h1{font-size:36px!important;line-height:1.6!important}}
+
+body.ft-client-home .hevy-set-row .live-reps::placeholder{color:#9aaba5!important;opacity:.7!important;font-size:12px!important;font-weight:400!important}
