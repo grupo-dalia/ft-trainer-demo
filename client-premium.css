@@ -1,0 +1,171 @@
+/* FT athlete interface. Shared tokens keep home, training and records consistent. */
+:root{--ft-bg:#0c1012;--ft-card:#171d20;--ft-raised:#20282c;--ft-line:#ffffff12;--ft-text:#f2f5f3;--ft-muted:#a1b0ae;--ft-accent:#54e39c;--ft-shadow:0 10px 28px #0003;--app-bg:var(--ft-bg);--app-card:var(--ft-card);--app-ink:var(--ft-text);--app-muted:var(--ft-muted)}
+html{background:var(--ft-bg);color-scheme:dark}
+body.ft-client-home{background:var(--ft-bg)!important;color:var(--ft-text)!important;font-family:"DM Sans",system-ui,sans-serif}
+.ft-client-home *, .client-section-panel *, .set-sheet *{box-sizing:border-box}
+.ft-client-home button{color:inherit;-webkit-appearance:none;touch-action:manipulation}
+.ft-client-home button:disabled{opacity:.5;cursor:not-allowed}
+.ft-client-home button:focus-visible,.ft-client-home input:focus-visible,.ft-client-home select:focus-visible,.ft-client-home summary:focus-visible{outline:2px solid var(--ft-accent)!important;outline-offset:4px}
+.ft-client-home [hidden]{display:none!important}
+.ft-client-home .ft-home-header{height:calc(74px + env(safe-area-inset-top))!important;padding:calc(10px + env(safe-area-inset-top)) 20px 10px!important;background:#0c1012f5!important;border-bottom:1px solid var(--ft-line)!important;box-shadow:none!important}
+.ft-client-home .ft-home-brand img{width:174px!important;max-height:43px!important}
+.ft-client-home .ft-home-brand{width:182px!important;height:48px!important;background:url("assets/brand/ft-horizontal-white.png") center/255px 255px no-repeat!important}
+.ft-client-home .ft-home-brand{mix-blend-mode:screen}
+.ft-client-home .ft-training-copy h1:after,.ft-client-home .ft-training-copy h1:before{display:none!important}
+.ft-client-home .ft-section>h2{color:var(--ft-text)!important}
+.ft-client-home .client-routine-choice strong{background:#54e39c12!important;border-radius:6px!important;padding:6px!important}
+.ft-client-home .session-day-tabs button span{color:inherit!important}
+.ft-client-home .session-bar{height:4px!important;background:#ffffff0d!important;border-radius:4px!important}
+.ft-client-home .membership-history-link{justify-self:start;padding:10px 13px;border:1px solid #d9b97145;background:#d9b97114;border-radius:8px;color:#ead49d;font:700 12px "DM Sans"}
+.ft-client-home .live-workout-toolbar{position:static!important}
+.ft-client-home .ft-home-user{gap:10px}
+.ft-client-home .ft-notification{width:39px!important;height:39px!important;background:var(--ft-card)!important;border:1px solid var(--ft-line);color:#c4d0cc!important}
+.ft-client-home .ft-avatar{width:39px;height:39px;box-shadow:0 0 0 3px #54e39c18;border:1px solid #54e39c45;background:#245540;color:var(--ft-accent)}
+.ft-client-home .ft-home-main{max-width:1080px;margin:auto;padding:22px 20px 118px!important}
+.ft-client-home .ft-home-main:before{display:none!important}
+.ft-client-home .ft-training-hero{display:flex!important;position:relative;isolation:isolate;min-height:290px!important;margin:0 0 18px!important;padding:26px!important;border-radius:20px!important;overflow:hidden;border:1px solid #ffffff18;background:radial-gradient(ellipse at 100% 0%,#2b654a80,transparent 65%),repeating-linear-gradient(125deg,transparent 0 38px,#54e39c06 39px 40px),linear-gradient(120deg,#172720,#0e1513)!important;box-shadow:var(--ft-shadow)}
+.ft-client-home .ft-training-hero:before,.ft-client-home .ft-training-hero:after{display:none!important}
+.ft-client-home .ft-training-copy{position:relative;z-index:1;max-width:400px;padding:0!important}
+.ft-client-home .ft-training-copy>span{font:700 10px "DM Sans"!important;letter-spacing:.17em;color:var(--ft-accent)!important}
+.ft-client-home .ft-training-copy h1{font:600 clamp(38px,7vw,62px)/1.03 "Oswald",sans-serif!important;font-style:normal!important;letter-spacing:-.015em!important;color:#fff!important;text-transform:uppercase;margin:14px 0!important}
+.ft-client-home .ft-training-copy p{font:400 13px/1.5 "DM Sans"!important;color:#c6d2cc!important;margin:0 0 19px!important}
+.ft-client-home #start-training{display:inline-flex!important;align-items:center;justify-content:space-between;gap:26px;background:var(--ft-accent)!important;color:#0d2518!important;border:0!important;border-radius:10px!important;padding:13px 18px!important;font:800 13px "DM Sans"!important;box-shadow:0 4px 20px #54e39c18}
+.ft-client-home .ft-next-session{min-height:90px!important;margin:0 0 26px!important;padding:16px!important;gap:14px!important;background:var(--ft-card)!important;border:1px solid var(--ft-line)!important;border-left:3px solid var(--ft-accent)!important;border-radius:14px!important;box-shadow:var(--ft-shadow)!important;color:var(--ft-text)!important}
+.ft-client-home .ft-next-icon{width:42px!important;height:42px!important;border-radius:11px!important;background:#54e39c10!important;color:var(--ft-accent)!important}
+.ft-client-home .ft-next-session small{color:var(--ft-muted)!important;font-size:9px!important;letter-spacing:.14em!important}
+.ft-client-home .ft-next-session b{color:var(--ft-text)!important;-webkit-text-fill-color:var(--ft-text);font:700 15px/1.35 "DM Sans"!important;margin:3px 0!important}
+.ft-client-home .ft-next-session em{color:var(--ft-muted)!important;font-size:11px!important;line-height:1.5!important}
+.ft-client-home .ft-section>h2{font:600 23px "Oswald"!important;letter-spacing:.03em!important;text-transform:uppercase!important;color:var(--ft-text);margin:0 0 14px!important}
+.ft-client-home .ft-quick-grid{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:9px!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
+.ft-client-home .ft-quick-grid button:nth-child(n){display:flex!important;flex-direction:column!important;align-items:flex-start!important;justify-content:space-between!important;grid-column:auto!important;gap:15px!important;min-height:108px!important;padding:15px 12px!important;background:var(--ft-card)!important;border:1px solid var(--ft-line)!important;border-radius:13px!important;box-shadow:0 4px 14px #0002!important;color:var(--ft-text)!important}
+.ft-client-home .ft-quick-grid button i{height:29px!important;width:29px!important;border-radius:0!important;background:transparent!important;color:var(--ft-accent)!important;padding:0!important}
+.ft-client-home .ft-quick-grid button svg{width:25px!important;height:25px!important;color:var(--ft-accent)!important}
+.ft-client-home .ft-quick-grid button b{font:600 12px/1.3 "DM Sans"!important;letter-spacing:0!important;text-transform:none!important;color:var(--ft-text)!important}
+.ft-client-home .ft-quick-grid button[data-home-action="coach"]{opacity:.65}
+.ft-client-home .ft-week-goal{display:flex!important;align-items:center;gap:20px;padding:22px!important;margin-top:25px!important;background:linear-gradient(120deg,#1b2923,var(--ft-card))!important;border:1px solid #54e39c20!important;border-radius:16px!important;box-shadow:var(--ft-shadow)!important}
+.ft-client-home .ft-week-goal>div:first-child{min-width:0;flex:1}
+.ft-client-home .ft-week-goal span{font:700 10px "DM Sans"!important;letter-spacing:.12em!important;color:var(--ft-muted)!important}
+.ft-client-home .ft-week-goal p{font:400 13px/1.7 "DM Sans"!important;color:#c7d1cc!important}
+.ft-client-home #week-completed{font:600 32px "Oswald"!important;color:var(--ft-accent)!important}
+.ft-client-home .ft-week-goal small{font-size:11px!important;color:var(--ft-muted)!important}
+.ft-client-home .ft-goal-bar{height:5px!important;background:#ffffff0c!important;border-radius:5px;margin:12px 0}
+.ft-client-home .ft-goal-bar i{background:var(--ft-accent)!important}
+.ft-client-home .ft-goal-ring{display:none!important}
+.ft-client-home .ft-tip-card{background:var(--ft-card)!important;border:1px solid var(--ft-line)!important;border-radius:16px!important;box-shadow:none!important;padding:22px!important}
+.ft-client-home .ft-tip-card h2{font:600 23px "Oswald"!important;color:var(--ft-text)!important}
+.ft-client-home .ft-tip-card p{color:var(--ft-muted)!important;font:400 13px/1.6 "DM Sans"!important}
+.ft-client-home .ft-coach-tip{background:var(--ft-card)!important;border:1px solid var(--ft-line)!important;border-left:2px solid var(--ft-accent)!important;border-radius:15px!important;box-shadow:none!important;padding:20px!important}.ft-client-home .ft-coach-tip h2{font:600 24px "Oswald"!important;color:var(--ft-text)!important}.ft-client-home .ft-coach-tip small{color:var(--ft-accent)!important}.ft-client-home .ft-coach-tip p{color:var(--ft-muted)!important;font:400 12px/1.6 "DM Sans"!important}.ft-client-home .ft-tip-symbol{display:none!important}
+.ft-client-home .ft-bottom-nav{position:fixed!important;left:50%!important;transform:translateX(-50%)!important;bottom:max(10px,env(safe-area-inset-bottom))!important;display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:4px!important;width:calc(100% - 28px)!important;max-width:480px!important;min-height:66px!important;height:66px!important;padding:6px!important;border:1px solid #ffffff16!important;border-radius:19px!important;background:#182021f5!important;box-shadow:0 12px 40px #0009!important;backdrop-filter:blur(18px);z-index:95}
+.ft-client-home .ft-bottom-nav button:nth-child(n){display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:4px!important;width:auto!important;min-height:0!important;height:52px!important;padding:5px!important;border:0!important;border-radius:12px!important;background:transparent!important;color:#8e9e99!important;box-shadow:none!important}
+.ft-client-home .ft-bottom-nav button[data-client-nav="materials"]{display:none!important}
+.ft-client-home .ft-bottom-nav button.active{background:#54e39c12!important;color:var(--ft-accent)!important}
+.ft-client-home .ft-bottom-nav button svg{width:22px!important;height:22px!important;color:currentColor!important}
+.ft-client-home .ft-bottom-nav button small{font:600 9px "DM Sans"!important;letter-spacing:.02em!important}
+.ft-client-home .ft-app-credit{margin:-80px auto 96px!important;color:#687b73!important;font:400 9px "DM Sans"}
+.ft-client-home .ft-app-credit a{color:#819b8c!important}
+
+/* Training, history, profile and community share the same surfaces. */
+.ft-client-home .client-section-panel{background:var(--ft-bg)!important;color:var(--ft-text)!important}
+.ft-client-home .client-section-panel>header{background:#0c1012f5!important;border-bottom:1px solid var(--ft-line)!important;box-shadow:none!important;gap:14px!important;min-height:calc(78px + env(safe-area-inset-top))!important;padding:calc(12px + env(safe-area-inset-top)) 20px 12px!important}
+.ft-client-home .client-section-panel>header h1{font:600 29px/1.15 "Oswald"!important;text-transform:uppercase!important;letter-spacing:.015em!important;color:var(--ft-text)!important}
+.ft-client-home .client-section-panel>header small{font:700 9px "DM Sans"!important;letter-spacing:.16em!important;color:var(--ft-accent)!important}
+.ft-client-home .client-panel-back{height:43px!important;min-height:43px!important;width:43px!important;min-width:43px!important;flex-basis:43px!important;border:1px solid var(--ft-line)!important;border-radius:12px!important;background:var(--ft-card)!important;color:var(--ft-text)!important}
+.ft-client-home .client-panel-content{max-width:1000px!important;margin:auto!important;padding:20px 20px 120px!important}
+.ft-client-home .routine-hub-intro{background:transparent!important;box-shadow:none!important;border:0!important;padding:0!important;margin-bottom:18px!important}
+.ft-client-home .routine-hub-intro>div{display:none!important}
+.ft-client-home #begin-live-workout{display:grid!important;grid-template-columns:36px 1fr!important;gap:2px 12px!important;align-items:center!important;width:100%!important;min-height:77px!important;padding:14px 18px!important;border-radius:14px!important;background:linear-gradient(120deg,#49d68d,#7beeae)!important;border:1px solid #9dffc545!important;color:#0b2819!important;box-shadow:0 6px 22px #54e39c15!important}
+.ft-client-home #begin-live-workout>span{grid-row:span 2!important;width:34px!important;height:34px!important;background:transparent!important;color:#0b2819!important}
+.ft-client-home #begin-live-workout b{font:800 15px "DM Sans"!important;text-align:left!important;color:#0b2819!important;letter-spacing:0!important;text-transform:none!important}
+.ft-client-home #begin-live-workout small{font:500 10px "DM Sans"!important;grid-column:2!important;margin:0!important;text-align:left!important;letter-spacing:0!important;color:#205c3d!important}
+.ft-client-home .client-workout-actions{display:grid!important;grid-template-columns:repeat(3,1fr)!important;gap:5px!important;padding:5px!important;margin:0 0 24px!important;border:1px solid var(--ft-line);border-radius:13px;background:#13191b}
+.ft-client-home .client-workout-actions>button{display:flex!important;flex-direction:row!important;justify-content:center!important;align-items:center!important;gap:6px!important;min-height:45px!important;padding:8px 4px!important;background:transparent!important;border:0!important;border-radius:9px!important;box-shadow:none!important;color:var(--ft-muted)!important}
+.ft-client-home .client-workout-actions>button.active{background:#2b3831!important;color:var(--ft-accent)!important}
+.ft-client-home .client-workout-actions>button b{font:600 11px "DM Sans"!important;letter-spacing:0!important;color:inherit!important}
+.ft-client-home .client-workout-actions>button svg{width:17px!important;height:17px!important;color:inherit!important}
+.ft-client-home .client-workout-actions>button small{display:none!important}
+.ft-client-home .routine-picker{background:transparent!important;border:0!important;padding:0!important;box-shadow:none!important;margin:0 0 20px!important}
+.ft-client-home .routine-picker-title{display:flex;align-items:center;justify-content:space-between;gap:14px}
+.ft-client-home .routine-picker-title h3{font:600 25px/1.2 "Oswald"!important;text-transform:uppercase!important;letter-spacing:0!important;margin:0 0 14px!important}
+.ft-client-home .routine-picker-title small{display:none!important}
+.ft-client-home #start-empty-workout{padding:9px 11px!important;max-width:110px;min-height:44px;border-radius:9px!important;border:1px solid #54e39c30!important;background:#54e39c08!important;color:var(--ft-accent)!important;font:600 10px/1.4 "DM Sans"!important;letter-spacing:0!important}
+.ft-client-home .client-routine-choice{background:var(--ft-card)!important;border:1px solid var(--ft-line)!important;border-radius:13px!important;box-shadow:0 5px 20px #0002!important;padding:14px!important;gap:10px!important}
+.ft-client-home .client-routine-choice.active{border-color:#54e39c60!important;background:linear-gradient(110deg,#213229,#171d20)!important}
+.ft-client-home .client-routine-choice>span{background:#54e39c12!important;color:var(--ft-accent)!important}
+.ft-client-home .client-routine-choice div b{font:700 14px "DM Sans"!important;color:var(--ft-text)!important}
+.ft-client-home .client-routine-choice div small{font:400 11px/1.5 "DM Sans"!important;color:var(--ft-muted)!important}
+.ft-client-home .client-routine-choice strong{font:600 10px "DM Sans"!important;color:var(--ft-accent)!important}
+.ft-client-home .routine-session-host .workout-card{background:var(--ft-card)!important;border:1px solid var(--ft-line)!important;border-radius:17px!important;box-shadow:var(--ft-shadow)!important;overflow:hidden}
+.ft-client-home .routine-session-host .workout-content{padding:18px 14px!important;background:transparent!important}
+.ft-client-home .workout-top p{font:600 9px "DM Sans"!important;color:var(--ft-muted)!important;letter-spacing:.08em!important}
+.ft-client-home .workout-top b{font:600 13px "DM Sans"!important;color:var(--ft-text)!important}
+.ft-client-home #percent{font:500 26px "Oswald"!important;color:var(--ft-accent)!important}
+.ft-client-home .session-progress{height:4px!important;background:#ffffff0a!important}
+.ft-client-home #session-progress{background:var(--ft-accent)!important}
+.ft-client-home .session-plan-head{margin:20px 0 12px!important}
+.ft-client-home .session-plan-head span{color:var(--ft-accent)!important;font-size:9px!important}
+.ft-client-home .session-plan-head b{color:var(--ft-text)!important;font:600 16px "DM Sans"!important}
+.ft-client-home .session-plan-head>small{color:var(--ft-muted)!important;background:transparent!important}
+.ft-client-home .session-day-tabs button{background:#111719!important;border:1px solid var(--ft-line)!important;border-radius:10px!important;color:var(--ft-muted)!important;padding:10px 14px!important}
+.ft-client-home .session-day-tabs button.active{background:#54e39c12!important;border-color:#54e39c45!important;color:var(--ft-accent)!important}
+.ft-client-home .session-day-tabs span{font:700 12px "DM Sans"!important}.ft-client-home .session-day-tabs small{font:400 10px "DM Sans"!important;color:inherit!important}
+.ft-client-home .live-exercise{display:grid!important;grid-template-columns:50px minmax(0,1fr) 16px!important;gap:12px!important;background:#1c2528!important;border:1px solid var(--ft-line)!important;border-radius:12px!important;padding:12px!important;margin-bottom:10px!important;color:var(--ft-text)!important;box-shadow:none!important}
+.ft-client-home .exercise-thumb{width:50px!important;height:54px!important;border-radius:9px!important;background:#e4eae6!important}
+.ft-client-home .live-exercise b{font:700 13px/1.4 "DM Sans"!important;color:var(--ft-text)!important}
+.ft-client-home .live-exercise small{font:400 11px/1.5 "DM Sans"!important;color:var(--ft-muted)!important}
+.ft-client-home .live-exercise em{font:600 10px "DM Sans"!important;color:var(--ft-accent)!important}
+.ft-client-home .live-exercise.done{border-color:#54e39c60!important}
+.ft-client-home .live-workout-toolbar{display:flex!important;gap:8px!important;align-items:center!important;background:#111719!important;border:1px solid var(--ft-line)!important;border-radius:11px!important;padding:12px!important;margin:0 0 18px!important}
+.ft-client-home .live-workout-toolbar>div{flex:1;min-width:0}.ft-client-home .live-workout-toolbar b{color:var(--ft-text)!important;font-variant-numeric:tabular-nums}.ft-client-home .live-workout-toolbar small{color:var(--ft-muted)!important;font-size:8px!important}
+.ft-client-home .live-workout-toolbar button{min-height:36px;background:#26332c!important;border:1px solid #54e39c20!important;border-radius:8px!important;color:var(--ft-accent)!important;font:600 10px "DM Sans"!important;padding:8px!important}
+.ft-client-home .client-empty-state,.ft-client-home .hof-empty{background:#151c1f!important;border:1px solid var(--ft-line)!important;border-radius:12px!important;padding:22px 18px!important;color:var(--ft-muted)!important;font:400 13px/1.65 "DM Sans"!important}
+.ft-client-home .client-empty-state b{color:var(--ft-text)!important;font-size:15px!important}
+.ft-client-home .membership-notice{background:#2b2519;border:1px solid #d9b97128;border-radius:13px;padding:18px;display:grid;gap:9px}.membership-notice small{color:#d9b971;letter-spacing:.1em;font-size:9px}.membership-notice b{font-size:15px}.membership-notice p{margin:0;font-size:12px;line-height:1.6;color:#c4b9a2}
+.ft-client-home .client-panel-card,.ft-client-home .client-metric-grid article,.ft-client-home .client-material-card,.ft-client-home .profile-dashboard button{background:var(--ft-card)!important;border:1px solid var(--ft-line)!important;border-radius:15px!important;box-shadow:var(--ft-shadow)!important;color:var(--ft-text)!important}
+.ft-client-home .client-panel-card h2,.ft-client-home .client-profile-hero h2{font:600 25px "Oswald"!important;color:var(--ft-text)!important}
+.ft-client-home .client-panel-card small,.ft-client-home .client-metric-grid small,.ft-client-home .profile-dashboard small{color:var(--ft-muted)!important}
+.ft-client-home .client-profile-hero{background:linear-gradient(110deg,#21392c,#171d20)!important;border:1px solid #54e39c20!important;box-shadow:var(--ft-shadow)!important;color:var(--ft-text)!important;border-radius:17px!important}
+.ft-client-home .client-profile-hero p{color:var(--ft-muted)!important}.ft-client-home .client-profile-hero b{background:#54e39c12!important;color:var(--ft-accent)!important}
+.ft-client-home .client-form-grid label,.ft-client-home .client-exercise-config label{font:500 12px "DM Sans"!important;color:var(--ft-muted)!important}
+.ft-client-home .client-section-panel input,.ft-client-home .client-section-panel select,.ft-client-home .client-section-panel textarea,.ft-client-home .client-exercise-preview input,.ft-client-home .client-exercise-preview select{background:#0f1619!important;border:1px solid #ffffff16!important;color:var(--ft-text)!important;border-radius:10px!important;min-height:45px!important;font:500 16px "DM Sans"!important}
+.ft-client-home .client-primary,.ft-client-home .client-add-exercise{background:var(--ft-accent)!important;color:#0d281a!important;border:0!important;border-radius:10px!important;font:700 13px "DM Sans"!important;letter-spacing:0!important}
+.ft-client-home .client-session-history article,.ft-client-home .strength-history article,.ft-client-home .measurement-history>div,.ft-client-home .hof-row{background:var(--ft-raised)!important;border:1px solid var(--ft-line)!important;color:var(--ft-text)!important;border-radius:11px!important;padding:14px!important}
+.ft-client-home .client-session-history small,.ft-client-home .client-session-history em,.ft-client-home .hof-person small,.ft-client-home .hof-mark small{color:var(--ft-muted)!important}
+.ft-client-home .calendar-days button{background:#20292a!important;color:var(--ft-muted)!important;border:0!important}.ft-client-home .calendar-days .trained{background:#54e39c!important;color:#0d281a!important}.ft-client-home .calendar-week{color:var(--ft-muted)!important}
+.ft-client-home .hof-hero{background:radial-gradient(ellipse at top right,#32704c,#12251c 65%)!important;border:1px solid #54e39c30!important;border-radius:18px!important;box-shadow:var(--ft-shadow);padding:24px!important;position:relative}
+.ft-client-home .hof-hero h2{font:600 34px/1.1 "Oswald"!important;text-transform:uppercase;letter-spacing:-.01em;color:#fff!important}.ft-client-home .hof-hero p{font:400 12px/1.65 "DM Sans"!important;max-width:270px;color:#b2c9bc!important}.ft-client-home .hof-hero small{color:var(--ft-accent)!important;font-size:9px!important;letter-spacing:.1em}.ft-client-home .hof-trophy{font-size:40px!important;filter:grayscale(.3)}
+.ft-client-home .hof-privacy{font-size:11px!important;color:var(--ft-muted)!important;line-height:1.7!important}.ft-client-home .hof-join label{font-size:13px!important}
+.ft-client-home .ft-notification-panel{background:var(--ft-card)!important;color:var(--ft-text)!important;border:1px solid var(--ft-line)!important;box-shadow:0 12px 40px #0008}.ft-client-home .ft-notification-panel p{color:var(--ft-muted)!important}
+
+/* Last workout is part of the routine, not hidden behind another tab. */
+.routine-recent-history{margin:20px 0;padding:17px;background:linear-gradient(135deg,#1d3025,#131d19);border:1px solid #54e39c24;border-radius:13px}
+.routine-history-heading{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}.routine-history-heading small{color:var(--ft-accent);font:700 9px "DM Sans";letter-spacing:.11em}.routine-history-heading h3{margin:5px 0 0;font:500 23px "Oswald";color:var(--ft-text)}.routine-history-heading svg{width:24px!important;height:24px!important;color:var(--ft-accent)}
+.routine-recent-history>p{color:var(--ft-muted);font:400 12px/1.7 "DM Sans"}
+.routine-history-session{border-top:1px solid #ffffff0d;padding:10px 0}.routine-history-session:last-child{padding-bottom:0}.routine-history-session summary{display:flex;align-items:center;justify-content:space-between;cursor:pointer;list-style:none;gap:8px}.routine-history-session summary::-webkit-details-marker{display:none}.routine-history-session summary div{display:grid;gap:4px}.routine-history-session summary b{font:700 13px "DM Sans";color:var(--ft-text)}.routine-history-session summary small{font:400 10px "DM Sans";color:var(--ft-muted)}.routine-history-session summary>span{font:700 8px "DM Sans";letter-spacing:.1em;color:var(--ft-accent);background:#54e39c12;border-radius:5px;padding:5px 7px}
+.routine-history-exercises article{margin-top:13px}.routine-history-exercises article>b{font:600 11px/1.5 "DM Sans";color:#d7e6dc}.routine-history-exercises article>div{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}.routine-history-exercises article span{background:#0b151180;border:1px solid #ffffff0d;border-radius:6px;padding:6px 8px;font:400 11px "DM Sans";color:#c8d8cc}.routine-history-exercises article small{font-size:8px;color:#859d8d;margin-right:4px}.routine-history-exercises article strong{color:var(--ft-accent);font-weight:700}
+
+/* A numeric result is always entered by the athlete. */
+.ft-client-home .set-sheet{background:#000b!important;backdrop-filter:blur(6px)}
+.ft-client-home .sheet-inner{background:var(--ft-card)!important;color:var(--ft-text)!important;border:1px solid #ffffff18!important;border-radius:22px 22px 0 0!important;padding:22px 16px calc(22px + env(safe-area-inset-bottom))!important;box-shadow:0 -20px 60px #0005}
+.ft-client-home #sheet-title{font:600 27px/1.2 "Oswald"!important;letter-spacing:0!important;color:var(--ft-text)!important}
+.ft-client-home .sheet-close,.ft-client-home .exercise-preview-close{background:#283431!important;color:var(--ft-text)!important;border:1px solid var(--ft-line)!important;border-radius:10px!important;min-height:40px;min-width:40px}
+.ft-client-home .client-exercise-media{background:#eef1ed!important;border-radius:12px!important;overflow:hidden}.ft-client-home #sheet-gif{max-height:210px!important;object-fit:contain}
+.ft-client-home .technique-tip{background:#54e39c09!important;border-left:2px solid var(--ft-accent)!important;color:#b6c8bd!important;font:400 12px/1.6 "DM Sans"!important}
+.ft-client-home .last-record{gap:8px!important}.ft-client-home .last-record>div{background:#233129!important;border:1px solid #54e39c12!important;border-radius:10px!important;padding:12px!important}.ft-client-home .last-record span{color:#9eb5a6!important;font:600 8px "DM Sans"!important;letter-spacing:.08em!important}.ft-client-home .last-record b{font:700 14px "DM Sans"!important;color:var(--ft-accent)!important}
+.ft-client-home .sheet-inner>p:not(.technique-tip){display:none}
+.ft-client-home .set-target{display:grid;gap:7px;margin:18px 0 16px;color:var(--ft-muted);font:400 11px/1.5 "DM Sans"}.set-target span{font:700 10px "DM Sans";color:var(--ft-accent);letter-spacing:.08em}
+.ft-client-home .hevy-set-head,.ft-client-home .hevy-set-row{display:grid!important;grid-template-columns:32px minmax(42px,1fr) minmax(42px,1fr) minmax(42px,1fr) 34px 32px!important;gap:6px!important;align-items:center!important;padding:10px 0!important;background:transparent!important;border:0!important;border-bottom:1px solid var(--ft-line)!important}
+.ft-client-home .hevy-set-head b{font:600 8px "DM Sans"!important;letter-spacing:.04em;color:var(--ft-muted)!important}.ft-client-home .hevy-set-row small{font:400 10px "DM Sans"!important;color:#9ab6a5!important;text-align:center}
+.ft-client-home .hevy-set-row input:not([type="checkbox"]),.ft-client-home .hevy-set-row select{width:100%!important;min-width:0!important;min-height:43px!important;padding:5px!important;background:#0f1618!important;border:1px solid #ffffff1a!important;border-radius:8px!important;color:#fff!important;text-align:center!important;font:600 16px "DM Sans"!important;box-shadow:inset 0 2px 5px #0002!important;appearance:textfield}
+.ft-client-home .hevy-set-row input::placeholder{color:#61766a!important}.ft-client-home input::-webkit-inner-spin-button,.ft-client-home input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.ft-client-home .hevy-set-row input[type="checkbox"]{width:30px!important;height:36px!important;min-height:36px!important;border:1px solid #ffffff24!important;border-radius:8px!important;background:#121b17!important;appearance:none!important;position:relative;cursor:pointer}
+.ft-client-home .hevy-set-row input[type="checkbox"]:checked{background:var(--ft-accent)!important;border-color:var(--ft-accent)!important}.ft-client-home .hevy-set-row input[type="checkbox"]:checked:after{content:"✓";position:absolute;inset:0;display:grid;place-items:center;color:#102a1b;font:800 18px "DM Sans"}
+.ft-client-home .add-live-set{background:#54e39c08!important;border:1px dashed #54e39c30!important;color:var(--ft-accent)!important;border-radius:9px!important;font:600 12px "DM Sans"!important}
+.ft-client-home #save-set{min-height:49px;background:var(--ft-accent)!important;color:#102a1b!important;border-radius:11px!important;border:0!important;font:800 13px "DM Sans"!important;letter-spacing:0!important;text-transform:none!important}
+.ft-client-home .client-exercise-preview>section,.ft-client-home .workout-share-modal,.ft-client-home .coach-program{background:var(--ft-card)!important;color:var(--ft-text)!important;border:1px solid var(--ft-line)!important}.ft-client-home .client-exercise-preview h2{color:var(--ft-text)!important}.ft-client-home .client-exercise-preview li{color:var(--ft-muted)!important}
+.ft-client-home .client-library-exercise{background:var(--ft-raised)!important;color:var(--ft-text)!important;border:1px solid var(--ft-line)!important}.ft-client-home .client-library-exercise small{color:var(--ft-muted)!important}
+.ft-client-home .client-toast{background:#e5f8eb!important;color:#11311f!important;border-radius:11px!important;font:600 12px "DM Sans"!important;box-shadow:0 8px 30px #0006}
+@media(min-width:761px){.ft-client-home .ft-training-hero{min-height:330px!important;padding:36px!important;background-position:center 40%!important}.ft-client-home .ft-quick-grid{grid-template-columns:repeat(6,minmax(0,1fr))!important}.ft-client-home .sheet-inner{border-radius:22px!important;max-width:600px!important}.ft-client-home .ft-home-header{padding-left:max(24px,calc((100vw - 1040px)/2))!important;padding-right:max(24px,calc((100vw - 1040px)/2))!important}}
+@media(max-width:360px){.ft-client-home .ft-home-main,.ft-client-home .client-panel-content{padding-left:12px!important;padding-right:12px!important}.ft-client-home .ft-home-brand img{width:145px!important}.ft-client-home .ft-training-copy h1{font-size:35px!important}.ft-client-home .hevy-set-head,.ft-client-home .hevy-set-row{grid-template-columns:28px minmax(30px,1fr) minmax(35px,1fr) minmax(35px,1fr) 28px 28px!important;gap:4px!important}}
+@media(prefers-reduced-motion:reduce){.ft-client-home *{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
+
+body.ft-client-home [hidden][hidden][hidden]{display:none!important}

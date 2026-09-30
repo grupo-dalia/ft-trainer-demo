@@ -70,6 +70,7 @@
   let restTimerId = null;
   let workoutPausedAt = null;
   let sessionCompleted = false;
+  let routineHistoryRequest = 0;
   function resetSession() {
     sessionId = null;
     sessionCompleted = false;
@@ -195,6 +196,8 @@
     clearInterval(restTimerId);
     sessionCompleted = true;
     workoutPausedAt = workoutPausedAt || Date.now();
+    const historyHost = document.getElementById("routine-recent-history");
+    if (historyHost) renderRoutineHistory(historyHost);
     toast("Entrenamiento guardado · gran trabajo");
   }
 
@@ -203,7 +206,7 @@
       host = node.querySelector(".client-panel-content"),
       session = document.getElementById("routine-session");
     if (!host.querySelector(".routine-hub-intro")) {
-      host.innerHTML = `<section class="routine-hub-intro"><div><small>PLAN DE FERNANDO</small><h2>Tu semana de entrenamiento</h2><p>Elige una rutina y registra cada serie mientras entrenas.</p></div><button type="button" id="begin-live-workout"><span>${icon("play")}</span><b>Iniciar entrenamiento</b><small>Guarda cada ejercicio al terminar</small></button></section><div class="client-workout-actions"><button type="button" data-workout-view="routines">${icon("dumbbell")}<span><b>Mis rutinas</b><small>Planes asignados</small></span></button><button type="button" data-workout-view="history">${icon("calendar")}<span><b>Historial</b><small>Calendario y sesiones</small></span></button><button type="button" data-workout-view="library">${icon("play")}<span><b>Ejercicios</b><small>Biblioteca y tecnica</small></span></button></div><section class="routine-picker"><div class="routine-picker-title"><div><small>MIS RUTINAS</small><h3>Elige tu entrenamiento</h3></div><button type="button" id="start-empty-workout">+ Entrenamiento libre</button></div><div id="client-routine-cards"></div></section><div class="workout-secondary-view" id="workout-secondary-view"></div><div class="routine-session-host"></div>`;
+      host.innerHTML = `<section class="routine-hub-intro"><div><small>PLAN DE FERNANDO</small><h2>Tu semana de entrenamiento</h2><p>Elige una rutina y registra cada serie mientras entrenas.</p></div><button type="button" id="begin-live-workout"><span>${icon("play")}</span><b>Iniciar entrenamiento</b><small>Guarda cada ejercicio al terminar</small></button></section><div class="client-workout-actions"><button type="button" data-workout-view="routines">${icon("dumbbell")}<span><b>Mis rutinas</b><small>Planes asignados</small></span></button><button type="button" data-workout-view="history">${icon("calendar")}<span><b>Historial</b><small>Calendario y sesiones</small></span></button><button type="button" data-workout-view="library">${icon("play")}<span><b>Ejercicios</b><small>Biblioteca y tecnica</small></span></button></div><section class="routine-picker"><div class="routine-picker-title"><div><small>MIS RUTINAS</small><h3>Mis rutinas</h3></div><button type="button" id="start-empty-workout">+ Entrenamiento libre</button></div><div id="client-routine-cards"></div></section><div class="workout-secondary-view" id="workout-secondary-view"></div><div class="routine-session-host"></div>`;
       host.querySelector("#begin-live-workout").onclick = () => {
         if (sessionCompleted) { resetSession(); renderRoutine(); }
         startWorkoutClock();
@@ -214,7 +217,7 @@
         const view = button.dataset.workoutView;
         host.querySelectorAll("[data-workout-view]").forEach((item) => item.classList.toggle("active", item === button));
         host.querySelector(".routine-picker").hidden = view !== "routines";
-        host.querySelector(".routine-session-host").hidden = view !== "routines";
+        host.querySelector(".routine-session-host").hidden = view !== "routines" || window.ftMembershipActive === false;
         host.querySelector("#workout-secondary-view").hidden = view === "routines";
         if (view === "history") renderWorkoutHistory(host.querySelector("#workout-secondary-view"));
         if (view === "library") renderClientLibrary(host.querySelector("#workout-secondary-view"));
@@ -229,6 +232,7 @@
   }
 
   function startEmptyWorkout() {
+    if (window.ftMembershipActive === false) { toast("Fernando debe confirmar tu cuota para entrenar"); return; }
     routine = { id: null, name: "Entrenamiento libre", description: "Sesion creada por ti", status: "active" };
     allRoutineItems = [];
     routineItems = [];
@@ -243,6 +247,17 @@
   function renderRoutinePicker() {
     const host = document.getElementById("client-routine-cards");
     if (!host) return;
+    const locked = window.ftMembershipActive === false;
+    const start = document.getElementById("begin-live-workout"), free = document.getElementById("start-empty-workout");
+    if (start) { start.hidden = locked; start.disabled = locked || !routineItems.length; start.querySelector("b").textContent = locked ? "Cuota pendiente" : "Iniciar entrenamiento"; }
+    if (free) { free.disabled = locked; free.hidden = locked; }
+    const pickerTitle = document.querySelector(".routine-picker-title h3");
+    if (pickerTitle) pickerTitle.textContent = locked ? "Tu acceso" : "Mis rutinas";
+    if (locked) {
+      host.innerHTML = '<div class="membership-notice"><small>ACCESO AL ENTRENAMIENTO</small><b>Cuota pendiente de confirmar</b><p>Cuando Fernando confirme tu cuota, apareceran tus rutinas. Puedes consultar el historial de tus entrenamientos.</p><button type="button" class="membership-history-link">Ver mi historial →</button></div>';
+      host.querySelector("button").onclick = () => document.querySelector('[data-workout-view="history"]')?.click();
+      return;
+    }
     host.innerHTML = availableRoutines.length ? availableRoutines.map((item) => `<button type="button" class="client-routine-choice ${item.id === routine?.id ? "active" : ""}" data-select-routine="${item.id}"><span>${icon("dumbbell")}</span><div><b>${esc(item.name)}</b><small>${esc(item.description || item.objective || "Plan de Fernando")}</small></div><strong>${item.id === routine?.id ? "Seleccionada" : "Abrir"}</strong></button>`).join("") : '<div class="client-empty-state">Fernando todavia no te ha asignado rutinas.</div>';
     host.querySelectorAll("[data-select-routine]").forEach((button) => button.onclick = () => selectRoutine(button.dataset.selectRoutine));
   }
@@ -441,6 +456,48 @@
       row.querySelector("strong").textContent = "✓";
     });
     ensureShareButton();
+    let historyHost = document.getElementById("routine-recent-history");
+    if (!historyHost) {
+      historyHost = document.createElement("section");
+      historyHost.id = "routine-recent-history";
+      historyHost.className = "routine-recent-history";
+      document.getElementById("exercise-list").before(historyHost);
+    }
+    renderRoutineHistory(historyHost);
+  }
+
+  async function renderRoutineHistory(host) {
+    const request = ++routineHistoryRequest;
+    const routineId = routine?.id, day = selectedRoutineDay;
+    if (!routineId || !db || !clientId) { host.innerHTML = ""; host.hidden = true; return; }
+    host.hidden = false;
+    host.innerHTML = '<p class="panel-loading">Consultando tus ultimas sesiones…</p>';
+    try {
+      const sessions = await checkedQuery(db.from("workout_sessions")
+        .select("id,planned_for,completed_at,duration_minutes")
+        .eq("client_id", clientId).eq("routine_id", routineId).eq("day_number", day)
+        .not("completed_at", "is", null).order("completed_at", { ascending: false }).limit(3));
+      if (request !== routineHistoryRequest) return;
+      if (!sessions.length) {
+        host.innerHTML = '<div class="routine-history-heading"><div><small>TU PUNTO DE PARTIDA</small><h3>Tu primera marca empieza aqui</h3></div></div><p>Al terminar este dia, veras aqui tus cargas, repeticiones y series para la proxima sesion.</p>';
+        return;
+      }
+      const logs = await checkedQuery(db.from("set_logs")
+        .select("session_id,exercise_id,set_number,reps,weight_kg,exercises(name)")
+        .in("session_id", sessions.map(session => session.id)).eq("completed", true).order("set_number"));
+      if (request !== routineHistoryRequest) return;
+      host.innerHTML = `<div class="routine-history-heading"><div><small>HISTORIAL · DIA ${day}</small><h3>Tu ultima sesion</h3></div><span>${icon("calendar")}</span></div>${sessions.map((session, index) => {
+        const sessionLogs = logs.filter(log => log.session_id === session.id);
+        const groups = new Map();
+        sessionLogs.forEach(log => { if (!groups.has(log.exercise_id)) groups.set(log.exercise_id, []); groups.get(log.exercise_id).push(log); });
+        const date = session.planned_for ? new Date(`${session.planned_for}T12:00:00`) : new Date(session.completed_at);
+        const volume = sessionLogs.reduce((sum, log) => sum + Number(log.weight_kg || 0) * Number(log.reps || 0), 0);
+        return `<details class="routine-history-session" ${index === 0 ? "open" : ""}><summary><div><b>${esc(date.toLocaleDateString("es-ES", {day:"numeric",month:"long"}))}</b><small>${sessionLogs.length} series · ${Math.round(volume).toLocaleString("es-ES")} kg de volumen${session.duration_minutes ? ` · ${session.duration_minutes} min` : ""}</small></div><span>${index === 0 ? "ULTIMA" : "VER"}</span></summary><div class="routine-history-exercises">${[...groups.values()].map(sets => `<article><b>${esc(sets[0].exercises?.name || allRoutineItems.find(item => item.exercise_id === sets[0].exercise_id)?.exercises?.name || "Ejercicio")}</b><div>${sets.map(set => `<span><small>S${set.set_number}</small> ${set.weight_kg == null ? "Sin carga" : `${esc(set.weight_kg)} kg`} <strong>× ${esc(set.reps ?? "—")}</strong></span>`).join("")}</div></article>`).join("") || '<p>No hay series registradas en esta sesion.</p>'}</div></details>`;
+      }).join("")}`;
+    } catch (error) {
+      if (request !== routineHistoryRequest) return;
+      showLoadError(host, () => renderRoutineHistory(host));
+    }
   }
 
   function ensureShareButton() {
@@ -552,14 +609,14 @@
     const sets = sheet.querySelector(".sets");
     sets.classList.add("hevy-set-table");
     sets.innerHTML =
-      `<div class="hevy-set-head"><b>SET</b><b>ANTERIOR</b><b>KG</b><b>REPS</b><b>RIR</b><b>✓</b></div>` +
+      `<p class="set-target"><span>OBJETIVO · ${item.target_reps_min ?? "—"}${item.target_reps_max && item.target_reps_max !== item.target_reps_min ? `–${item.target_reps_max}` : ""} REPS</span>Escribe las repeticiones que has hecho en cada serie y marca la casilla al terminar.</p><div class="hevy-set-head"><b>SET</b><b>ANTERIOR</b><b>KG</b><b>REPS</b><b>RIR</b><b>✓</b></div>` +
       Array.from({ length: Math.max(item.target_sets || 3, ...currentLogs.map(log => log.set_number)) }, (_, index) => {
         const previous = previousSets[index],
           current = currentLogs.find(log => log.set_number === index + 1),
           reps = current?.reps ?? "",
           weight = current?.weight_kg ?? "";
         const previousLabel = previous ? `${previous.weight_kg ?? 0} × ${previous.reps ?? 0}` : "—";
-        return `<label class="hevy-set-row"><select class="live-set-type" aria-label="Tipo de serie ${index + 1}"><option value="normal">${index + 1}</option><option value="warmup">W</option><option value="drop">D</option><option value="failure">F</option></select><small>${previousLabel}</small><input class="live-weight" value="${weight}" inputmode="decimal" aria-label="Peso serie ${index + 1}"><input class="live-reps" placeholder="${item.target_reps_min ?? ""}–${item.target_reps_max ?? ""}" value="${reps}" inputmode="numeric" aria-label="Repeticiones serie ${index + 1}"><input class="live-rir" value="${current?.rir ?? ""}" inputmode="numeric" aria-label="RIR serie ${index + 1}"><input class="live-complete" type="checkbox" ${current?.completed ? "checked" : ""} aria-label="Completar serie ${index + 1}"></label>`;
+        return `<label class="hevy-set-row"><select class="live-set-type" aria-label="Tipo de serie ${index + 1}"><option value="normal">${index + 1}</option><option value="warmup">W</option><option value="drop">D</option><option value="failure">F</option></select><small>${previousLabel}</small><input class="live-weight" value="${weight}" inputmode="decimal" aria-label="Peso serie ${index + 1}"><input class="live-reps" type="number" min="1" max="1000" step="1" placeholder="—" value="${reps}" inputmode="numeric" aria-label="Repeticiones serie ${index + 1}"><input class="live-rir" value="${current?.rir ?? ""}" inputmode="numeric" aria-label="RIR serie ${index + 1}"><input class="live-complete" type="checkbox" ${current?.completed ? "checked" : ""} aria-label="Completar serie ${index + 1}"></label>`;
       }).join("") + `<button type="button" class="add-live-set">+ Anadir serie</button><div class="exercise-rest-timer" hidden><span>${icon("clock")}</span><div><small>DESCANSO</small><b id="exercise-rest-time">1:30</b></div><button type="button">Omitir</button></div>`;
     sets.querySelectorAll(".live-set-type").forEach((select, index) => { select.value = currentLogs.find(log => log.set_number === index + 1)?.set_type || "normal"; });
     sets.querySelector(".add-live-set").onclick = () => {
@@ -677,6 +734,8 @@
           .eq("id", currentSession);
         if (finished.error) throw finished.error;
         sessionCompleted = true;
+        const historyHost = document.getElementById("routine-recent-history");
+        if (historyHost) renderRoutineHistory(historyHost);
         workoutPausedAt = Date.now();
         clearInterval(workoutTimerId);
         document.body.classList.remove("workout-in-progress");

@@ -59,7 +59,7 @@ function saveHarness({checked=[true,false,false], weights=['40','',''], reps=['1
     workoutPausedAt:null,selectedItem:{item:{id:'item1',exercise_id:'ex1',target_sets:3,rest_seconds:0},row},
     completedExerciseIds:new Set(),ensureSession:async()=>'session-active',elapsedWorkoutTime:()=>60000,
     updateWorkoutProgress:done=>({total:1,percent:done*100}),startRestTimer:seconds=>state.rest.push(seconds),toast:message=>state.messages.push(message),clearInterval(){},
-    document:{body:{classList:{remove(){}}},getElementById:id=>id==='save-set'?button:{classList:{remove(){}}},querySelectorAll:selector=>selector==='.hevy-set-row'?rows:selector==='.live-exercise.done'?(state.done?[row]:[]):inputs[selector]}
+    document:{body:{classList:{remove(){}}},getElementById:id=>id==='routine-recent-history'?null:id==='save-set'?button:{classList:{remove(){}}},querySelectorAll:selector=>selector==='.hevy-set-row'?rows:selector==='.live-exercise.done'?(state.done?[row]:[]):inputs[selector]}
   });
   vm.runInContext(extract('  const oldSave', '  async function getWorkoutShareData'),context);
   return {button,state,db,context};
@@ -124,7 +124,8 @@ test('new sets are blank and unchecked, with previous performance visible', asyn
   await vm.runInContext('openExercise({exercise_id:"e1",target_sets:3,target_reps_min:8,target_reps_max:12,exercises:{}}, {})',context);
   assert.match(record.innerHTML,/40 kg × 10/);
   assert.match(record.innerHTML,/60 kg/);
-  assert.match(sets.innerHTML,/placeholder="8–12" value=""/);
+  assert.match(sets.innerHTML,/OBJETIVO · 8–12 REPS/);
+  assert.match(sets.innerHTML,/type="number" min="1" max="1000" step="1" placeholder="—" value=""/);
   assert.doesNotMatch(sets.innerHTML,/type="checkbox" checked/);
   assert.ok(db.calls[0].operations.some(op=>op[0]==='eq' && op[1]==='workout_sessions.client_id' && op[2]==='c1'));
 });
@@ -135,6 +136,36 @@ test('home routine button opens the routine panel', () => {
   vm.runInContext(fs.readFileSync(new URL('../client-navigation-fix.js',import.meta.url),'utf8'),context);
   listener({target:{closest:()=>({dataset:{homeAction:'routine'}})},preventDefault(){},stopImmediatePropagation(){}});
   assert.equal(opened,1);
+});
+
+test('routine history scopes the latest sessions to the client, routine and day', async()=>{
+  const host={innerHTML:'',hidden:false};
+  const db=database([
+    {data:[{id:'last',planned_for:'2026-09-28',completed_at:'2026-09-28T12:00:00Z',duration_minutes:45}]},
+    {data:[{session_id:'last',exercise_id:'e1',set_number:1,reps:11,weight_kg:42.5,exercises:{name:'Press <test>'}},{session_id:'last',exercise_id:'e1',set_number:2,reps:9,weight_kg:45,exercises:{name:'Press <test>'}}]}
+  ]);
+  const context=vm.createContext({db,host,routine:{id:'r1'},clientId:'c1',selectedRoutineDay:2,routineHistoryRequest:0,allRoutineItems:[],setTimeout,clearTimeout,icon:()=>'',esc:v=>String(v).replaceAll('<','&lt;').replaceAll('>','&gt;')});
+  vm.runInContext(checked+extract('  async function renderRoutineHistory','  function ensureShareButton'),context);
+  await vm.runInContext('renderRoutineHistory(host)',context);
+  assert.match(host.innerHTML,/Tu ultima sesion/);
+  assert.match(host.innerHTML,/42.5 kg/);
+  assert.match(host.innerHTML,/× 11/);
+  assert.match(host.innerHTML,/× 9/);
+  assert.match(host.innerHTML,/Press &lt;test&gt;/);
+  for(const [key,value] of [['client_id','c1'],['routine_id','r1'],['day_number',2]]) assert.ok(db.calls[0].operations.some(op=>op[0]==='eq'&&op[1]===key&&op[2]===value));
+  assert.ok(db.calls[1].operations.some(op=>op[0]==='eq'&&op[1]==='completed'&&op[2]===true));
+});
+
+test('routine history handles a first session and offers retry after a query error', async()=>{
+  const host={innerHTML:'',hidden:false};
+  const context=vm.createContext({db:database([{data:[]}]),host,routine:{id:'r1'},clientId:'c1',selectedRoutineDay:1,routineHistoryRequest:0,setTimeout,clearTimeout,
+    showLoadError:host=>{host.innerHTML='Reintentar';}});
+  vm.runInContext(checked+extract('  async function renderRoutineHistory','  function ensureShareButton'),context);
+  await vm.runInContext('renderRoutineHistory(host)',context);
+  assert.match(host.innerHTML,/primera marca/);
+  context.db=database([{error:{message:'offline'}}]);
+  await vm.runInContext('renderRoutineHistory(host)',context);
+  assert.equal(host.innerHTML,'Reintentar');
 });
 
 test('exercise form applies day, order, sets, repetition range and zero rest', () => {
