@@ -196,3 +196,4 @@ body.ft-client-home .calendar-days button[aria-pressed="true"]{outline:2px solid
 body.ft-client-home #exercise-motion-media{width:100%;padding:8px}
 body.ft-client-home #exercise-motion-media a{display:block;font:400 12px "DM Sans";padding:8px;color:#176443}
 body.ft-client-home .client-exercise-media:has(#exercise-motion-media){height:auto!important;min-height:180px}
+body.ft-client-home .history-show-all,body.ft-client-home [data-repeat-routine]{background:#54e39c16!important;color:#54e39c!important;border:1px solid #54e39c35!important;border-radius:9px;padding:10px 14px;font:600 12px "DM Sans"!important;cursor:pointer}
