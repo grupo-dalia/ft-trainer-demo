@@ -183,3 +183,16 @@ body.ft-client-home #week-completed{font-family:"DM Sans",sans-serif!important}
 @media(min-width:761px){body.ft-client-home .ft-training-copy h1{font-size:36px!important;line-height:1.6!important}}
 
 body.ft-client-home .hevy-set-row .live-reps::placeholder{color:#9aaba5!important;opacity:.7!important;font-size:12px!important;font-weight:400!important}
+
+body.ft-client-home .history-session-detail{grid-column:1/-1;width:100%;padding:12px 0;border-top:1px solid #ffffff16}
+body.ft-client-home .history-session-detail summary{color:var(--ft-accent);cursor:pointer;padding:8px 0;font-size:14px}
+body.ft-client-home .history-session-detail section{padding:10px 0}
+body.ft-client-home .history-session-detail h4{margin:0 0 8px;font:700 14px "DM Sans";color:var(--ft-text)}
+body.ft-client-home .history-session-detail p{display:flex;gap:12px;align-items:center;font:400 13px "DM Sans";color:var(--ft-muted)}
+body.ft-client-home .history-session-detail strong{margin-left:auto;color:var(--ft-text)}
+body.ft-client-home .client-session-history>article{flex-wrap:wrap}
+body.ft-client-home .history-day-summary{font:400 12px/1.6 "DM Sans";color:var(--ft-muted)}
+body.ft-client-home .calendar-days button[aria-pressed="true"]{outline:2px solid var(--ft-accent);outline-offset:2px}
+body.ft-client-home #exercise-motion-media{width:100%;padding:8px}
+body.ft-client-home #exercise-motion-media a{display:block;font:400 12px "DM Sans";padding:8px;color:#176443}
+body.ft-client-home .client-exercise-media:has(#exercise-motion-media){height:auto!important;min-height:180px}

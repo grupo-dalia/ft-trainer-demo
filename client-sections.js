@@ -567,11 +567,18 @@
       sheet = document.getElementById("set-sheet");
     document.getElementById("sheet-title").textContent = ex.name || "Ejercicio";
     const gif = document.getElementById("sheet-gif");
-    if (gif) {
-      gif.src =
-        ex.media_url || ex.thumbnail_url || "assets/brand/ft-symbol-color.png";
-      gif.alt = `Demostracion de ${ex.name || "ejercicio"}`;
-    }
+    if (gif && window.ftExerciseMedia) {
+      let mediaHost = document.getElementById("exercise-motion-media");
+      if (!mediaHost) { mediaHost = document.createElement("div"); mediaHost.id = "exercise-motion-media"; gif.after(mediaHost); }
+      gif.hidden = true;
+      mediaHost.innerHTML = window.ftExerciseMedia.html(ex);
+      const credit = gif.parentElement.querySelector("small");
+      if (credit) credit.hidden = ex.media_type === "youtube" || ex.media_type === "video";
+      const observer = new MutationObserver(() => {
+        if (!sheet.classList.contains("open")) { mediaHost.innerHTML = ""; observer.disconnect(); }
+      });
+      observer.observe(sheet, {attributes:true,attributeFilter:["class"]});
+    } else if (gif) { gif.src = ex.media_url || ex.thumbnail_url || "assets/brand/ft-symbol-color.png"; }
     const tip = document.querySelector(".technique-tip");
     if (tip)
       tip.textContent =
@@ -1062,6 +1069,16 @@
 
   window.ftWorkoutShare = { open: openWorkoutShare };
 
+  function renderHistorySets(logs) {
+    const groups = new Map();
+    logs.forEach(log => {
+      const key = log.exercise_id || log.exercises?.name || "exercise";
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(log);
+    });
+    return [...groups.values()].map(sets => `<section><h4>${esc(sets[0].exercises?.name || "Ejercicio")}</h4>${sets.map(set => `<p>Serie ${Number(set.set_number) || 1}<strong>${Number(set.weight_kg) || 0} kg × ${Number(set.reps) || 0}</strong>${set.rir != null ? `<small>RIR ${Number(set.rir)}</small>` : ""}</p>`).join("")}</section>`).join("") || '<p>No hay series completadas en esta sesion.</p>';
+  }
+
   async function renderWorkoutHistory(host) {
     host.innerHTML = '<div class="panel-loading">Cargando historial…</div>';
     try {
@@ -1072,7 +1089,7 @@
     const ids = (sessions || []).map((item) => item.id);
     let logs = [];
     if (ids.length) {
-      logs = await checkedQuery(db.from("set_logs").select("session_id,weight_kg,reps,completed").in("session_id", ids));
+      logs = await checkedQuery(db.from("set_logs").select("session_id,exercise_id,set_number,weight_kg,reps,rir,completed,exercises(name)").in("session_id", ids).order("set_number"));
     }
     const stats = new Map();
     logs.forEach((set) => {
@@ -1083,14 +1100,24 @@
     const doneDates = new Set((sessions || []).filter((item) => item.completed_at).map((item) => item.planned_for));
     const now = new Date(), year = now.getFullYear(), month = now.getMonth(), first = new Date(year, month, 1), days = new Date(year, month + 1, 0).getDate(), offset = (first.getDay() + 6) % 7;
     const calendar = `${Array.from({length: offset}, () => '<i></i>').join("")}${Array.from({length: days}, (_, index) => { const day = index + 1, iso = `${year}-${String(month + 1).padStart(2,"0")}-${String(day).padStart(2,"0")}`; return `<button type="button" class="${doneDates.has(iso) ? "trained" : ""}" data-history-date="${iso}">${day}</button>`; }).join("")}`;
-    host.innerHTML = `<section class="history-calendar client-panel-card"><div class="panel-title"><div><small>CONSTANCIA</small><h2>${now.toLocaleDateString("es-ES", {month:"long",year:"numeric"})}</h2></div><b>${(sessions || []).filter(item => item.completed_at && String(item.planned_for).startsWith(`${year}-${String(month + 1).padStart(2,"0")}`)).length} entrenamientos</b></div><div class="calendar-week"><span>L</span><span>M</span><span>X</span><span>J</span><span>V</span><span>S</span><span>D</span></div><div class="calendar-days">${calendar}</div></section><section class="client-panel-card"><div class="panel-title"><div><small>DIARIO DE ENTRENAMIENTO</small><h2>Sesiones recientes</h2></div></div><div class="client-session-history">${(sessions || []).map((item) => { const stat = stats.get(item.id) || {sets:0,volume:0}; return `<article data-session-date="${item.planned_for}"><span class="history-status ${item.completed_at ? "done" : "open"}">${item.completed_at ? "✓" : "…"}</span><div><small>${new Date(`${item.planned_for}T12:00:00`).toLocaleDateString("es-ES", {weekday:"short",day:"numeric",month:"short"})}</small><b>${esc(item.routines?.name || "Entrenamiento libre")}</b><em>${stat.sets} series · ${Math.round(stat.volume).toLocaleString("es-ES")} kg · ${item.duration_minutes || "—"} min</em></div>${item.routine_id ? `<button type="button" data-repeat-routine="${item.routine_id}">Repetir</button>` : ""}</article>`; }).join("") || '<div class="client-empty-state">Todavia no has completado entrenamientos.</div>'}</div></section>`;
-    host.querySelectorAll("[data-history-date]").forEach((button) => button.onclick = () => {
-      host.querySelectorAll("[data-session-date]").forEach((item) => item.hidden = item.dataset.sessionDate !== button.dataset.historyDate);
-    });
+    host.innerHTML = `<section class="history-calendar client-panel-card"><div class="panel-title"><div><small>CONSTANCIA</small><h2>${now.toLocaleDateString("es-ES", {month:"long",year:"numeric"})}</h2></div><b>${(sessions || []).filter(item => item.completed_at && String(item.planned_for).startsWith(`${year}-${String(month + 1).padStart(2,"0")}`)).length} entrenamientos</b></div><div class="calendar-week"><span>L</span><span>M</span><span>X</span><span>J</span><span>V</span><span>S</span><span>D</span></div><div class="calendar-days">${calendar}</div></section><section class="client-panel-card"><div class="panel-title"><div><small>DIARIO DE ENTRENAMIENTO</small><h2>Sesiones recientes</h2><p class="history-day-summary" aria-live="polite"></p></div><button type="button" class="history-show-all">Ver todas</button></div><div class="client-session-history">${(sessions || []).map((item) => { const stat = stats.get(item.id) || {sets:0,volume:0}; return `<article data-session-date="${item.planned_for}"><span class="history-status ${item.completed_at ? "done" : "open"}">${item.completed_at ? "✓" : "…"}</span><div><small>${new Date(`${item.planned_for}T12:00:00`).toLocaleDateString("es-ES", {weekday:"short",day:"numeric",month:"short"})}</small><b>${esc(item.routines?.name || "Entrenamiento libre")} · Dia ${item.day_number || 1}</b><em>${stat.sets} series · ${Math.round(stat.volume).toLocaleString("es-ES")} kg · ${item.duration_minutes || "—"} min</em></div>${item.routine_id ? `<button type="button" data-repeat-routine="${item.routine_id}" data-repeat-day="${item.day_number || 1}">Repetir</button>` : ""}<details class="history-session-detail"><summary>Ver ejercicios y series</summary>${renderHistorySets(logs.filter(log => log.session_id === item.id && log.completed))}</details></article>`; }).join("") || '<div class="client-empty-state">Todavia no has completado entrenamientos.</div>'}</div></section>`;
+    const filterDate = (date) => {
+      const matching = sessions.filter(item => !date || item.planned_for === date);
+      const count = matching.reduce((total, item) => total + (stats.get(item.id)?.sets || 0), 0);
+      host.querySelectorAll("[data-session-date]").forEach(item => { item.hidden = !!date && item.dataset.sessionDate !== date; });
+      host.querySelectorAll("[data-history-date]").forEach(button => button.setAttribute("aria-pressed", String(button.dataset.historyDate === date)));
+      host.querySelector(".history-day-summary").textContent = date ? `${new Date(`${date}T12:00:00`).toLocaleDateString("es-ES")} · ${matching.length} sesiones · ${count} series realizadas${matching.length ? "" : " · Sin entrenamientos este dia"}` : "";
+    };
+    host.querySelectorAll("[data-history-date]").forEach(button => button.onclick = () => filterDate(button.dataset.historyDate));
+    host.querySelector(".history-show-all").onclick = () => filterDate(null);
     host.querySelectorAll("[data-repeat-routine]").forEach((button) => button.onclick = async () => {
       resetSession();
       routine = null;
       await selectRoutine(button.dataset.repeatRoutine);
+      selectedRoutineDay = Number(button.dataset.repeatDay || 1);
+      routineItems = allRoutineItems.filter(item => (Number(item.day_number) || 1) === selectedRoutineDay);
+      renderRoutine();
+      await restoreTodaySession();
       host.closest(".client-panel-content").querySelector('[data-workout-view="routines"]').click();
       toast("Rutina preparada para repetir");
     });
@@ -1143,7 +1170,7 @@
   function openLibraryExercise(exercise) {
     const overlay = document.createElement("div");
     overlay.className = "client-exercise-preview";
-    overlay.innerHTML = `<section><button type="button" class="exercise-preview-close">×</button><img src="${esc(exercise.gif || exercise.imagen)}" alt="Demostracion de ${esc(exercise.nombre_es || exercise.nombre)}"><small>${esc(exercise.grupo)} · ${esc(exercise.equipo)}</small><h2>${esc(exercise.nombre_es || exercise.nombre)}</h2><ol>${(exercise.instrucciones || []).map((step) => `<li>${esc(step)}</li>`).join("") || '<li>Consulta las indicaciones de Fernando antes de realizar el ejercicio.</li>'}</ol><form class="client-exercise-config"><label>Destino<select name="destination"><option value="current">Entrenamiento actual</option><option value="free">Nuevo entrenamiento libre</option></select></label><div class="client-form-grid"><label>Dia<input name="day" type="number" min="1" max="14" value="${selectedRoutineDay || 1}" required></label><label>Posicion<input name="position" type="number" min="1" value="${routineItems.length + 1}" required></label><label>Series<input name="sets" type="number" min="1" max="20" value="3" required></label><label>Repeticiones minimas<input name="min" type="number" min="1" max="100" value="8" required></label><label>Repeticiones maximas<input name="max" type="number" min="1" max="100" value="12" required></label><label>Descanso (segundos)<input name="rest" type="number" min="0" max="900" value="90" required></label></div><p class="form-feedback" aria-live="polite"></p><button type="submit" class="client-add-exercise">+ Anadir al entrenamiento</button></form></section>`;
+    overlay.innerHTML = `<section><button type="button" class="exercise-preview-close">×</button>${window.ftExerciseMedia ? window.ftExerciseMedia.html(exercise.database || {media_url:exercise.gif || exercise.imagen,name:exercise.nombre_es || exercise.nombre}) : `<img src="${esc(exercise.imagen)}" alt="">`}<small>${esc(exercise.grupo)} · ${esc(exercise.equipo)}</small><h2>${esc(exercise.nombre_es || exercise.nombre)}</h2><ol>${(exercise.instrucciones || []).map((step) => `<li>${esc(step)}</li>`).join("") || '<li>Consulta las indicaciones de Fernando antes de realizar el ejercicio.</li>'}</ol><form class="client-exercise-config"><label>Destino<select name="destination"><option value="current">Entrenamiento actual</option><option value="free">Nuevo entrenamiento libre</option></select></label><div class="client-form-grid"><label>Dia<input name="day" type="number" min="1" max="14" value="${selectedRoutineDay || 1}" required></label><label>Posicion<input name="position" type="number" min="1" value="${routineItems.length + 1}" required></label><label>Series<input name="sets" type="number" min="1" max="20" value="3" required></label><label>Repeticiones minimas<input name="min" type="number" min="1" max="100" value="8" required></label><label>Repeticiones maximas<input name="max" type="number" min="1" max="100" value="12" required></label><label>Descanso (segundos)<input name="rest" type="number" min="0" max="900" value="90" required></label></div><p class="form-feedback" aria-live="polite"></p><button type="submit" class="client-add-exercise">+ Anadir al entrenamiento</button></form></section>`;
     document.body.appendChild(overlay);
     overlay.querySelector("button").onclick = () => overlay.remove();
     overlay.querySelector("form").onsubmit = (event) => {

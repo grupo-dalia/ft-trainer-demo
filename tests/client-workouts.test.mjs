@@ -20,11 +20,15 @@ function database(results) {
 const checked = extract('  async function checkedQuery', '  function formatWorkoutTime');
 test('history renders sessions and volume, and offers retry on rejected queries', async () => {
   const host = { innerHTML: '', querySelectorAll: () => [], querySelector: () => ({}) };
-  const db = database([{ data: [{ id:'s1', planned_for:'2026-09-30', completed_at:'2026-09-30', routines:{name:'Torso'} }] }, { data:[{session_id:'s1',completed:true,weight_kg:20,reps:10}] }]);
+  const db = database([{ data: [{ id:'s1', planned_for:'2026-09-30', completed_at:'2026-09-30', routines:{name:'Torso'} }] }, { data:[{session_id:'s1',exercise_id:'e1',set_number:2,exercises:{name:'Press banca'},completed:true,weight_kg:20,reps:10}] }]);
   const context = vm.createContext({db,clientId:'client1',host,setTimeout,clearTimeout,esc:String});
-  vm.runInContext(checked + extract('  async function renderWorkoutHistory', '  let clientExerciseLibrary'), context);
+  vm.runInContext(checked + extract('  function renderHistorySets', '  let clientExerciseLibrary'), context);
   await vm.runInContext('renderWorkoutHistory(host)', context);
   assert.match(host.innerHTML, /Torso/);
+  assert.match(host.innerHTML, /Press banca/);
+  assert.match(host.innerHTML, /Serie 2/);
+  assert.match(host.innerHTML, /20 kg × 10/);
+  assert.match(host.innerHTML, /Ver ejercicios y series/);
   assert.match(host.innerHTML, /1 series · 200 kg/);
   context.db = { from() { throw new Error('offline'); } };
   await vm.runInContext('renderWorkoutHistory(host)', context);
@@ -172,7 +176,7 @@ test('routine history handles a first session and offers retry after a query err
 test('exercise form applies day, order, sets, repetition range and zero rest', () => {
   const form={}, feedback={}, button={};
   const overlay={innerHTML:'',querySelector:selector=>selector==='form'?form:button,remove(){}};
-  const context=vm.createContext({document:{createElement:()=>overlay,body:{appendChild(){}},querySelector:()=>({click(){}})},esc:String,selectedRoutineDay:1,routine:{id:'r1'},routineItems:[],allRoutineItems:[],renderRoutine(){},toast(){},FormData:class {constructor(form){this.form=form;}get(key){return this.form.values[key];}}});
+  const context=vm.createContext({window:{},document:{createElement:()=>overlay,body:{appendChild(){}},querySelector:()=>({click(){}})},esc:String,selectedRoutineDay:1,routine:{id:'r1'},routineItems:[],allRoutineItems:[],renderRoutine(){},toast(){},FormData:class {constructor(form){this.form=form;}get(key){return this.form.values[key];}}});
   vm.runInContext(extract('  function openLibraryExercise', '  function weekKey'),context);
   vm.runInContext('openLibraryExercise({database:{id:"e1",name:"Press"},instrucciones:[]})',context);
   assert.match(overlay.innerHTML,/Descanso \(segundos\)/);
