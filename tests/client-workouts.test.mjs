@@ -54,7 +54,7 @@ test('history renders sessions and volume, and offers retry on rejected queries'
 test('a new session only reuses unfinished sessions', async () => {
   const db = database([{data:null},{data:{id:'new-session'}}]);
   const context = vm.createContext({db,clientId:'client1',sessionId:null,sessionCompleted:false,routine:{id:'r1'},selectedItem:{item:{day_number:1}},sessionStartedAt:0,selectedRoutineDay:1,saveFreeDraft(){}});
-  vm.runInContext(extract('  function localDate', '  function elapsedWorkoutTime') + extract('  async function ensureSession', '  const oldSave'), context);
+  vm.runInContext(extract('  function localDate', '  function elapsedWorkoutTime') + extract('  async function ensureSession', '  let exerciseSaveInFlight'), context);
   assert.equal(await vm.runInContext('ensureSession()', context), 'new-session');
   assert.ok(db.calls[0].operations.some(op => op[0] === 'is' && op[1] === 'completed_at' && op[2] === null));
   assert.ok(db.calls[0].operations.some(op => op[0] === 'eq' && op[1] === 'day_number' && op[2] === 1));
@@ -70,22 +70,22 @@ function saveHarness({checked=[true,false,false], weights=['40','',''], reps=['1
     '.live-complete': checked.map(checked=>({checked}))
   };
   const rows=reps.map((_,i)=>({querySelector:key=>inputs[key][i]}));
-  const button={cloneNode(){return button;},replaceWith(){}};
   const state={done:false,messages:[],writes:[],rest:[]};
   const row={classList:{toggle(_,value){state.done=value;}},querySelector:()=>({})};
   const db=database([{data:[],error},{data:[],error:finishError}]);
+  const scope={dataset:{recordsFailed:'false'},querySelectorAll:selector=>selector==='.hevy-set-row'?rows:inputs[selector]};
   const context=vm.createContext({db,sessionId:'session-active',sessionCompleted:false,workoutTimerId:null,
     workoutPausedAt:null,selectedItem:{item:{id:'item1',exercise_id:'ex1',target_sets:3,rest_seconds:0},row},
     dirtyExercises:new Set(),completedExerciseIds:new Set(),ensureSession:async()=>'session-active',elapsedWorkoutTime:()=>60000,
     updateWorkoutProgress:done=>({total:1,percent:done*100}),startRestTimer:seconds=>state.rest.push(seconds),toast:message=>state.messages.push(message),clearInterval(){},
-    document:{body:{classList:{contains:()=>true,remove(){}}},getElementById:id=>id==='routine-recent-history'?null:id==='save-set'?button:{classList:{remove(){}},querySelectorAll:selector=>selector==='.hevy-set-row'?rows:inputs[selector]},querySelectorAll:selector=>selector==='.hevy-set-row'?rows:selector==='.live-exercise.done'?(state.done?[row]:[]):selector==='.save-inline-exercise'?[]:inputs[selector]}
+    document:{body:{classList:{contains:()=>true,remove(){}}},getElementById:()=>null,querySelectorAll:selector=>selector==='.live-exercise.done'?(state.done?[row]:[]):[]}
   });
-  vm.runInContext(extract('  const oldSave', '  async function getWorkoutShareData'),context);
-  return {button,state,db,context};
+  vm.runInContext(extract('  let exerciseSaveInFlight', '  async function getWorkoutShareData'),context);
+  return {scope,state,db,context,save:()=>vm.runInContext('persistExercise(selectedItem, scope)',Object.assign(context,{scope}))};
 }
 
 test('saving one of three sets keeps the exercise incomplete', async()=>{
-  const h=saveHarness();await h.button.onclick();
+  const h=saveHarness();await h.save();
   assert.equal(h.state.done,false);
   assert.equal(h.context.sessionCompleted,false);
   assert.equal(h.db.calls.length,1);
@@ -93,12 +93,8 @@ test('saving one of three sets keeps the exercise incomplete', async()=>{
 
 test('saving an inline exercise reads only its own form, never other visible exercises', async()=>{
   const h=saveHarness({weights:['47','',''],reps:['11','','']});
-  h.context.document.querySelectorAll=selector=>{
-    if(selector==='.live-exercise.done')return [];
-    if(selector==='.save-inline-exercise')return [];
-    throw new Error('Attempted to read another exercise: '+selector);
-  };
-  await h.button.onclick();
+  h.context.document.querySelectorAll=selector=>selector==='.live-exercise.done'?[]:(()=>{throw new Error('Attempted to read another exercise: '+selector);})();
+  await h.save();
   const values=h.db.calls[0].operations.find(op=>op[0]==='upsert')[1];
   assert.equal(values.length,3);
   assert.equal(values[0].weight_kg,47);
@@ -107,7 +103,7 @@ test('saving an inline exercise reads only its own form, never other visible exe
 });
 
 test('unchecking stored sets persists completed=false without retaining their volume', async()=>{
-  const h=saveHarness({checked:[false,false,false]});await h.button.onclick();
+  const h=saveHarness({checked:[false,false,false]});await h.save();
   const logs=h.db.calls[0].operations.find(op=>op[0]==='upsert')[1];
   assert.equal(logs.length,3);
   assert.ok(logs.every(log=>!log.completed && log.weight_kg===null && log.reps===null));
@@ -115,29 +111,28 @@ test('unchecking stored sets persists completed=false without retaining their vo
 
 test('negative or nonnumeric weights cannot reach the database',async()=>{
   for(const weight of ['-5','abc']){
-    const h=saveHarness({weights:[weight,'','']});await h.button.onclick();
+    const h=saveHarness({weights:[weight,'','']});await h.save();
     assert.equal(h.db.calls.length,0);
-    assert.equal(h.button.disabled,false);
+    assert.match(h.state.messages.at(-1),/Revisa/);
   }
 });
 
 test('RPE is converted to RIR when saving a completed set',async()=>{
   const h=saveHarness({rpes:['8','','']});
-  await h.button.onclick();
+  await h.save();
   const logs=h.db.calls[0].operations.find(op=>op[0]==='upsert')[1];
   assert.equal(logs[0].rir,2);
 });
 
 test('a fractional RPE is rejected because stored RIR is an integer',async()=>{
   const h=saveHarness({rpes:['7.5','','']});
-  await h.button.onclick();
+  await h.save();
   assert.equal(h.db.calls.length,0);
 });
 
 test('all completed sets stay open until the user finishes the workout',async()=>{
   const h=saveHarness({checked:[true,true,true],reps:['10','10','10'],weights:['40','40','40']});
-  await h.button.onclick();assert.equal(h.context.sessionCompleted,false);assert.equal(h.db.calls.length,1);
-  assert.match(h.state.messages.at(-1),/Finalizar/);
+  await h.save();assert.equal(h.context.sessionCompleted,false);assert.equal(h.db.calls.length,1);
 });
 
 test('paused elapsed time remains frozen',()=>{
@@ -186,6 +181,8 @@ test('new sets are blank and unchecked, with previous performance visible', asyn
   assert.match(record.innerHTML,/60 kg × 6/);
   assert.ok(db.calls[1].operations.some(op=>op[0]==='select' && op[1].includes('reps')));
   assert.match(sets.innerHTML,/OBJETIVO · 8–12 REPS/);
+  assert.match(sets.innerHTML,/<option value="normal">1<\/option><option value="warmup">C<\/option>/);
+  assert.doesNotMatch(sets.innerHTML,/<option value="(?:drop|failure)">/);
   assert.match(sets.innerHTML,/type="number" min="1" max="1000" step="1" placeholder="8–12" value=""/);
   assert.doesNotMatch(sets.innerHTML,/type="checkbox" checked/);
   assert.ok(db.calls[0].operations.some(op=>op[0]==='eq' && op[1]==='workout_sessions.client_id' && op[2]==='c1'));
@@ -332,11 +329,69 @@ test('finalizing a routine completes the session and stops the clock only after 
     const messages=[];
     let stopped=false;
     const context=vm.createContext({db,sessionId:'s1',sessionCompleted:false,routine:{id:'r1'},exerciseSaveInFlight:false,dirtyExercises:new Set(),elapsedWorkoutTime:()=>90000,confirm:()=>true,
-      finishWorkoutClock(){stopped=true;},updateWorkoutEntry(){},isFreeWorkout:()=>false,clearFreeDraft(){},toast:message=>messages.push(message),document:{getElementById:()=>null}});
+      finishWorkoutClock(){stopped=true;},updateWorkoutEntry(){},isFreeWorkout:()=>false,clearFreeDraft(){},toast:message=>messages.push(message),document:{getElementById:()=>null,querySelectorAll:()=>[]}});
     vm.runInContext(extract('  async function finishWorkout', '  function showRoutines'),context);
     await vm.runInContext('finishWorkout()',context);
     assert.equal(context.sessionCompleted,!failure);
     assert.equal(stopped,!failure);
     assert.equal(db.calls[0].operations.find(op=>op[0]==='update')[1].duration_minutes,2);
   }
+});
+
+test('finishing with incomplete sets warns and saves edited sets before closing', async () => {
+  const h=saveHarness();
+  h.context.dirtyExercises.add('ex1');
+  h.context.routineItems=[h.context.selectedItem.item];
+  h.context.document.querySelectorAll=selector=>selector==='#exercise-list .hevy-set-row'?
+    [{querySelector:()=>({checked:true})},{querySelector:()=>({checked:false})}]:
+    selector==='.live-exercise'?[Object.assign(h.context.selectedItem.row,{dataset:{liveIndex:'0'},querySelector:key=>key==='.inline-registration'?h.scope:{}})]:
+    selector==='.live-exercise.done'?[]:[];
+  let warning='';
+  h.context.confirm=text=>{warning=text;return true;};
+  h.context.finishWorkoutClock=()=>{};
+  h.context.updateWorkoutEntry=()=>{};
+  h.context.isFreeWorkout=()=>false;
+  vm.runInContext(extract('  async function finishWorkout', '  function openWorkoutSettings'),h.context);
+  await vm.runInContext('finishWorkout()',h.context);
+  assert.match(warning,/1 series sin completar/);
+  assert.equal(h.db.calls[0].table,'set_logs');
+  assert.equal(h.db.calls[1].table,'workout_sessions');
+  assert.equal(h.context.sessionCompleted,true);
+});
+
+test('rest timer floats, counts down and can be skipped', () => {
+  let now=1000, tick, box, removed=false;
+  const time={textContent:''},label={textContent:''},skip={};
+  const context=vm.createContext({restTimerId:null,sessionCompleted:false,Date:{now:()=>now},navigator:{},
+    clearInterval(){},setInterval:fn=>{tick=fn;return 1;},
+    document:{querySelector:()=>box,createElement:()=>({className:'',setAttribute(){},remove(){removed=true;},querySelector:key=>key==='button'?skip:key==='.live-rest-time'?time:label,classList:{add(){}}}),body:{appendChild:node=>box=node}}});
+  vm.runInContext(extract('  function startRestTimer', '  function ensureWorkoutToolbar'),context);
+  vm.runInContext('startRestTimer(90)',context);
+  assert.equal(box.className,'live-rest-timer');
+  assert.equal(time.textContent,'1:30');
+  now=32000;tick();assert.equal(time.textContent,'0:59');
+  skip.onclick();assert.equal(removed,true);
+});
+
+test('supersets save several free workout exercises in the draft', async () => {
+  const items=[{exercise_id:'a'},{exercise_id:'b'},{exercise_id:'c'}];
+  let saved=0,rendered=0;
+  const context=vm.createContext({routine:{id:null},routineItems:items,isFreeWorkout:()=>true,saveFreeDraft:()=>saved++,renderRoutine:()=>rendered++});
+  vm.runInContext(extract('  function supersetStorageKey', '  function finishWorkoutClock'),context);
+  await vm.runInContext('applySupersetGroups([{exercise_id:"a",superset_group:1},{exercise_id:"b",superset_group:1},{exercise_id:"c"}])',context);
+  assert.deepEqual(items.map(item=>item.superset_group),[1,1,null]);
+  assert.equal(saved,1);assert.equal(rendered,1);
+});
+
+test('personal routine supersets are sent to the authorized database function', async () => {
+  let rpc;
+  const items=[{id:'r1',exercise_id:'a'},{id:'r2',exercise_id:'b'}];
+  const context=vm.createContext({routine:{id:'routine',source:'client'},selectedRoutineDay:2,routineItems:items,
+    db:{rpc:(name,args)=>{rpc={name,args};return Promise.resolve({data:null});}},
+    checkedQuery:async query=>(await query).data,renderRoutine(){},isFreeWorkout:()=>false});
+  vm.runInContext(extract('  function supersetStorageKey', '  function finishWorkoutClock'),context);
+  await vm.runInContext('applySupersetGroups([{id:"r1",superset_group:1},{id:"r2",superset_group:1}])',context);
+  assert.equal(rpc.name,'ft_set_personal_supersets');
+  assert.equal(rpc.args.p_day,2);
+  assert.equal(rpc.args.p_groups.length,2);
 });

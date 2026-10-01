@@ -84,11 +84,63 @@
   function clearFreeDraft() {
     try { localStorage.removeItem(freeDraftKey); } catch (error) { /* Storage may be unavailable. */ }
   }
+  function supersetStorageKey() {
+    return `ft-supersets-${clientId}-${routine?.id || "free"}-${selectedRoutineDay}`;
+  }
+  function restoreSessionSupersets() {
+    if (isFreeWorkout() || routine?.source === "client") return;
+    try {
+      const groups = JSON.parse(localStorage.getItem(supersetStorageKey()) || "{}");
+      routineItems.forEach(item => { if (Object.prototype.hasOwnProperty.call(groups, item.exercise_id)) item.superset_group = groups[item.exercise_id]; });
+    } catch (error) { /* Keep the assigned routine if storage is unavailable. */ }
+  }
+  async function applySupersetGroups(next) {
+    if (routine?.id && routine.source === "client") {
+      await checkedQuery(db.rpc("ft_set_personal_supersets", {
+        p_routine: routine.id, p_day: selectedRoutineDay,
+        p_groups: next.map(item => ({ id: item.id, group: item.superset_group || null })),
+      }));
+    } else if (!isFreeWorkout()) {
+      const groups = Object.fromEntries(next.map(item => [item.exercise_id, item.superset_group || null]));
+      localStorage.setItem(supersetStorageKey(), JSON.stringify(groups));
+    }
+    next.forEach((item, index) => { routineItems[index].superset_group = item.superset_group || null; });
+    if (isFreeWorkout()) saveFreeDraft();
+    renderRoutine();
+  }
+  function openSupersetPicker() {
+    if (routineItems.length < 2) { toast("Añade al menos dos ejercicios para crear una superserie"); return; }
+    if (dirtyExercises.size) { toast("Finaliza el entrenamiento antes de reorganizar ejercicios con series editadas"); return; }
+    const overlay = document.createElement("div");
+    overlay.className = "client-exercise-preview superset-picker";
+    const groups = [...new Set(routineItems.map(item => item.superset_group).filter(Boolean))];
+    overlay.innerHTML = `<section role="dialog" aria-modal="true" aria-label="Crear superserie"><button type="button" class="exercise-preview-close" aria-label="Cerrar">×</button><small>SUPER SERIES</small><h2>Agrupar ejercicios</h2><p>Selecciona dos o más ejercicios para hacerlos seguidos.</p><form><div class="superset-options">${routineItems.map((item, index) => `<label><input type="checkbox" value="${index}"><span>${esc(item.exercises?.name || "Ejercicio")}</span>${item.superset_group ? `<small>Grupo ${item.superset_group}</small>` : ""}</label>`).join("")}</div><p class="form-feedback" role="status"></p><button type="submit" class="client-add-exercise">Crear superserie</button></form>${groups.map(group => `<button type="button" class="superset-remove" data-group="${group}">Quitar superserie ${group}</button>`).join("")}</section>`;
+    document.body.appendChild(overlay);
+    overlay.querySelector(".exercise-preview-close").onclick = () => overlay.remove();
+    overlay.onclick = event => { if (event.target === overlay) overlay.remove(); };
+    overlay.querySelector("form").onsubmit = async event => {
+      event.preventDefault();
+      const selected = [...overlay.querySelectorAll(".superset-options input:checked")].map(input => Number(input.value));
+      const feedback = overlay.querySelector(".form-feedback");
+      if (selected.length < 2) { feedback.textContent = "Selecciona al menos dos ejercicios."; return; }
+      const group = Math.max(0, ...groups.map(Number)) + 1;
+      const next = routineItems.map(item => ({ ...item }));
+      selected.forEach(index => { next[index].superset_group = group; });
+      for (const old of groups) if (next.filter(item => item.superset_group === old).length < 2) next.forEach(item => { if (item.superset_group === old) item.superset_group = null; });
+      try { await applySupersetGroups(next); overlay.remove(); toast("Superserie creada"); }
+      catch (error) { feedback.textContent = "No se pudo guardar la superserie. Inténtalo de nuevo."; }
+    };
+    overlay.querySelectorAll(".superset-remove").forEach(button => button.onclick = async () => {
+      const next = routineItems.map(item => ({ ...item, superset_group: String(item.superset_group) === button.dataset.group ? null : item.superset_group }));
+      try { await applySupersetGroups(next); overlay.remove(); toast("Superserie quitada"); }
+      catch (error) { overlay.querySelector(".form-feedback").textContent = "No se pudo quitar la superserie."; }
+    });
+  }
   function finishWorkoutClock() {
     workoutPausedAt = workoutPausedAt || Date.now();
     clearInterval(workoutTimerId);
     clearInterval(restTimerId);
-    document.querySelector(".live-rest-chip")?.remove();
+    document.querySelector(".live-rest-timer")?.remove();
     document.body.classList.remove("workout-in-progress");
     document.body.classList.add("workout-completed");
     updateWorkoutClock();
@@ -101,7 +153,7 @@
     sessionId = null;
     sessionCompleted = false;
     completedExerciseIds.clear();
-    document.querySelector(".live-rest-chip")?.remove();
+    document.querySelector(".live-rest-timer")?.remove();
     const pauseButton = document.getElementById("pause-live-workout");
     if (pauseButton) { pauseButton.textContent = "Pausar"; pauseButton.hidden = false; }
     const finishButton = document.getElementById("finish-live-workout");
@@ -196,26 +248,24 @@
 
   function startRestTimer(seconds) {
     clearInterval(restTimerId);
-    let remaining = Math.max(0, Number(seconds) || 0);
-    document.querySelector(".live-rest-chip")?.remove();
-    if (!remaining) return;
-    const toolbar = document.querySelector(".live-workout-toolbar");
-    let box = toolbar?.querySelector(".live-rest-chip");
-    if (toolbar && !box) {
-      box = document.createElement("button");
-      box.type = "button";
-      box.className = "live-rest-chip";
-      box.innerHTML = `<small>DESCANSO</small><b id="live-rest-time">1:30</b>`;
-      box.onclick = () => { clearInterval(restTimerId); box.remove(); };
-      toolbar.querySelector("button").before(box);
-    }
-    const output = document.getElementById("live-rest-time");
-    if (!output || !box) return;
+    document.querySelector(".live-rest-timer")?.remove();
+    const duration = Math.max(0, Number(seconds) || 0);
+    if (!duration || sessionCompleted) return;
+    const endsAt = Date.now() + duration * 1000;
+    const box = document.createElement("div");
+    box.className = "live-rest-timer";
+    box.setAttribute("role", "timer");
+    box.innerHTML = `<span>DESCANSO</span><b class="live-rest-time"></b><button type="button">Omitir</button>`;
+    box.querySelector("button").onclick = () => { clearInterval(restTimerId); box.remove(); };
+    document.body.appendChild(box);
+    const output = box.querySelector(".live-rest-time");
     const paint = () => {
+      const remaining = Math.max(0, Math.ceil((endsAt - Date.now()) / 1000));
       output.textContent = `${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, "0")}`;
-      if (remaining-- <= 0) {
+      if (!remaining) {
         clearInterval(restTimerId);
         box.classList.add("finished");
+        box.querySelector("span").textContent = "DESCANSO TERMINADO";
         if (navigator.vibrate) navigator.vibrate([150, 80, 150]);
       }
     };
@@ -250,21 +300,30 @@
   async function finishWorkout() {
     if (sessionCompleted) { toast("Este entrenamiento ya esta guardado"); return; }
     if (exerciseSaveInFlight) { toast("Espera a que terminen de guardarse las series"); return; }
-    if (dirtyExercises.size) { toast("Guarda las series modificadas antes de terminar"); return; }
-    if (!sessionId) {
-      toast("Completa al menos una serie antes de finalizar");
-      return;
-    }
-    if (!confirm("¿Finalizar y guardar este entrenamiento?")) return;
+    const rows = [...document.querySelectorAll("#exercise-list .hevy-set-row")];
+    const completed = rows.filter(row => row.querySelector(".live-complete")?.checked).length;
+    if (!sessionId && !dirtyExercises.size && !completed) { toast("Registra alguna serie antes de finalizar"); return; }
+    const warning = completed < rows.length
+      ? `Hay ${rows.length - completed} series sin completar. Se guardarán las realizadas. ¿Finalizar el entrenamiento?`
+      : "¿Finalizar y guardar este entrenamiento?";
+    if (!confirm(warning)) return;
+    const finishButton = document.getElementById("finish-live-workout");
+    if (finishButton) finishButton.disabled = true;
+    try {
+      for (const row of document.querySelectorAll(".live-exercise")) {
+        const item = routineItems[Number(row.dataset.liveIndex)];
+        if (item && dirtyExercises.has(item.exercise_id)) {
+          const saved = await persistExercise({ item, row }, row.querySelector(".inline-registration"));
+          if (!saved) return;
+        }
+      }
+      if (!sessionId) await ensureSession();
     const duration = Math.max(1, Math.round((elapsedWorkoutTime()) / 60000));
     const result = await db.from("workout_sessions").update({
       completed_at: new Date().toISOString(),
       duration_minutes: duration,
     }).eq("id", sessionId);
-    if (result.error) {
-      toast("No se pudo finalizar. Comprueba la conexion.");
-      return;
-    }
+    if (result.error) throw result.error;
     sessionCompleted = true;
     finishWorkoutClock();
     updateWorkoutEntry();
@@ -272,6 +331,11 @@
     const historyHost = document.getElementById("routine-recent-history");
     if (historyHost) renderRoutineHistory(historyHost);
     toast("Entrenamiento guardado · gran trabajo");
+    } catch (error) {
+      toast("No se pudo finalizar. Comprueba la conexión e inténtalo de nuevo.");
+    } finally {
+      if (finishButton && !sessionCompleted) finishButton.disabled = false;
+    }
   }
 
   function openWorkoutSettings() {
@@ -563,6 +627,7 @@
     routineItems = allRoutineItems.filter(
       (item) => (Number(item.day_number) || 1) === selectedRoutineDay,
     );
+    restoreSessionSupersets();
     renderRoutine();
     await restoreTodaySession();
     renderRoutine();
@@ -644,16 +709,17 @@
                 ? item.target_reps_min
                 : `${item.target_reps_min || "—"}–${item.target_reps_max || "—"}`,
             image = ex.thumbnail_url || "assets/brand/ft-symbol-color.png";
-          return `<article class="live-exercise inline-exercise ${item.superset_group ? "superset-exercise" : ""}" data-live-index="${index}" ${item.superset_group ? `data-superset="${item.superset_group}"` : ""}><button type="button" class="exercise-row exercise-technique"><span class="exercise-thumb"><img src="${esc(image)}" alt="${esc(ex.name)}" loading="lazy"></span><span>${item.superset_group ? `<mark>SUPERSET ${item.superset_group}</mark>` : ""}<b>${esc(ex.name || "Ejercicio")}</b><small>${item.target_sets} series · ${reps} repeticiones${item.target_weight_kg != null ? ` · ${item.target_weight_kg} kg` : ""}</small><em>Ver vídeo y técnica</em></span><strong>⋮</strong></button><textarea class="exercise-session-note" rows="1" placeholder="Agregar notas aquí…" aria-label="Notas de ${esc(ex.name || "ejercicio")}"></textarea><button type="button" class="exercise-rest-control" data-rest-enabled="false" aria-pressed="false">${icon("clock")}<span>Descanso: APAGADO</span></button>${isFreeWorkout() ? `<button type="button" class="remove-free-exercise" data-remove-index="${index}" aria-label="Quitar ${esc(ex.name || "Ejercicio")}">Quitar ejercicio</button>` : ""}<div class="inline-registration"><div class="last-record"></div><div class="sets"><p>Cargando series…</p></div><button type="button" class="save-inline-exercise" disabled>Guardar series ✓</button></div></article>`;
+          return `<article class="live-exercise inline-exercise ${item.superset_group ? "superset-exercise" : ""}" data-live-index="${index}" ${item.superset_group ? `data-superset="${item.superset_group}"` : ""}><button type="button" class="exercise-row exercise-technique"><span class="exercise-thumb"><img src="${esc(image)}" alt="${esc(ex.name)}" loading="lazy"></span><span>${item.superset_group ? `<mark>SUPERSET ${item.superset_group}</mark>` : ""}<b>${esc(ex.name || "Ejercicio")}</b><small>${item.target_sets} series · ${reps} repeticiones${item.target_weight_kg != null ? ` · ${item.target_weight_kg} kg` : ""}</small><em>Ver vídeo y técnica</em></span><strong>⋮</strong></button><textarea class="exercise-session-note" rows="1" placeholder="Agregar notas aquí…" aria-label="Notas de ${esc(ex.name || "ejercicio")}"></textarea><button type="button" class="exercise-rest-control" data-rest-enabled="true" aria-pressed="true">${icon("clock")}<span>Descanso: ${item.rest_seconds ?? 90} s</span></button>${isFreeWorkout() ? `<button type="button" class="remove-free-exercise" data-remove-index="${index}" aria-label="Quitar ${esc(ex.name || "Ejercicio")}">Quitar ejercicio</button>` : ""}<div class="inline-registration"><div class="last-record"></div><div class="sets"><p>Cargando series…</p></div></div></article>`;
         })
         .join("") ||
         '<div class="client-empty-state">Esta sesión aún no contiene ejercicios.</div>');
-    document.getElementById("exercise-list").insertAdjacentHTML("beforeend", `<div class="workout-session-actions"><button type="button" class="workout-add-exercise">+ Añadir ejercicio</button><button type="button" class="workout-open-settings">Configuración</button>${isFreeWorkout() && !sessionId ? '<button type="button" class="workout-discard-free">Descartar entreno</button>' : ""}</div>`);
+    document.getElementById("exercise-list").insertAdjacentHTML("beforeend", `<div class="workout-session-actions"><button type="button" class="workout-add-exercise">+ Añadir ejercicio</button><button type="button" class="workout-add-superset">+ Superserie</button><button type="button" class="workout-open-settings">Configuración</button>${isFreeWorkout() && !sessionId ? '<button type="button" class="workout-discard-free">Descartar entreno</button>' : ""}</div>`);
     document.querySelector(".workout-add-exercise").onclick = () => {
       if (!isFreeWorkout() && sessionId && !sessionCompleted) { toast("Finaliza la sesión actual antes de editar la rutina"); return; }
       document.querySelector('[data-workout-view="library"]')?.click();
     };
     document.querySelector(".workout-open-settings").onclick = openWorkoutSettings;
+    document.querySelector(".workout-add-superset").onclick = openSupersetPicker;
     document.querySelector(".workout-discard-free")?.addEventListener("click", discardFreeWorkout);
     document.querySelectorAll("[data-routine-day]").forEach((button) => {
       button.onclick = () => {
@@ -669,6 +735,7 @@
         routineItems = allRoutineItems.filter(
           (item) => (Number(item.day_number) || 1) === selectedRoutineDay,
         );
+        restoreSessionSupersets();
         renderRoutine();
         updateWorkoutProgress(
           routineItems.filter((item) =>
@@ -697,7 +764,7 @@
       button.setAttribute("aria-pressed", String(enabled));
       const item = routineItems[Number(button.closest(".live-exercise").dataset.liveIndex)];
       button.querySelector("span").textContent = enabled ? `Descanso: ${item.rest_seconds ?? 90} s` : "Descanso: APAGADO";
-      if (!enabled) { clearInterval(restTimerId); document.querySelector(".live-rest-chip")?.remove(); }
+      if (!enabled) { clearInterval(restTimerId); document.querySelector(".live-rest-timer")?.remove(); }
     });
     document.querySelectorAll("[data-remove-index]").forEach(button => button.onclick = () => {
       if (sessionId && !sessionCompleted) { toast("Finaliza el entrenamiento antes de quitar ejercicios"); return; }
@@ -894,22 +961,22 @@
     const sets = sheet.querySelector(".sets");
     sets.classList.add("hevy-set-table");
     sets.innerHTML =
-      `<p class="set-target"><span>OBJETIVO · ${item.target_reps_min ?? "—"}${item.target_reps_max && item.target_reps_max !== item.target_reps_min ? `–${item.target_reps_max}` : ""} REPS</span>Marca las series terminadas y guarda los cambios.</p><div class="hevy-set-head"><b>SERIE</b><b>ANTERIOR</b><b>KG</b><b>REPS</b><b>RPE</b><b>✓</b></div>` +
+      `<p class="set-target"><span>OBJETIVO · ${item.target_reps_min ?? "—"}${item.target_reps_max && item.target_reps_max !== item.target_reps_min ? `–${item.target_reps_max}` : ""} REPS</span>Marca las series terminadas. Se guardarán al finalizar el entrenamiento.</p><div class="hevy-set-head"><b>SERIE</b><b>ANTERIOR</b><b>KG</b><b>REPS</b><b>RPE</b><b>✓</b></div>` +
       Array.from({ length: Math.max(item.target_sets || 3, ...currentLogs.map(log => log.set_number)) }, (_, index) => {
         const previous = previousSets[index],
           current = currentLogs.find(log => log.set_number === index + 1),
           reps = current?.reps ?? "",
           weight = current?.weight_kg ?? "";
         const previousLabel = previous ? `${previous.weight_kg ?? 0} × ${previous.reps ?? 0}` : "—";
-        return `<label class="hevy-set-row"><select class="live-set-type" aria-label="Tipo de serie ${index + 1}"><option value="normal">${index + 1}</option><option value="warmup">W</option><option value="drop">D</option><option value="failure">F</option></select><small>${previousLabel}</small><input class="live-weight" value="${weight}" inputmode="decimal" aria-label="Peso serie ${index + 1}"><input class="live-reps" type="number" min="1" max="1000" step="1" placeholder="${item.target_reps_min ?? "—"}${item.target_reps_max && item.target_reps_max !== item.target_reps_min ? `–${item.target_reps_max}` : ""}" value="${reps}" inputmode="numeric" aria-label="Repeticiones serie ${index + 1}"><input class="live-rir" type="number" min="0" max="10" step="1" value="${current?.rir == null ? "" : 10 - Number(current.rir)}" inputmode="numeric" aria-label="RPE serie ${index + 1}"><input class="live-complete" type="checkbox" ${current?.completed ? "checked" : ""} aria-label="Completar serie ${index + 1}"></label>`;
-      }).join("") + `<button type="button" class="add-live-set">+ Agregar serie</button><div class="exercise-rest-timer" hidden><span>${icon("clock")}</span><div><small>DESCANSO</small><b class="exercise-rest-time">1:30</b></div><button type="button">Omitir</button></div>`;
-    sets.querySelectorAll(".live-set-type").forEach((select, index) => { select.value = currentLogs.find(log => log.set_number === index + 1)?.set_type || "normal"; });
+        return `<label class="hevy-set-row"><select class="live-set-type" aria-label="Tipo de serie ${index + 1}"><option value="normal">1</option><option value="warmup">C</option></select><small>${previousLabel}</small><input class="live-weight" value="${weight}" inputmode="decimal" aria-label="Peso serie ${index + 1}"><input class="live-reps" type="number" min="1" max="1000" step="1" placeholder="${item.target_reps_min ?? "—"}${item.target_reps_max && item.target_reps_max !== item.target_reps_min ? `–${item.target_reps_max}` : ""}" value="${reps}" inputmode="numeric" aria-label="Repeticiones serie ${index + 1}"><input class="live-rir" type="number" min="0" max="10" step="1" value="${current?.rir == null ? "" : 10 - Number(current.rir)}" inputmode="numeric" aria-label="RPE serie ${index + 1}"><input class="live-complete" type="checkbox" ${current?.completed ? "checked" : ""} aria-label="Completar serie ${index + 1}"></label>`;
+      }).join("") + `<button type="button" class="add-live-set">+ Agregar serie</button>`;
+    sets.querySelectorAll(".live-set-type").forEach((select, index) => { select.value = currentLogs.find(log => log.set_number === index + 1)?.set_type === "warmup" ? "warmup" : "normal"; });
     sets.querySelector(".add-live-set").onclick = () => {
       const rows = sets.querySelectorAll(".hevy-set-row"),
         lastRow = rows[rows.length - 1],
         clone = lastRow.cloneNode(true),
         number = rows.length + 1;
-      clone.querySelector('.live-set-type option[value="normal"]').textContent = number;
+      clone.querySelector(".live-set-type").value = "normal";
       clone.querySelector("small").textContent = "—";
       clone.querySelectorAll("input").forEach((input) => {
         input.setAttribute("aria-label", input.getAttribute("aria-label").replace(/\d+$/, number));
@@ -921,23 +988,17 @@
       dirtyExercises.add(item.exercise_id);
       updateWorkoutStats();
     };
-    sets.querySelector(".exercise-rest-timer button").onclick = () => {
-      clearInterval(restTimerId);
-      sets.querySelector(".exercise-rest-timer").hidden = true;
-    };
-    const registerSetEdit = () => {
+    const registerSetEdit = event => {
       if (sessionCompleted) return;
       if (!document.body.classList.contains("workout-in-progress")) startWorkoutClock();
       dirtyExercises.add(item.exercise_id);
       updateWorkoutStats();
+      if (event?.type === "change" && event.target?.classList?.contains("live-complete") && event.target.checked && row?.querySelector(".exercise-rest-control")?.dataset?.restEnabled === "true") startRestTimer(item.rest_seconds ?? 90);
     };
     sheet.oninput = registerSetEdit;
     sheet.onchange = registerSetEdit;
-    if (inlineHost) {
-      const button = sheet.querySelector(".save-inline-exercise");
-      button.disabled = recordsFailed || sessionCompleted;
-      button.onclick = () => persistExercise({item,row}, sheet, button);
-    } else { save.disabled = recordsFailed; sheet.classList.add("open"); }
+    if (inlineHost) sheet.dataset.recordsFailed = String(recordsFailed);
+    else sheet.classList.add("open");
     updateWorkoutStats();
   }
   async function ensureSession() {
@@ -973,28 +1034,21 @@
     saveFreeDraft();
     return sessionId;
   }
-  const oldSave = document.getElementById("save-set"),
-    save = oldSave.cloneNode(true);
-  oldSave.replaceWith(save);
-  save.onclick = () => persistExercise(selectedItem, document.getElementById("set-sheet"), save);
   let exerciseSaveInFlight = false;
-  async function persistExercise(selectedItem, scope, save) {
-    if (!selectedItem || !db || exerciseSaveInFlight) return;
-    if (sessionCompleted) { toast("Inicia otro entrenamiento para registrar nuevas series"); return; }
+  async function persistExercise(selectedItem, scope) {
+    if (!selectedItem || !db || exerciseSaveInFlight) return false;
+    if (scope?.dataset?.recordsFailed === "true") { toast("No se pudieron cargar las series. Vuelve a abrir el entrenamiento e inténtalo de nuevo."); return false; }
+    if (sessionCompleted) return false;
     exerciseSaveInFlight = true;
-    save.disabled = true;
-    save.textContent = "Guardando…";
     try {
       const completedRows = [...scope.querySelectorAll(".hevy-set-row")].filter(row => row.querySelector(".live-complete").checked);
       if (completedRows.some(row => {
         const reps = Number(row.querySelector(".live-reps").value), weight = row.querySelector(".live-weight").value.trim().replace(",", "."), rpe = row.querySelector(".live-rir").value.trim().replace(",", ".");
         return !Number.isInteger(reps) || reps < 1 || reps > 1000 || (weight !== "" && (!Number.isFinite(Number(weight)) || Number(weight) < 0 || Number(weight) > 99999)) || (rpe !== "" && (!Number.isInteger(Number(rpe)) || Number(rpe) < 0 || Number(rpe) > 10));
       })) {
-        toast("Revisa las repeticiones, el peso y el RIR de las series marcadas");
-        return;
+        toast("Revisa las repeticiones, el peso y el RPE de las series marcadas");
+        return false;
       }
-      if (!completedRows.length && !sessionId) { toast("Marca al menos una serie realizada"); return; }
-      if (!document.body.classList.contains("workout-in-progress")) startWorkoutClock();
       const currentSession = await ensureSession(),
         reps = [...scope.querySelectorAll(".live-reps")],
         weights = [...scope.querySelectorAll(".live-weight")],
@@ -1027,15 +1081,12 @@
       else completedExerciseIds.delete(selectedItem.item.exercise_id);
       const done = document.querySelectorAll(".live-exercise.done").length;
       updateWorkoutProgress(done);
-      document.getElementById("set-sheet").classList.remove("open");
-      if (selectedItem.row.querySelector(".exercise-rest-control")?.dataset?.restEnabled === "true") startRestTimer(selectedItem.item.rest_seconds ?? 90);
-      toast("Series guardadas. Pulsa Finalizar cuando acabes el entrenamiento.");
+      return true;
     } catch (error) {
       toast("No se pudo guardar. Comprueba la conexion.");
+      return false;
     } finally {
       exerciseSaveInFlight = false;
-      save.disabled = sessionCompleted;
-      save.textContent = "Guardar series ✓";
     }
   };
 
