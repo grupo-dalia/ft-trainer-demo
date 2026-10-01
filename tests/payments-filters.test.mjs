@@ -1,0 +1,8 @@
+import fs from 'node:fs';
+import vm from 'node:vm';
+import test from 'node:test';
+import assert from 'node:assert/strict';
+const source=fs.readFileSync(new URL('../payments-manager.js',import.meta.url),'utf8');
+function context(){const ctx=vm.createContext({clientName:c=>c.full_name,currentMonth:()=> '2026-10',feeStatus:()=>({key:'grace'}),feeState:{period:'2025-10',payments:[{client_id:'a',period_start:'2025-10-01',amount_eur:40},{client_id:'a',period_start:'2026-10-01',amount_eur:45},{client_id:'b',period_start:'2025-10-01',amount_eur:30}]}});vm.runInContext(source.slice(source.indexOf('  function matchesClient'),source.indexOf('  pages.payments')),ctx);return ctx;}
+test('payment period filters month and year, client and historical status without changing current access',()=>{const ctx=context();assert.equal(vm.runInContext('periodPayments().reduce((sum,p)=>sum+p.amount_eur,0)',ctx),70);assert.equal(vm.runInContext('periodPayments("a").length',ctx),1);assert.equal(vm.runInContext('periodStatus({id:"a"}).key',ctx),'paid');assert.equal(vm.runInContext('periodStatus({id:"c"}).key',ctx),'due');ctx.feeState.period='2026-10';assert.equal(vm.runInContext('periodPayments()[0].amount_eur',ctx),45);assert.equal(vm.runInContext('periodStatus({id:"a"}).key',ctx),'grace');});
+test('client lookup supports accents, multiple words, member number and phone',()=>{const ctx=context();ctx.client={full_name:'José Muñoz',subscriber_number:123,phone:'600123456',dni:'12345678A'};for(const query of ['jose munoz','MUÑOZ','123','600123456','12345678a']){ctx.query=query;assert.equal(vm.runInContext('matchesClient(client,query)',ctx),true);}ctx.query='otro';assert.equal(vm.runInContext('matchesClient(client,query)',ctx),false);});

@@ -5,6 +5,7 @@
       payments: [],
       query: "",
       filter: "all",
+      period: new Date().toISOString().slice(0,7),
       grace: localStorage.getItem("ft-fee-grace") !== "off",
     },
     esc = (value) => escapeHtml(String(value ?? "")),
@@ -58,17 +59,30 @@
     return { key: "due", label: "Pendiente", payment: null };
   }
 
+  function matchesClient(client,query) {
+    const normalize=value=>String(value??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('es');
+    return normalize(query).trim().split(/\s+/).every(term=>normalize([clientName(client),client.subscriber_number,client.dni,client.phone,client.email].join(' ')).includes(term));
+  }
+  function periodPayments(clientId) {
+    return feeState.payments.filter(payment=>(!clientId||payment.client_id===clientId)&&payment.period_start?.startsWith(feeState.period));
+  }
+  function periodStatus(client) {
+    if(feeState.period===currentMonth())return feeStatus(client);
+    const payment=periodPayments(client.id)[0];
+    return payment?{key:'paid',label:'Pagado',payment}:{key:'due',label:'Sin pago en este mes',payment:null};
+  }
+
   pages.payments = () => `<div class="fees-page">
     <section class="fees-hero"><div><p class="eyebrow">CONTROL MENSUAL</p><h2>Cuotas y accesos</h2><p>Registra el pago en efectivo. El acceso se activa hasta el fin del periodo.</p></div><button type="button" class="primary" id="new-fee-payment">+ Registrar pago</button></section>
     <section class="fees-summary" id="fees-summary">
       <article class="card fee-stat"><span class="fee-stat-icon">${icons.users}</span><div><b>--</b><small>Socios totales</small></div></article>
-      <article class="card fee-stat"><span class="fee-stat-icon">${icons.card}</span><div><b>--</b><small>Cuotas al dia</small></div></article>
+      <article class="card fee-stat"><span class="fee-stat-icon">${icons.card}</span><div><b>--</b><small>Cuotas del mes al día</small></div></article>
       <article class="card fee-stat"><span class="fee-stat-icon">${icons.bell}</span><div><b>--</b><small>Pendientes</small></div></article>
-      <article class="card fee-stat"><span class="fee-stat-icon">${icons.chart}</span><div><b>--</b><small>Cobrado este mes</small></div></article>
+      <article class="card fee-stat"><span class="fee-stat-icon">${icons.chart}</span><div><b>--</b><small>Importe del mes seleccionado</small></div></article>
     </section>
     <section class="fees-toolbar">
       <label class="fees-search"><span data-icon="search"></span><input id="fee-search" type="search" placeholder="Buscar por nombre, abonado, DNI o telefono"></label>
-      <select id="fee-filter" aria-label="Filtrar cuotas"><option value="all">Todos los estados</option><option value="paid">Al dia</option><option value="grace">En tregua</option><option value="due">Pendientes</option></select>
+      <label>Mes y año de la cuota<input id="fee-period" type="month" value="${feeState.period}" required></label><select id="fee-filter" aria-label="Filtrar cuotas"><option value="all">Todos los estados</option><option value="paid">Al dia</option><option value="grace">En tregua</option><option value="due">Pendientes</option></select>
       <label class="fees-grace"><input id="fee-grace" type="checkbox" ${feeState.grace ? "checked" : ""}> Tregua del dia 1 al 5</label>
     </section>
     <section class="card fees-table-card"><table class="fees-table"><thead><tr><th>SOCIO</th><th>ESTADO</th><th>PERIODO PAGADO</th><th>ULTIMO PAGO</th><th>IMPORTE</th><th>ACCIONES</th></tr></thead><tbody id="fee-rows"><tr><td colspan="6" class="fees-empty">Cargando cuotas...</td></tr></tbody></table></section>
@@ -132,39 +146,24 @@
     if (!rows) return;
     let clients = feeState.clients.map((client) => ({
       client,
-      status: feeStatus(client),
-      history: feeState.payments.filter((payment) => payment.client_id === client.id),
+      status: periodStatus(client),
+      history: periodPayments(client.id),
     }));
-    if (feeState.query)
-      clients = clients.filter(({ client }) =>
-        [
-          clientName(client),
-          client.subscriber_number,
-          client.dni,
-          client.phone,
-          client.email,
-        ].some((value) =>
-          String(value || "")
-            .toLocaleLowerCase("es")
-            .includes(feeState.query),
-        ),
-      );
+    if (feeState.query) clients=clients.filter(({client})=>matchesClient(client,feeState.query));
     if (feeState.filter !== "all")
       clients = clients.filter(({ status }) => status.key === feeState.filter);
     rows.innerHTML = clients.length
       ? clients
           .map(({ client, status, history }) => {
             const last = history[0];
-            return `<tr><td><div class="fee-client"><span class="fee-client-avatar">${esc(initials(client))}</span><div><b>${esc(clientName(client))}</b><small>Abonado #${esc(client.subscriber_number || "--")} · ${esc(client.phone || "Sin telefono")}</small></div></div></td><td><span class="fee-status ${status.key}">${status.label}</span></td><td>${status.payment ? `${formatDate(status.payment.period_start)} - ${formatDate(status.payment.period_end)}` : "Sin periodo activo"}</td><td>${last ? formatDate(last.paid_on) : "Nunca"}</td><td><b>${last ? euro(last.amount_eur) : "--"}</b></td><td><div class="fee-actions"><button type="button" class="primary" data-pay-client="${client.id}">Registrar</button><button type="button" class="fee-history" data-fee-history="${client.id}">Historial (${history.length})</button></div></td></tr>`;
+            return `<tr><td><div class="fee-client"><span class="fee-client-avatar">${esc(initials(client))}</span><div><b>${esc(clientName(client))}</b><small>Abonado #${esc(client.subscriber_number || "--")} · ${esc(client.phone || "Sin telefono")}</small></div></div></td><td><span class="fee-status ${status.key}">${status.label}</span></td><td>${status.payment ? `${formatDate(status.payment.period_start)} - ${formatDate(status.payment.period_end)}` : "Sin periodo activo"}</td><td>${last ? formatDate(last.paid_on) : "Sin pago este mes"}</td><td><b>${last ? euro(last.amount_eur) : "--"}</b></td><td><div class="fee-actions"><button type="button" class="primary" data-pay-client="${client.id}">Registrar</button><button type="button" class="fee-history" data-fee-history="${client.id}">Historial (${history.length})</button></div></td></tr>`;
           })
           .join("")
       : '<tr><td colspan="6" class="fees-empty">No hay socios con estos filtros.</td></tr>';
-    const statuses = feeState.clients.map((client) => feeStatus(client)),
+    const statuses = feeState.clients.map((client) => periodStatus(client)),
       paid = statuses.filter((status) => status.key === "paid").length,
       due = statuses.filter((status) => status.key === "due").length,
-      month = currentMonth(),
-      revenue = feeState.payments
-        .filter((payment) => payment.period_start?.startsWith(month))
+      revenue = periodPayments()
         .reduce((sum, payment) => sum + Number(payment.amount_eur || 0), 0),
       values = [feeState.clients.length, paid, due, euro(revenue)];
     document
@@ -184,6 +183,8 @@
       filter = document.getElementById("fee-filter"),
       grace = document.getElementById("fee-grace"),
       add = document.getElementById("new-fee-payment");
+    const period=document.getElementById("fee-period");
+    period.onchange=()=>{if(/^\d{4}-\d{2}$/.test(period.value)){feeState.period=period.value;renderFees();}};
     search.oninput = () => {
       feeState.query = search.value.trim().toLocaleLowerCase("es");
       renderFees();
@@ -228,8 +229,8 @@
 
   function openPaymentForm(selectedClient) {
     const node = overlay("payment-form-overlay"),
-      month = currentMonth();
-    node.innerHTML = `<form class="admin-form payment-form"><button type="button" class="admin-form-close" aria-label="Cerrar">×</button><p class="eyebrow">REGISTRAR CUOTA</p><h2>Confirmar pago en efectivo</h2><p class="muted">Al guardar, el socio recupera todo el acceso durante el periodo elegido.</p><div class="admin-fields"><label class="wide">Socio<select name="client_id" required><option value="">Selecciona un socio</option>${feeState.clients.map((client) => `<option value="${client.id}" ${client.id === selectedClient ? "selected" : ""}>#${esc(client.subscriber_number || "--")} · ${esc(clientName(client))} · ${esc(client.phone || "")}</option>`).join("")}</select></label><label>Mes de la cuota<input type="month" name="period" value="${month}" required></label><label>Importe<input type="number" name="amount" value="45" min="0" step="0.01" required></label><label>Fecha del pago<input type="date" name="paid_on" value="${iso(new Date())}" required></label><label>Metodo<input value="Efectivo" disabled></label><label class="wide">Nota<textarea name="notes" placeholder="Opcional: descuento, beca, ajuste..."></textarea></label></div><div class="payment-period-preview"><span><small>Acceso desde</small><b id="payment-period-start"></b></span><span><small>Acceso hasta</small><b id="payment-period-end"></b></span></div><p class="form-feedback" aria-live="polite"></p><button class="primary full" type="submit">Guardar pago y activar acceso</button></form>`;
+      month = feeState.period;
+    node.innerHTML = `<form class="admin-form payment-form"><button type="button" class="admin-form-close" aria-label="Cerrar">×</button><p class="eyebrow">REGISTRAR CUOTA</p><h2>Confirmar pago en efectivo</h2><p class="muted">Al guardar, el socio recupera todo el acceso durante el periodo elegido.</p><div class="admin-fields"><label class="wide">Buscar socio<input type="search" id="payment-client-search" placeholder="Nombre, abonado, DNI o teléfono" autocomplete="off"></label><label class="wide">Socio<select name="client_id" required><option value="">Selecciona un socio</option>${feeState.clients.map((client) => `<option value="${client.id}" ${client.id === selectedClient ? "selected" : ""}>#${esc(client.subscriber_number || "--")} · ${esc(clientName(client))} · ${esc(client.phone || "")}</option>`).join("")}</select></label><label>Mes de la cuota<input type="month" name="period" value="${month}" required></label><label>Importe<input type="number" name="amount" value="45" min="0" step="0.01" required></label><label>Fecha del pago<input type="date" name="paid_on" value="${iso(new Date())}" required></label><label>Metodo<input value="Efectivo" disabled></label><label class="wide">Nota<textarea name="notes" placeholder="Opcional: descuento, beca, ajuste..."></textarea></label></div><div class="payment-period-preview"><span><small>Acceso desde</small><b id="payment-period-start"></b></span><span><small>Acceso hasta</small><b id="payment-period-end"></b></span></div><p class="form-feedback" aria-live="polite"></p><button class="primary full" type="submit">Guardar pago y activar acceso</button></form>`;
     const form = node.querySelector("form"),
       period = form.querySelector('[name="period"]'),
       updatePreview = () => {
@@ -237,6 +238,12 @@
         form.querySelector("#payment-period-start").textContent = formatDate(range.start);
         form.querySelector("#payment-period-end").textContent = formatDate(range.end);
       };
+    const clientSearch=form.querySelector('#payment-client-search'),clientSelect=form.querySelector('[name="client_id"]');
+    clientSearch.oninput=()=>{
+      const previous=clientSelect.value,matches=feeState.clients.filter(client=>matchesClient(client,clientSearch.value));
+      clientSelect.innerHTML=`<option value="">${matches.length?'Selecciona un socio':'Sin resultados'}</option>${matches.map(client=>`<option value="${esc(client.id)}">#${esc(client.subscriber_number||'--')} · ${esc(clientName(client))} · ${esc(client.phone||'')}</option>`).join('')}`;
+      clientSelect.value=matches.some(client=>client.id===previous)?previous:'';
+    };
     updatePreview();
     period.onchange = updatePreview;
     form.querySelector(".admin-form-close").onclick = () => node.classList.remove("open");
@@ -291,9 +298,9 @@
 
   function openPaymentHistory(clientId) {
     const client = feeState.clients.find((item) => item.id === clientId),
-      history = feeState.payments.filter((payment) => payment.client_id === clientId),
+      history = periodPayments(clientId),
       node = overlay("payment-history-overlay");
-    node.innerHTML = `<section class="admin-form payment-form"><button type="button" class="admin-form-close" aria-label="Cerrar">×</button><p class="eyebrow">HISTORIAL DE CUOTAS</p><h2>${esc(clientName(client))}</h2><p class="muted">${history.length} pagos registrados. El perfil y este historial nunca se borran al pausar el acceso.</p><div class="payment-history-list">${history.length ? history.map((payment) => `<article class="payment-history-row"><div><b>${formatDate(payment.period_start)} - ${formatDate(payment.period_end)}</b><small>Pagado el ${formatDate(payment.paid_on)} · Efectivo${payment.notes ? ` · ${esc(payment.notes)}` : ""}</small></div><strong>${euro(payment.amount_eur)}</strong><span class="fee-status ${new Date(payment.period_end + "T23:59:59") >= new Date() ? "paid" : "due"}">${new Date(payment.period_end + "T23:59:59") >= new Date() ? "Vigente" : "Finalizada"}</span></article>`).join("") : '<div class="fees-empty">Todavia no hay pagos registrados.</div>'}</div><button type="button" class="primary full" data-history-pay>Registrar nueva cuota</button></section>`;
+    node.innerHTML = `<section class="admin-form payment-form"><button type="button" class="admin-form-close" aria-label="Cerrar">×</button><p class="eyebrow">HISTORIAL DE CUOTAS</p><h2>${esc(clientName(client))}</h2><p class="muted">${history.length} pagos registrados para ${esc(feeState.period)}. El perfil y este historial nunca se borran al pausar el acceso.</p><div class="payment-history-list">${history.length ? history.map((payment) => `<article class="payment-history-row"><div><b>${formatDate(payment.period_start)} - ${formatDate(payment.period_end)}</b><small>Pagado el ${formatDate(payment.paid_on)} · Efectivo${payment.notes ? ` · ${esc(payment.notes)}` : ""}</small></div><strong>${euro(payment.amount_eur)}</strong><span class="fee-status ${new Date(payment.period_end + "T23:59:59") >= new Date() ? "paid" : "due"}">${new Date(payment.period_end + "T23:59:59") >= new Date() ? "Vigente" : "Finalizada"}</span></article>`).join("") : '<div class="fees-empty">Todavia no hay pagos registrados.</div>'}</div><button type="button" class="primary full" data-history-pay>Registrar nueva cuota</button></section>`;
     node.querySelector(".admin-form-close").onclick = () => node.classList.remove("open");
     node.querySelector("[data-history-pay]").onclick = () => {
       node.classList.remove("open");
