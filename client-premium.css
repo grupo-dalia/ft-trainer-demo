@@ -218,3 +218,36 @@ body.ft-client-home .client-section-panel>header h1{overflow-wrap:anywhere}
  body.ft-client-home .client-session-history>article{gap:8px}
  body.ft-client-home .history-session-detail p{flex-wrap:wrap}
 }
+
+/* Folder library and inline workout registration. */
+body.ft-client-home .client-workout-actions{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+body.ft-client-home .client-workout-actions>button{min-width:0;padding:9px 3px!important;gap:4px!important}
+body.ft-client-home .client-workout-actions b{font-size:10px!important;white-space:normal;line-height:1.4}
+body.ft-client-home .client-workout-actions svg{display:none!important}
+body.ft-client-home #client-routine-cards{display:block!important}
+body.ft-client-home .personal-folder{margin:12px 0;padding:12px;border:1px solid var(--ft-line);border-radius:12px;background:#131d19}
+body.ft-client-home .personal-folder summary{font:700 16px "DM Sans";color:var(--ft-text);padding:9px 0;cursor:pointer}
+body.ft-client-home .personal-folder .client-routine-choice{width:100%;margin:8px 0}
+body.ft-client-home .general-folder{padding:18px;margin:15px 0;border:1px solid var(--ft-line);border-radius:12px;background:var(--ft-card)}
+body.ft-client-home .general-folder h3{font:700 19px "DM Sans";margin:0}
+body.ft-client-home .general-folder button,body.ft-client-home .save-inline-exercise,body.ft-client-home .client-exercise-config button[type="submit"]{padding:13px 16px;background:var(--ft-accent);color:#102a1b;border:0;border-radius:9px;font:700 13px "DM Sans"}
+body.ft-client-home .inline-exercise{display:block!important;min-width:0;width:100%;margin:14px 0;padding:12px;border:1px solid var(--ft-line);border-radius:15px;background:var(--ft-card)}
+body.ft-client-home .inline-exercise>.exercise-technique{width:100%;border:0!important;background:transparent!important;padding:6px!important;text-align:left}
+body.ft-client-home .inline-registration{min-width:0;padding:10px 0}
+body.ft-client-home .inline-registration .sets{margin:14px 0;display:block}
+body.ft-client-home .inline-registration .save-inline-exercise{width:100%;margin-top:12px}
+body.ft-client-home .inline-registration .last-record{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+body.ft-client-home .inline-registration .set-target{font:400 11px/1.6 "DM Sans";color:var(--ft-muted)}
+body.ft-client-home .inline-registration input{padding:4px!important;min-width:0!important;width:100%!important}
+body.ft-client-home .inline-registration input.live-complete{width:28px!important}
+body.ft-client-home .inline-registration .hevy-set-head,body.ft-client-home .inline-registration .hevy-set-row{grid-template-columns:25px minmax(36px,1fr) minmax(40px,1fr) minmax(40px,1fr) 29px 28px!important;gap:4px!important}
+body.ft-client-home .inline-registration .hevy-set-row{padding:7px 0!important}
+body.ft-client-home .inline-registration .hevy-set-row small{font-size:9px!important}
+body.ft-client-home .inline-registration input.live-reps::placeholder{font-size:10px!important}
+body.ft-client-home .client-exercise-config label{display:grid;gap:8px;margin:14px 0}
+body.ft-client-home .client-exercise-config input,body.ft-client-home .client-exercise-config select{width:100%;min-width:0}
+body.ft-client-home .inline-registration .hevy-set-head,body.ft-client-home .inline-registration .hevy-set-row{grid-template-columns:24px minmax(0,.85fr) repeat(2,minmax(0,1fr)) 24px 24px!important;gap:3px!important;width:100%;min-width:0}
+body.ft-client-home .inline-registration .hevy-set-row>*{min-width:0!important;max-width:100%;box-sizing:border-box}
+body.ft-client-home .inline-registration input.live-complete{width:24px!important}
+body.ft-client-home .inline-registration .hevy-set-head b{font-size:7px!important}
+@media(max-width:360px){body.ft-client-home .client-section-panel>header h1{font-size:18px!important}body.ft-client-home .inline-exercise{padding:8px}body.ft-client-home .inline-registration .last-record>div{padding:8px!important}}

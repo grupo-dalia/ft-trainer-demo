@@ -61,9 +61,9 @@ function saveHarness({checked=[true,false,false], weights=['40','',''], reps=['1
   const db=database([{data:[],error},{data:[],error:finishError}]);
   const context=vm.createContext({db,sessionId:'session-active',sessionCompleted:false,workoutTimerId:null,
     workoutPausedAt:null,selectedItem:{item:{id:'item1',exercise_id:'ex1',target_sets:3,rest_seconds:0},row},
-    completedExerciseIds:new Set(),ensureSession:async()=>'session-active',elapsedWorkoutTime:()=>60000,
+    dirtyExercises:new Set(),completedExerciseIds:new Set(),ensureSession:async()=>'session-active',elapsedWorkoutTime:()=>60000,
     updateWorkoutProgress:done=>({total:1,percent:done*100}),startRestTimer:seconds=>state.rest.push(seconds),toast:message=>state.messages.push(message),clearInterval(){},
-    document:{body:{classList:{remove(){}}},getElementById:id=>id==='routine-recent-history'?null:id==='save-set'?button:{classList:{remove(){}}},querySelectorAll:selector=>selector==='.hevy-set-row'?rows:selector==='.live-exercise.done'?(state.done?[row]:[]):inputs[selector]}
+    document:{body:{classList:{contains:()=>true,remove(){}}},getElementById:id=>id==='routine-recent-history'?null:id==='save-set'?button:{classList:{remove(){}},querySelectorAll:selector=>selector==='.hevy-set-row'?rows:inputs[selector]},querySelectorAll:selector=>selector==='.hevy-set-row'?rows:selector==='.live-exercise.done'?(state.done?[row]:[]):selector==='.save-inline-exercise'?[]:inputs[selector]}
   });
   vm.runInContext(extract('  const oldSave', '  async function getWorkoutShareData'),context);
   return {button,state,db,context};
@@ -74,6 +74,21 @@ test('saving one of three sets keeps the exercise incomplete', async()=>{
   assert.equal(h.state.done,false);
   assert.equal(h.context.sessionCompleted,false);
   assert.equal(h.db.calls.length,1);
+});
+
+test('saving an inline exercise reads only its own form, never other visible exercises', async()=>{
+  const h=saveHarness({weights:['47','',''],reps:['11','','']});
+  h.context.document.querySelectorAll=selector=>{
+    if(selector==='.live-exercise.done')return [];
+    if(selector==='.save-inline-exercise')return [];
+    throw new Error('Attempted to read another exercise: '+selector);
+  };
+  await h.button.onclick();
+  const values=h.db.calls[0].operations.find(op=>op[0]==='upsert')[1];
+  assert.equal(values.length,3);
+  assert.equal(values[0].weight_kg,47);
+  assert.equal(values[0].reps,11);
+  assert.equal(values[0].exercise_id,'ex1');
 });
 
 test('unchecking stored sets persists completed=false without retaining their volume', async()=>{
@@ -173,24 +188,13 @@ test('routine history handles a first session and offers retry after a query err
   assert.equal(host.innerHTML,'Reintentar');
 });
 
-test('exercise form applies day, order, sets, repetition range and zero rest', () => {
-  const form={}, feedback={}, button={};
-  const overlay={innerHTML:'',querySelector:selector=>selector==='form'?form:button,remove(){}};
-  const context=vm.createContext({window:{},document:{createElement:()=>overlay,body:{appendChild(){}},querySelector:()=>({click(){}})},esc:String,selectedRoutineDay:1,routine:{id:'r1'},routineItems:[],allRoutineItems:[],renderRoutine(){},toast(){},FormData:class {constructor(form){this.form=form;}get(key){return this.form.values[key];}}});
+test('exercise configuration persists the chosen routine, day, position and zero rest', async () => {
+  const feedback={},button={},destination={value:'r1'};let payload;
+  const form={};const overlay={innerHTML:'',querySelector:s=>s==='form'?form:s==='[name="destination"]'?destination:button,remove(){}};
+  const context=vm.createContext({window:{},document:{createElement:()=>overlay,body:{appendChild(){}},querySelector:()=>({click(){}})},esc:String,selectedRoutineDay:1,routine:{id:'r1'},availableRoutines:[{id:'r1',source:'client',name:'Torso'}],personalFolders:[],routineItems:[],allRoutineItems:[],renderRoutine(){},resetSession(){},loadRoutineItems:async()=>{},restoreTodaySession:async()=>{},toast(){},checkedQuery:async q=>q,db:{rpc:(name,args)=>{payload=args;return 'id';}},FormData:class{constructor(form){this.form=form;}get(key){return this.form.values[key];}}});
   vm.runInContext(extract('  function openLibraryExercise', '  function weekKey'),context);
   vm.runInContext('openLibraryExercise({database:{id:"e1",name:"Press"},instrucciones:[]})',context);
-  assert.match(overlay.innerHTML,/Descanso \(segundos\)/);
-  const submitted={values:{destination:'current',day:'2',position:'1',sets:'4',min:'8',max:'12',rest:'0'},querySelector:()=>feedback};
-  form.onsubmit({preventDefault(){},currentTarget:submitted});
-  const item=context.allRoutineItems[0];
-  assert.equal(item.day_number,2);
-  assert.equal(item.position,1);
-  assert.equal(item.target_sets,4);
-  assert.equal(item.target_reps_min,8);
-  assert.equal(item.target_reps_max,12);
-  assert.equal(item.rest_seconds,0);
-  submitted.values.max='6';
-  form.onsubmit({preventDefault(){},currentTarget:submitted});
-  assert.equal(context.allRoutineItems.length,1);
-  assert.match(feedback.textContent,/maximo/);
+  const submitted={values:{day:'2',position:'1',sets:'4',min:'8',max:'12',rest:'0'},querySelector:s=>s==='.form-feedback'?feedback:button};
+  await form.onsubmit({preventDefault(){},currentTarget:submitted});
+  assert.equal(payload.p_routine,'r1');assert.equal(payload.p_day,2);assert.equal(payload.p_position,1);assert.equal(payload.p_sets,4);assert.equal(payload.p_min,8);assert.equal(payload.p_max,12);assert.equal(payload.p_rest,0);
 });

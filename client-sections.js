@@ -59,6 +59,7 @@
 
   let routine = null,
     availableRoutines = [],
+    personalFolders = [],
     allRoutineItems = [],
     routineItems = [],
     selectedRoutineDay = 1,
@@ -71,7 +72,9 @@
   let workoutPausedAt = null;
   let sessionCompleted = false;
   let routineHistoryRequest = 0;
+  const dirtyExercises = new Set();
   function resetSession() {
+    dirtyExercises.clear();
     sessionId = null;
     sessionCompleted = false;
     completedExerciseIds.clear();
@@ -206,7 +209,7 @@
       host = node.querySelector(".client-panel-content"),
       session = document.getElementById("routine-session");
     if (!host.querySelector(".routine-hub-intro")) {
-      host.innerHTML = `<section class="routine-hub-intro"><div><small>PLAN DE FERNANDO</small><h2>Tu semana de entrenamiento</h2><p>Elige una rutina y registra cada serie mientras entrenas.</p></div><button type="button" id="begin-live-workout"><span>${icon("play")}</span><b>Iniciar entrenamiento</b><small>Guarda cada ejercicio al terminar</small></button></section><div class="client-workout-actions"><button type="button" data-workout-view="routines">${icon("dumbbell")}<span><b>Mis rutinas</b><small>Planes asignados</small></span></button><button type="button" data-workout-view="history">${icon("calendar")}<span><b>Historial</b><small>Calendario y sesiones</small></span></button><button type="button" data-workout-view="library">${icon("play")}<span><b>Ejercicios</b><small>Biblioteca y tecnica</small></span></button></div><section class="routine-picker"><div class="routine-picker-title"><div><small>MIS RUTINAS</small><h3>Mis rutinas</h3></div><button type="button" id="start-empty-workout">+ Entrenamiento libre</button></div><div id="client-routine-cards"></div></section><div class="workout-secondary-view" id="workout-secondary-view"></div><div class="routine-session-host"></div>`;
+      host.innerHTML = `<section class="routine-hub-intro"><div><small>PLAN DE FERNANDO</small><h2>Tu semana de entrenamiento</h2><p>Elige una rutina y registra cada serie mientras entrenas.</p></div><button type="button" id="begin-live-workout"><span>${icon("play")}</span><b>Iniciar entrenamiento</b><small>Guarda cada ejercicio al terminar</small></button></section><div class="client-workout-actions"><button type="button" data-workout-view="routines">${icon("dumbbell")}<span><b>Mis rutinas</b><small>Planes asignados</small></span></button><button type="button" data-workout-view="history">${icon("calendar")}<span><b>Historial</b><small>Calendario y sesiones</small></span></button><button type="button" data-workout-view="library">${icon("play")}<span><b>Ejercicios</b><small>Biblioteca y tecnica</small></span></button><button type="button" data-workout-view="general">${icon("dumbbell")}<span><b>Rutinas generales</b><small>Planes para copiar</small></span></button></div><section class="routine-picker"><div class="routine-picker-title"><div><small>MIS RUTINAS</small><h3>Mis rutinas</h3></div><button type="button" id="start-empty-workout">+ Crear entrenamiento</button></div><div id="client-routine-cards"></div></section><div class="workout-secondary-view" id="workout-secondary-view"></div><div class="routine-session-host"></div>`;
       host.querySelector("#begin-live-workout").onclick = () => {
         if (sessionCompleted) { resetSession(); renderRoutine(); }
         startWorkoutClock();
@@ -221,6 +224,7 @@
         host.querySelector("#workout-secondary-view").hidden = view === "routines";
         if (view === "history") renderWorkoutHistory(host.querySelector("#workout-secondary-view"));
         if (view === "library") renderClientLibrary(host.querySelector("#workout-secondary-view"));
+        if (view === "general") renderGeneralRoutines(host.querySelector("#workout-secondary-view"));
       });
       host.querySelector("#start-empty-workout").onclick = startEmptyWorkout;
     }
@@ -231,17 +235,42 @@
     openPanel(node, "routine");
   }
 
-  function startEmptyWorkout() {
+  function startEmptyWorkout(onCreated) {
+    if(exerciseSaveInFlight){toast("Espera a que terminen de guardarse las series");return;}
     if (window.ftMembershipActive === false) { toast("Fernando debe confirmar tu cuota para entrenar"); return; }
-    routine = { id: null, name: "Entrenamiento libre", description: "Sesion creada por ti", status: "active" };
-    allRoutineItems = [];
-    routineItems = [];
-    selectedRoutineDay = 1;
-    resetSession();
-    renderRoutine();
-    renderRoutinePicker();
-    document.querySelector('[data-workout-view="library"]')?.click();
-    toast("Busca ejercicios y anadelos a tu entrenamiento libre");
+    if(dirtyExercises.size && !confirm("Hay series sin guardar. ¿Crear otro entrenamiento y descartarlas?"))return;
+    const overlay = document.createElement("div"); overlay.className = "client-exercise-preview";
+    overlay.innerHTML = `<section role="dialog" aria-modal="true" aria-label="Crear entrenamiento"><button type="button" class="exercise-preview-close" aria-label="Cerrar">×</button><h2>Crear entrenamiento</h2><form class="client-exercise-config"><label>Nombre del entrenamiento<input name="name" maxlength="120" placeholder="Ej. Torso A" required></label><label>Carpeta<select name="folder"><option value="new">+ Nueva carpeta</option>${personalFolders.map(folder => `<option value="${esc(folder.id)}">${esc(folder.name)}</option>`).join("")}</select></label><label class="new-folder-name">Nombre de la carpeta<input name="folder_name" maxlength="120" placeholder="Ej. Octubre o Version 2.0" required></label><p class="form-feedback" role="status"></p><button type="submit">Crear entrenamiento</button></form></section>`;
+    document.body.appendChild(overlay);
+    overlay.querySelector("button").onclick = () => overlay.remove();
+    const form=overlay.querySelector("form"), select=form.querySelector('[name="folder"]');
+    select.onchange=()=>{const fresh=select.value==='new';form.querySelector('.new-folder-name').hidden=!fresh;form.querySelector('[name="folder_name"]').required=fresh;};
+    form.onsubmit=async event=>{
+      event.preventDefault();const data=new FormData(form),button=form.querySelector('[type="submit"]');button.disabled=true;
+      try{
+        const id=await checkedQuery(db.rpc('ft_create_training',{p_client:clientId,p_name:data.get('name').trim(),p_folder:select.value==='new'?null:select.value,p_folder_name:data.get('folder_name').trim()}));
+        await loadRoutine();await selectRoutine(id);overlay.remove();
+        if(typeof onCreated==='function') onCreated(id); else document.querySelector('[data-workout-view="library"]')?.click();
+        toast('Entrenamiento creado y guardado');
+      }catch(error){form.querySelector('.form-feedback').textContent='No se pudo crear el entrenamiento. Comprueba la conexion y vuelve a intentarlo.';}
+      finally{button.disabled=false;}
+    };
+  }
+
+  async function renderGeneralRoutines(host) {
+    host.innerHTML='<div class="panel-loading">Cargando rutinas generales…</div>';
+    try {
+      const folders=await checkedQuery(db.from('routine_folders').select('id,name').is('client_id',null).eq('is_published',true).order('name'));
+      const plans=folders.length?await checkedQuery(db.from('routines').select('id,name,description,folder_id').is('client_id',null).in('folder_id',folders.map(f=>f.id)).order('name')):[];
+      host.innerHTML=`<section class="client-panel-card"><h2>Rutinas generales</h2><p>Elige un programa de Fernando. Se guardara una copia en una nueva carpeta de Mis rutinas.</p>${folders.map(folder=>`<article class="general-folder"><h3>${esc(folder.name)}</h3><ul>${plans.filter(plan=>plan.folder_id===folder.id).map(plan=>`<li>${esc(plan.name)}</li>`).join('')}</ul><button type="button" data-copy-folder="${esc(folder.id)}" ${window.ftMembershipActive===false?'disabled':''}>Copiar a mis rutinas</button><p class="copy-feedback" role="status"></p></article>`).join('')||'<p>No hay programas publicados todavia.</p>'}</section>`;
+      host.querySelectorAll('[data-copy-folder]').forEach(button=>button.onclick=async()=>{
+        if(exerciseSaveInFlight){toast("Espera a que terminen de guardarse las series");return;}
+        if(dirtyExercises.size && !confirm("Hay series sin guardar. ¿Copiar el programa y descartarlas?"))return;
+        const folder=folders.find(f=>f.id===button.dataset.copyFolder);button.disabled=true;
+        try { await checkedQuery(db.rpc('ft_copy_general_folder',{p_client:clientId,p_folder:folder.id,p_name:folder.name}));await loadRoutine();button.textContent='Copiada ✓';button.closest('article').querySelector('.copy-feedback').textContent='Ya esta en Mis rutinas. Tus carpetas anteriores se conservan.'; }
+        catch(error){button.disabled=false;button.closest('article').querySelector('.copy-feedback').textContent='No se pudo copiar. Intentalo de nuevo.';}
+      });
+    }catch(error){showLoadError(host,()=>renderGeneralRoutines(host));}
   }
 
   function renderRoutinePicker() {
@@ -258,12 +287,17 @@
       host.querySelector("button").onclick = () => document.querySelector('[data-workout-view="history"]')?.click();
       return;
     }
-    host.innerHTML = availableRoutines.length ? availableRoutines.map((item) => `<button type="button" class="client-routine-choice ${item.id === routine?.id ? "active" : ""}" data-select-routine="${item.id}"><span>${icon("dumbbell")}</span><div><b>${esc(item.name)}</b><small>${esc(item.description || item.objective || "Plan de Fernando")}</small></div><strong>${item.id === routine?.id ? "Seleccionada" : "Abrir"}</strong></button>`).join("") : '<div class="client-empty-state">Fernando todavia no te ha asignado rutinas.</div>';
+    const card = item => `<button type="button" class="client-routine-choice ${item.id === routine?.id ? "active" : ""}" data-select-routine="${item.id}"><span>${icon("dumbbell")}</span><div><b>${esc(item.name)}</b><small>${esc(item.description || item.objective || (item.source==='client'?'Tu entrenamiento':'Plan de Fernando'))}</small></div><strong>${item.id === routine?.id ? "Seleccionada" : "Abrir"}</strong></button>`;
+    const personalIds = new Set(personalFolders.map(folder=>folder.id));
+    const assigned=availableRoutines.filter(item=>!personalIds.has(item.folder_id));
+    host.innerHTML = `${assigned.length?`<details class="personal-folder" open><summary>Planes asignados</summary>${assigned.map(card).join('')}</details>`:''}${personalFolders.map(folder=>`<details class="personal-folder" open><summary>${esc(folder.name)}</summary>${availableRoutines.filter(item=>item.folder_id===folder.id).map(card).join('')||'<p>Crea un entrenamiento en esta carpeta.</p>'}</details>`).join('')}` || '<div class="client-empty-state">Crea tu entrenamiento o copia un programa de Rutinas generales.</div>';
     host.querySelectorAll("[data-select-routine]").forEach((button) => button.onclick = () => selectRoutine(button.dataset.selectRoutine));
   }
 
   async function selectRoutine(id) {
+    if(exerciseSaveInFlight){toast("Espera a que terminen de guardarse las series");return;}
     if (routine?.id === id && sessionId && !sessionCompleted) return;
+    if(dirtyExercises.size && !confirm("Hay series sin guardar. ¿Cambiar de entrenamiento y descartarlas?"))return;
     routine = availableRoutines.find((item) => item.id === id);
     resetSession();
     try { await loadRoutineItems(); renderRoutinePicker(); }
@@ -304,11 +338,12 @@
     try {
     const routines = await checkedQuery(db
       .from("routines")
-      .select("id,name,description,objective,status,week_start,created_at")
+      .select("id,name,description,objective,status,week_start,created_at,source,folder_id")
       .eq("client_id", clientId)
       .in("status", ["active", "draft"])
       .order("created_at", { ascending: false }));
     availableRoutines = routines || [];
+    personalFolders = await checkedQuery(db.from("routine_folders").select("id,name").eq("client_id",clientId).order("created_at",{ascending:false}));
     resetSession();
     routine = availableRoutines.find(item => item.id === routine?.id) || availableRoutines[0] || null;
     if (!routine) {
@@ -339,6 +374,7 @@
     );
     renderRoutine();
     await restoreTodaySession();
+    renderRoutine();
     renderRoutinePicker();
   }
   function renderRoutineEmpty() {
@@ -416,12 +452,14 @@
                 ? item.target_reps_min
                 : `${item.target_reps_min || "—"}–${item.target_reps_max || "—"}`,
             image = ex.thumbnail_url || "assets/brand/ft-symbol-color.png";
-          return `<button type="button" class="exercise-row live-exercise ${item.superset_group ? "superset-exercise" : ""}" data-live-index="${index}" ${item.superset_group ? `data-superset="${item.superset_group}"` : ""}><span class="exercise-thumb"><img src="${esc(image)}" alt="${esc(ex.name)}" loading="lazy"><i>${icon("play")}</i></span><span>${item.superset_group ? `<mark>SUPERSET ${item.superset_group}</mark>` : ""}<b>${esc(ex.name || "Ejercicio")}</b><small>${item.target_sets} series · ${reps} repeticiones${item.target_weight_kg != null ? ` · ${item.target_weight_kg} kg` : ""}</small><em>Ver tecnica y registrar</em></span><strong>›</strong></button>`;
+          return `<article class="live-exercise inline-exercise ${item.superset_group ? "superset-exercise" : ""}" data-live-index="${index}" ${item.superset_group ? `data-superset="${item.superset_group}"` : ""}><button type="button" class="exercise-row exercise-technique"><span class="exercise-thumb"><img src="${esc(image)}" alt="${esc(ex.name)}" loading="lazy"><i>${icon("play")}</i></span><span>${item.superset_group ? `<mark>SUPERSET ${item.superset_group}</mark>` : ""}<b>${esc(ex.name || "Ejercicio")}</b><small>${item.target_sets} series · ${reps} repeticiones${item.target_weight_kg != null ? ` · ${item.target_weight_kg} kg` : ""}</small><em>Ver video y tecnica</em></span><strong>›</strong></button><div class="inline-registration"><div class="last-record"></div><div class="sets"><p>Cargando series…</p></div><button type="button" class="save-inline-exercise" disabled>Guardar series ✓</button></div></article>`;
         })
         .join("") ||
         '<div class="client-empty-state">Esta sesion aun no contiene ejercicios.</div>');
     document.querySelectorAll("[data-routine-day]").forEach((button) => {
       button.onclick = () => {
+        if(exerciseSaveInFlight){toast("Espera a que terminen de guardarse las series");return;}
+        if(dirtyExercises.size && !confirm("Hay series sin guardar. ¿Cambiar de dia y descartarlas?"))return;
         const targetDay = Number(button.dataset.routineDay) || 1;
         if (targetDay === selectedRoutineDay) return;
         if (!confirm(`¿Seguro que quieres empezar el dia ${targetDay}?`))
@@ -437,19 +475,14 @@
             completedExerciseIds.has(item.exercise_id),
           ).length,
         );
-        restoreTodaySession();
+        restoreTodaySession().then(renderRoutine);
       };
     });
-    document
-      .querySelectorAll(".live-exercise")
-      .forEach(
-        (button) =>
-          (button.onclick = () =>
-            openExercise(
-              routineItems[Number(button.dataset.liveIndex)],
-              button,
-            )),
-      );
+    document.querySelectorAll(".live-exercise").forEach(row => {
+      const item = routineItems[Number(row.dataset.liveIndex)];
+      row.querySelector(".exercise-technique").onclick = () => openExerciseTechnique(item);
+      openExercise(item, row, row.querySelector(".inline-registration"));
+    });
     document.querySelectorAll(".live-exercise").forEach((row, index) => {
       if (!completedExerciseIds.has(routineItems[index]?.exercise_id)) return;
       row.classList.add("done");
@@ -559,12 +592,25 @@
       routineItems.filter((item) => completedIds.has(item.exercise_id)).length,
     );
   }
-  async function openExercise(item, row) {
-    if (sessionCompleted) { resetSession(); renderRoutine(); row = [...document.querySelectorAll(".live-exercise")][routineItems.indexOf(item)]; }
-    if (!document.body.classList.contains("workout-in-progress")) startWorkoutClock();
-    selectedItem = { item, row };
+  function openExerciseTechnique(item) {
+    const ex = item.exercises || {}, overlay = document.createElement("div");
+    overlay.className = "client-exercise-preview";
+    overlay.innerHTML = `<section role="dialog" aria-modal="true" aria-label="Tecnica del ejercicio"><button type="button" class="exercise-preview-close" aria-label="Cerrar tecnica">×</button><h2>${esc(ex.name || "Ejercicio")}</h2>${window.ftExerciseMedia?.html(ex) || ""}<p>${esc(ex.instructions || item.notes || "Sigue las indicaciones de Fernando.")}</p></section>`;
+    const close = () => { overlay.remove(); document.removeEventListener("keydown", onKey); };
+    const onKey = event => { if(event.key === "Escape") close(); };
+    overlay.querySelector("button").onclick = close;
+    overlay.onclick = event => { if(event.target === overlay) close(); };
+    document.addEventListener("keydown", onKey);
+    document.body.appendChild(overlay);
+    overlay.querySelector("button").focus();
+  }
+
+  async function openExercise(item, row, inlineHost = null) {
+    if (!inlineHost && sessionCompleted) { resetSession(); renderRoutine(); row = [...document.querySelectorAll(".live-exercise")][routineItems.indexOf(item)]; }
+    if (!inlineHost) { if (!document.body.classList.contains("workout-in-progress")) startWorkoutClock(); selectedItem = { item, row }; }
     const ex = item.exercises || {},
-      sheet = document.getElementById("set-sheet");
+      sheet = inlineHost || document.getElementById("set-sheet");
+    if (!inlineHost) {
     document.getElementById("sheet-title").textContent = ex.name || "Ejercicio";
     const gif = document.getElementById("sheet-gif");
     if (gif && window.ftExerciseMedia) {
@@ -585,6 +631,7 @@
         ex.instructions ||
         item.notes ||
         "Sigue las indicaciones de Fernando y controla la tecnica.";
+    }
     let recentLogs = [], currentLogs = [], bestLogs = [], recordsFailed = false;
     try {
     let logsQuery = db
@@ -604,7 +651,7 @@
       previousSets = (recentLogs || [])
         .filter((log) => log.session_id === previousSessionId)
         .sort((a, b) => a.set_number - b.set_number);
-    const last = document.querySelector(".last-record");
+    const last = inlineHost ? sheet.querySelector(".last-record") : document.querySelector(".last-record");
     if (last) {
       const top = bestLogs.reduce(
         (best, set) =>
@@ -624,7 +671,7 @@
           weight = current?.weight_kg ?? "";
         const previousLabel = previous ? `${previous.weight_kg ?? 0} × ${previous.reps ?? 0}` : "—";
         return `<label class="hevy-set-row"><select class="live-set-type" aria-label="Tipo de serie ${index + 1}"><option value="normal">${index + 1}</option><option value="warmup">W</option><option value="drop">D</option><option value="failure">F</option></select><small>${previousLabel}</small><input class="live-weight" value="${weight}" inputmode="decimal" aria-label="Peso serie ${index + 1}"><input class="live-reps" type="number" min="1" max="1000" step="1" placeholder="${item.target_reps_min ?? "—"}${item.target_reps_max && item.target_reps_max !== item.target_reps_min ? `–${item.target_reps_max}` : ""}" value="${reps}" inputmode="numeric" aria-label="Repeticiones serie ${index + 1}"><input class="live-rir" value="${current?.rir ?? ""}" inputmode="numeric" aria-label="RIR serie ${index + 1}"><input class="live-complete" type="checkbox" ${current?.completed ? "checked" : ""} aria-label="Completar serie ${index + 1}"></label>`;
-      }).join("") + `<button type="button" class="add-live-set">+ Anadir serie</button><div class="exercise-rest-timer" hidden><span>${icon("clock")}</span><div><small>DESCANSO</small><b id="exercise-rest-time">1:30</b></div><button type="button">Omitir</button></div>`;
+      }).join("") + `<button type="button" class="add-live-set">+ Anadir serie</button><div class="exercise-rest-timer" hidden><span>${icon("clock")}</span><div><small>DESCANSO</small><b class="exercise-rest-time">1:30</b></div><button type="button">Omitir</button></div>`;
     sets.querySelectorAll(".live-set-type").forEach((select, index) => { select.value = currentLogs.find(log => log.set_number === index + 1)?.set_type || "normal"; });
     sets.querySelector(".add-live-set").onclick = () => {
       const rows = sets.querySelectorAll(".hevy-set-row"),
@@ -644,8 +691,12 @@
       clearInterval(restTimerId);
       sets.querySelector(".exercise-rest-timer").hidden = true;
     };
-    save.disabled = recordsFailed;
-    sheet.classList.add("open");
+    if (inlineHost) {
+      sheet.oninput=()=>dirtyExercises.add(item.exercise_id);
+      const button = sheet.querySelector(".save-inline-exercise");
+      button.disabled = recordsFailed || sessionCompleted;
+      button.onclick = () => persistExercise({item,row}, sheet, button);
+    } else { save.disabled = recordsFailed; sheet.classList.add("open"); }
   }
   async function ensureSession() {
     if (sessionCompleted) resetSession();
@@ -668,7 +719,7 @@
       .insert({
         client_id: clientId,
         routine_id: routine?.id || null,
-        day_number: selectedItem.item.day_number,
+        day_number: selectedRoutineDay,
         planned_for: today,
         started_at: startedAt,
       })
@@ -682,12 +733,17 @@
   const oldSave = document.getElementById("save-set"),
     save = oldSave.cloneNode(true);
   oldSave.replaceWith(save);
-  save.onclick = async () => {
-    if (!selectedItem || !db) return;
+  save.onclick = () => persistExercise(selectedItem, document.getElementById("set-sheet"), save);
+  let exerciseSaveInFlight = false;
+  async function persistExercise(selectedItem, scope, save) {
+    if (!selectedItem || !db || exerciseSaveInFlight) return;
+    if (sessionCompleted) { toast("Inicia otro entrenamiento para registrar nuevas series"); return; }
+    exerciseSaveInFlight = true;
+    if (!document.body.classList.contains("workout-in-progress")) startWorkoutClock();
     save.disabled = true;
     save.textContent = "Guardando…";
     try {
-      const completedRows = [...document.querySelectorAll(".hevy-set-row")].filter(row => row.querySelector(".live-complete").checked);
+      const completedRows = [...scope.querySelectorAll(".hevy-set-row")].filter(row => row.querySelector(".live-complete").checked);
       if (completedRows.some(row => {
         const reps = Number(row.querySelector(".live-reps").value), weight = row.querySelector(".live-weight").value.trim().replace(",", "."), rir = row.querySelector(".live-rir").value.trim();
         return !Number.isInteger(reps) || reps < 1 || reps > 1000 || (weight !== "" && (!Number.isFinite(Number(weight)) || Number(weight) < 0 || Number(weight) > 99999)) || (rir !== "" && (!Number.isInteger(Number(rir)) || Number(rir) < 0 || Number(rir) > 10));
@@ -697,11 +753,11 @@
       }
       if (!completedRows.length && !sessionId) { toast("Marca al menos una serie realizada"); return; }
       const currentSession = await ensureSession(),
-        reps = [...document.querySelectorAll(".live-reps")],
-        weights = [...document.querySelectorAll(".live-weight")],
-        rirs = [...document.querySelectorAll(".live-rir")],
-        types = [...document.querySelectorAll(".live-set-type")],
-        checked = [...document.querySelectorAll(".live-complete")],
+        reps = [...scope.querySelectorAll(".live-reps")],
+        weights = [...scope.querySelectorAll(".live-weight")],
+        rirs = [...scope.querySelectorAll(".live-rir")],
+        types = [...scope.querySelectorAll(".live-set-type")],
+        checked = [...scope.querySelectorAll(".live-complete")],
         logs = reps.map((input, index) => ({
           session_id: currentSession,
           routine_exercise_id: selectedItem.item.id || null,
@@ -720,6 +776,7 @@
         .from("set_logs")
         .upsert(logs, { onConflict: "session_id,exercise_id,set_number" });
       if (error) throw error;
+      dirtyExercises.delete(selectedItem.item.exercise_id);
       const exerciseComplete = logs.filter(log => log.completed).length >= (selectedItem.item.target_sets || 3);
       selectedItem.row.classList.toggle("done", exerciseComplete);
       selectedItem.row.querySelector("strong").textContent = exerciseComplete ? "✓" : "›";
@@ -741,6 +798,7 @@
           .eq("id", currentSession);
         if (finished.error) throw finished.error;
         sessionCompleted = true;
+        document.querySelectorAll(".save-inline-exercise").forEach(button => button.disabled = true);
         const historyHost = document.getElementById("routine-recent-history");
         if (historyHost) renderRoutineHistory(historyHost);
         workoutPausedAt = Date.now();
@@ -754,8 +812,9 @@
     } catch (error) {
       toast("No se pudo guardar. Comprueba la conexion.");
     } finally {
-      save.disabled = false;
-      save.textContent = "Guardar y completar ✓";
+      exerciseSaveInFlight = false;
+      save.disabled = sessionCompleted;
+      save.textContent = "Guardar series ✓";
     }
   };
 
@@ -1170,35 +1229,26 @@
   function openLibraryExercise(exercise) {
     const overlay = document.createElement("div");
     overlay.className = "client-exercise-preview";
-    overlay.innerHTML = `<section><button type="button" class="exercise-preview-close">×</button>${window.ftExerciseMedia ? window.ftExerciseMedia.html(exercise.database || {media_url:exercise.gif || exercise.imagen,name:exercise.nombre_es || exercise.nombre}) : `<img src="${esc(exercise.imagen)}" alt="">`}<small>${esc(exercise.grupo)} · ${esc(exercise.equipo)}</small><h2>${esc(exercise.nombre_es || exercise.nombre)}</h2><ol>${(exercise.instrucciones || []).map((step) => `<li>${esc(step)}</li>`).join("") || '<li>Consulta las indicaciones de Fernando antes de realizar el ejercicio.</li>'}</ol><form class="client-exercise-config"><label>Destino<select name="destination"><option value="current">Entrenamiento actual</option><option value="free">Nuevo entrenamiento libre</option></select></label><div class="client-form-grid"><label>Dia<input name="day" type="number" min="1" max="14" value="${selectedRoutineDay || 1}" required></label><label>Posicion<input name="position" type="number" min="1" value="${routineItems.length + 1}" required></label><label>Series<input name="sets" type="number" min="1" max="20" value="3" required></label><label>Repeticiones minimas<input name="min" type="number" min="1" max="100" value="8" required></label><label>Repeticiones maximas<input name="max" type="number" min="1" max="100" value="12" required></label><label>Descanso (segundos)<input name="rest" type="number" min="0" max="900" value="90" required></label></div><p class="form-feedback" aria-live="polite"></p><button type="submit" class="client-add-exercise">+ Anadir al entrenamiento</button></form></section>`;
+    overlay.innerHTML = `<section><button type="button" class="exercise-preview-close">×</button>${window.ftExerciseMedia ? window.ftExerciseMedia.html(exercise.database || {media_url:exercise.gif || exercise.imagen,name:exercise.nombre_es || exercise.nombre}) : `<img src="${esc(exercise.imagen)}" alt="">`}<small>${esc(exercise.grupo)} · ${esc(exercise.equipo)}</small><h2>${esc(exercise.nombre_es || exercise.nombre)}</h2><ol>${(exercise.instrucciones || []).map((step) => `<li>${esc(step)}</li>`).join("") || '<li>Consulta las indicaciones de Fernando antes de realizar el ejercicio.</li>'}</ol><form class="client-exercise-config"><label>Entrenamiento<select name="destination">${availableRoutines.filter(plan=>plan.source==="client").map(plan=>`<option value="${esc(plan.id)}" ${plan.id===routine?.id?"selected":""}>${esc(personalFolders.find(folder=>folder.id===plan.folder_id)?.name || "Mis rutinas")} · ${esc(plan.name)}</option>`).join("")}<option value="new">+ Crear entrenamiento y elegir carpeta</option></select></label><div class="client-form-grid"><label>Dia<input name="day" type="number" min="1" max="14" value="${selectedRoutineDay || 1}" required></label><label>Posicion<input name="position" type="number" min="1" value="${routineItems.length + 1}" required></label><label>Series<input name="sets" type="number" min="1" max="20" value="3" required></label><label>Repeticiones minimas<input name="min" type="number" min="1" max="100" value="8" required></label><label>Repeticiones maximas<input name="max" type="number" min="1" max="100" value="12" required></label><label>Descanso (segundos)<input name="rest" type="number" min="0" max="900" value="90" required></label></div><p class="form-feedback" aria-live="polite"></p><button type="submit" class="client-add-exercise">+ Anadir al entrenamiento</button></form></section>`;
     document.body.appendChild(overlay);
     overlay.querySelector("button").onclick = () => overlay.remove();
-    overlay.querySelector("form").onsubmit = (event) => {
+    const destination=overlay.querySelector('[name="destination"]');
+    destination.onchange=()=>{if(destination.value==='new'){overlay.remove();startEmptyWorkout(()=>openLibraryExercise(exercise));}};
+    overlay.querySelector("form").onsubmit = async event => {
       event.preventDefault();
-      const form = event.currentTarget, data = new FormData(form), source = exercise.database;
-      if (!source) return;
-      const min = Number(data.get("min")), max = Number(data.get("max"));
-      if (max < min) { form.querySelector(".form-feedback").textContent = "El maximo de repeticiones debe ser igual o mayor que el minimo."; return; }
-      if (data.get("destination") === "free" || !routine) {
-        resetSession();
-        routine = { id: null, name: "Entrenamiento libre", status: "active" };
-        allRoutineItems = [];
-      }
-      const day = Number(data.get("day"));
-      const sameDay = allRoutineItems.filter(item => item.day_number === day);
-      if (sameDay.some(item => item.exercise_id === source.id)) {
-        form.querySelector(".form-feedback").textContent = "Este ejercicio ya esta incluido en este dia."; return;
-      }
-      const item = { id:null, exercise_id:source.id, day_number:day, target_sets:Number(data.get("sets")), target_reps_min:min, target_reps_max:max, target_weight_kg:null, target_rir:null, rest_seconds:Number(data.get("rest")), notes:"", exercises:source };
-      sameDay.splice(Math.min(Number(data.get("position")) - 1, sameDay.length), 0, item);
-      sameDay.forEach((entry, index) => entry.position = index + 1);
-      allRoutineItems = [...allRoutineItems.filter(entry => entry.day_number !== day), ...sameDay];
-      selectedRoutineDay = day;
-      routineItems = sameDay;
-      renderRoutine();
-      overlay.remove();
-      document.querySelector('[data-workout-view="routines"]')?.click();
-      toast(`${source.name} anadido al entrenamiento`);
+      if(destination.value==='new'){overlay.remove();startEmptyWorkout(()=>openLibraryExercise(exercise));return;}
+      const form=event.currentTarget,data=new FormData(form),source=exercise.database,button=form.querySelector('[type="submit"]');
+      if(!source)return;
+      const min=Number(data.get('min')),max=Number(data.get('max'));
+      if(max<min){form.querySelector('.form-feedback').textContent='El maximo debe ser igual o mayor que el minimo.';return;}
+      button.disabled=true;
+      try {
+        await checkedQuery(db.rpc('ft_add_personal_exercise',{p_routine:destination.value,p_exercise:source.id,p_day:Number(data.get('day')),p_position:Number(data.get('position')),p_sets:Number(data.get('sets')),p_min:min,p_max:max,p_rest:Number(data.get('rest'))}));
+        resetSession();routine=availableRoutines.find(plan=>plan.id===destination.value);await loadRoutineItems();
+        selectedRoutineDay=Number(data.get('day'));routineItems=allRoutineItems.filter(item=>Number(item.day_number)===selectedRoutineDay);await restoreTodaySession();renderRoutine();
+        overlay.remove();document.querySelector('[data-workout-view="routines"]')?.click();toast('Ejercicio guardado en tu entrenamiento');
+      }catch(error){form.querySelector('.form-feedback').textContent='No se pudo anadir. Comprueba que no este repetido en ese dia y vuelve a intentarlo.';}
+      finally{button.disabled=false;}
     };
     overlay.onclick = (event) => { if (event.target === overlay) overlay.remove(); };
   }
@@ -1535,7 +1585,7 @@
   let lastRoutineRefresh = Date.now();
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState !== "visible") return;
-    if (sessionId && !sessionCompleted) return;
+    if (dirtyExercises.size || exerciseSaveInFlight || (sessionId && !sessionCompleted)) return;
     if (Date.now() - lastRoutineRefresh < 15000) return;
     lastRoutineRefresh = Date.now();
     loadRoutine();
