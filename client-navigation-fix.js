@@ -5,9 +5,9 @@
   function activate(name) {
     document.querySelectorAll("[data-client-nav]").forEach(button => button.classList.toggle("active", button.dataset.clientNav === name));
   }
-  function run(action) {
+  function run(action, button) {
     if (action === "routine") {
-      window.ftClientSections?.showRoutines?.();
+      window.ftClientSections?.showRoutines?.({ focus: button.dataset.workoutEntry !== "hub" });
     } else if (action === "progress") window.ftClientSections?.showProgress?.();
     else if (action === "profile") window.ftClientSections?.showProfile?.();
     else if (action === "materials") window.ftClientMaterials?.show?.();
@@ -17,7 +17,7 @@
   document.addEventListener("click", event => {
     const button = event.target.closest("[data-home-action]");
     if (!button) return;
-    event.preventDefault(); event.stopImmediatePropagation(); run(button.dataset.homeAction);
+    event.preventDefault(); event.stopImmediatePropagation(); run(button.dataset.homeAction, button);
   }, true);
   document.querySelectorAll("[data-home-action]").forEach(button => button.setAttribute("aria-label", button.textContent.trim()));
 })();

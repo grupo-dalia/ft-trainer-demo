@@ -80,16 +80,17 @@
   } catch(error) { document.getElementById("week-message").textContent="No se pudo actualizar el resumen. Recarga para reintentar."; }
 
   const scrollRoutine = () => window.ftClientSections?.showRoutines(),
+    openRoutineHub = () => window.ftClientSections?.showRoutines({ focus: false }),
     openProgress = () => document.querySelector(".card-title a")?.click(),
     openCoach = () =>
       document.querySelector(".coach-program-invite button")?.click();
 
-  document.getElementById("start-training").onclick = scrollRoutine;
+  document.getElementById("start-training").onclick = openRoutineHub;
   document.getElementById("next-session-card").onclick = scrollRoutine;
   document.querySelectorAll("[data-home-action]").forEach((button) => {
     button.onclick = () => {
       const action = button.dataset.homeAction;
-      if (action === "routine") scrollRoutine();
+      if (action === "routine") (button.dataset.workoutEntry === "hub" ? openRoutineHub : scrollRoutine)();
       if (action === "progress") openProgress();
       if (action === "coach") openCoach();
       if (action === "profile") window.ftClientSections?.showProfile();

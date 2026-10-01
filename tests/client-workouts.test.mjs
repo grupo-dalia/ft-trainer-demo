@@ -19,17 +19,32 @@ function database(results) {
 }
 const checked = extract('  async function checkedQuery', '  function formatWorkoutTime');
 test('history renders sessions and volume, and offers retry on rejected queries', async () => {
-  const host = { innerHTML: '', querySelectorAll: () => [], querySelector: () => ({}) };
-  const db = database([{ data: [{ id:'s1', planned_for:'2026-09-30', completed_at:'2026-09-30', routines:{name:'Torso'} }] }, { data:[{session_id:'s1',exercise_id:'e1',set_number:2,exercises:{name:'Press banca'},completed:true,weight_kg:20,reps:10}] }]);
-  const context = vm.createContext({db,clientId:'client1',host,setTimeout,clearTimeout,esc:String});
+  const now=new Date(), previous=new Date(now.getFullYear(),now.getMonth(),now.getDate()-1),
+    date=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`,
+    previousDate=`${previous.getFullYear()}-${String(previous.getMonth()+1).padStart(2,'0')}-${String(previous.getDate()).padStart(2,'0')}`;
+  const dayButton={dataset:{historyDate:date}}, showAll={};
+  const host={innerHTML:'',querySelectorAll:selector=>selector==='[data-history-date]'?[dayButton]:[],querySelector:()=>showAll};
+  let popup, removed=false;
+  const closeButton={focus(){}};
+  const document={activeElement:{focus(){}},createElement:()=>({innerHTML:'',querySelector:()=>closeButton,querySelectorAll:()=>[],remove(){removed=true;}}),
+    body:{appendChild:node=>popup=node},addEventListener(){},removeEventListener(){}};
+  const db = database([{ data: [{ id:'s1', planned_for:date, completed_at:date, routines:{name:'Torso'} },{id:'s2',planned_for:previousDate,completed_at:previousDate,routines:{name:'Pierna'}}] }, { data:[{session_id:'s1',exercise_id:'e1',set_number:2,exercises:{name:'Press banca'},completed:true,weight_kg:20,reps:10}] }]);
+  const context = vm.createContext({db,clientId:'client1',host,document,setTimeout,clearTimeout,esc:String});
   vm.runInContext(checked + extract('  function renderHistorySets', '  let clientExerciseLibrary'), context);
   await vm.runInContext('renderWorkoutHistory(host)', context);
-  assert.match(host.innerHTML, /Torso/);
-  assert.match(host.innerHTML, /Press banca/);
-  assert.match(host.innerHTML, /Serie 2/);
-  assert.match(host.innerHTML, /20 kg × 10/);
-  assert.match(host.innerHTML, /Ver ejercicios y series/);
-  assert.match(host.innerHTML, /1 series · 200 kg/);
+  assert.match(host.innerHTML, /Ver historial completo/);
+  assert.doesNotMatch(host.innerHTML, /client-session-history/);
+  dayButton.onclick();
+  assert.match(popup.innerHTML, /Torso/);
+  assert.match(popup.innerHTML, /Press banca/);
+  assert.match(popup.innerHTML, /Serie 2/);
+  assert.match(popup.innerHTML, /20 kg × 10/);
+  assert.match(popup.innerHTML, /1 series · 200 kg/);
+  assert.doesNotMatch(popup.innerHTML,/Pierna/);
+  closeButton.onclick();
+  assert.equal(removed,true);
+  showAll.onclick();
+  assert.match(popup.innerHTML,/Pierna/);
   context.db = { from() { throw new Error('offline'); } };
   await vm.runInContext('renderWorkoutHistory(host)', context);
   assert.match(host.innerHTML, /Reintentar/);
@@ -38,7 +53,7 @@ test('history renders sessions and volume, and offers retry on rejected queries'
 
 test('a new session only reuses unfinished sessions', async () => {
   const db = database([{data:null},{data:{id:'new-session'}}]);
-  const context = vm.createContext({db,clientId:'client1',sessionId:null,sessionCompleted:false,routine:{id:'r1'},selectedItem:{item:{day_number:1}},sessionStartedAt:0,selectedRoutineDay:1});
+  const context = vm.createContext({db,clientId:'client1',sessionId:null,sessionCompleted:false,routine:{id:'r1'},selectedItem:{item:{day_number:1}},sessionStartedAt:0,selectedRoutineDay:1,saveFreeDraft(){}});
   vm.runInContext(extract('  function localDate', '  function elapsedWorkoutTime') + extract('  async function ensureSession', '  const oldSave'), context);
   assert.equal(await vm.runInContext('ensureSession()', context), 'new-session');
   assert.ok(db.calls[0].operations.some(op => op[0] === 'is' && op[1] === 'completed_at' && op[2] === null));
@@ -46,11 +61,11 @@ test('a new session only reuses unfinished sessions', async () => {
   assert.equal(db.calls[1].operations[0][0], 'insert');
 });
 
-function saveHarness({checked=[true,false,false], weights=['40','',''], reps=['10','',''], error=null, finishError=null}={}) {
+function saveHarness({checked=[true,false,false], weights=['40','',''], reps=['10','',''], rpes=['','',''], error=null, finishError=null}={}) {
   const inputs={
     '.live-reps': reps.map(value=>({value})),
     '.live-weight': weights.map(value=>({value})),
-    '.live-rir': reps.map(()=>({value:''})),
+    '.live-rir': rpes.map(value=>({value})),
     '.live-set-type': reps.map(()=>({value:'normal'})),
     '.live-complete': checked.map(checked=>({checked}))
   };
@@ -106,17 +121,43 @@ test('negative or nonnumeric weights cannot reach the database',async()=>{
   }
 });
 
-test('all completed sets finish a workout but update errors never report completion',async()=>{
+test('RPE is converted to RIR when saving a completed set',async()=>{
+  const h=saveHarness({rpes:['8','','']});
+  await h.button.onclick();
+  const logs=h.db.calls[0].operations.find(op=>op[0]==='upsert')[1];
+  assert.equal(logs[0].rir,2);
+});
+
+test('a fractional RPE is rejected because stored RIR is an integer',async()=>{
+  const h=saveHarness({rpes:['7.5','','']});
+  await h.button.onclick();
+  assert.equal(h.db.calls.length,0);
+});
+
+test('all completed sets stay open until the user finishes the workout',async()=>{
   const h=saveHarness({checked:[true,true,true],reps:['10','10','10'],weights:['40','40','40']});
-  await h.button.onclick();assert.equal(h.context.sessionCompleted,true);assert.equal(h.db.calls.length,2);
-  const failed=saveHarness({checked:[true,true,true],reps:['10','10','10'],finishError:{message:'offline'}});
-  await failed.button.onclick();assert.equal(failed.context.sessionCompleted,false);assert.match(failed.state.messages.at(-1),/No se pudo guardar/);
+  await h.button.onclick();assert.equal(h.context.sessionCompleted,false);assert.equal(h.db.calls.length,1);
+  assert.match(h.state.messages.at(-1),/Finalizar/);
 });
 
 test('paused elapsed time remains frozen',()=>{
   const context=vm.createContext({workoutPausedAt:5000,sessionStartedAt:1000});
   vm.runInContext(extract('  function elapsedWorkoutTime','  function updateWorkoutClock'),context);
   assert.equal(vm.runInContext('elapsedWorkoutTime()',context),4000);
+});
+
+test('the displayed timer stays frozen after a workout finishes',()=>{
+  let now=10000;
+  const clock={textContent:''},pause={},finish={};
+  const context=vm.createContext({Date:{now:()=>now},sessionStartedAt:1000,workoutPausedAt:null,workoutTimerId:1,restTimerId:2,
+    clearInterval(){},document:{querySelector:()=>null,body:{classList:{remove(){},add(){},contains:()=>true}},getElementById:id=>id==='live-workout-time'?clock:id==='pause-live-workout'?pause:finish}});
+  vm.runInContext(extract('  function finishWorkoutClock','  function resetSession')+extract('  function formatWorkoutTime','  function startRestTimer'),context);
+  vm.runInContext('finishWorkoutClock()',context);
+  assert.equal(clock.textContent,'00:00:09');
+  assert.equal(finish.disabled,true);
+  now=20000;
+  vm.runInContext('updateWorkoutClock()',context);
+  assert.equal(clock.textContent,'00:00:09');
 });
 
 test('restoring a partial session does not mark the entire exercise complete',async()=>{
@@ -137,7 +178,7 @@ test('new sets are blank and unchecked, with previous performance visible', asyn
   const record = {innerHTML:''};
   const sheet = {querySelector:()=>sets,classList:{add(){}}};
   const db=database([{data:[{session_id:'old',set_number:1,reps:10,weight_kg:40}]},{data:[{weight_kg:60,reps:6}]}]);
-  const context=vm.createContext({db,clientId:'c1',sessionId:null,sessionCompleted:false,selectedItem:null,save:{},setTimeout,clearTimeout,toast(){},icon:()=>'',
+  const context=vm.createContext({db,clientId:'c1',sessionId:null,sessionCompleted:false,selectedItem:null,save:{},setTimeout,clearTimeout,toast(){},icon:()=>'',updateWorkoutStats(){},
     document:{body:{classList:{contains:()=>true}},getElementById:id=>id==='set-sheet'?sheet:id==='sheet-title'?{}:null,querySelector:selector=>selector==='.last-record'?record:null}});
   vm.runInContext(checked+extract('  async function openExercise', '  async function ensureSession'),context);
   await vm.runInContext('openExercise({exercise_id:"e1",target_sets:3,target_reps_min:8,target_reps_max:12,exercises:{}}, {})',context);
@@ -150,12 +191,66 @@ test('new sets are blank and unchecked, with previous performance visible', asyn
   assert.ok(db.calls[0].operations.some(op=>op[0]==='eq' && op[1]==='workout_sessions.client_id' && op[2]==='c1'));
 });
 
+test('the workout clock starts on the first set edit, not when the exercise opens', async () => {
+  let starts = 0;
+  const sets = {innerHTML:'',classList:{add(){}},querySelector:()=>({}),querySelectorAll:()=>[]};
+  const sheet = {querySelector:()=>sets,classList:{add(){}}};
+  const db=database([{data:[]},{data:[]}]);
+  const context=vm.createContext({db,clientId:'c1',sessionId:null,sessionCompleted:false,selectedItem:null,save:{},setTimeout,clearTimeout,
+    dirtyExercises:new Set(),toast(){},icon:()=>'',updateWorkoutStats(){},startWorkoutClock(){starts++;},
+    document:{body:{classList:{contains:()=>false}},getElementById:id=>id==='set-sheet'?sheet:id==='sheet-title'?{}:null,querySelector:()=>null}});
+  vm.runInContext(checked+extract('  async function openExercise', '  async function ensureSession'),context);
+  await vm.runInContext('openExercise({exercise_id:"e1",target_sets:3,exercises:{}}, {})',context);
+  assert.equal(starts,0);
+  sheet.oninput();
+  assert.equal(starts,1);
+  assert.equal(context.dirtyExercises.has('e1'),true);
+});
+
+test('the routine hub offers a way back to the separate active workout screen', () => {
+  const classes=new Set();
+  const label={textContent:''},hint={textContent:''};
+  const button={hidden:false,disabled:false,querySelector:selector=>selector==='b'?label:hint};
+  const title={textContent:''},detail={textContent:''},eyebrow={textContent:''};
+  const intro={querySelector:selector=>({'h2':title,'p':detail,'small':eyebrow,'#begin-live-workout':button})[selector]};
+  let routineClicks=0,scrolls=0;
+  const panel={classList:{toggle:(name,on)=>on?classes.add(name):classes.delete(name),contains:name=>classes.has(name)},querySelector:selector=>
+    selector==='[data-workout-view="routines"]'?{click(){routineClicks++;}}:{scrollIntoView(){scrolls++;}}};
+  const context=vm.createContext({routine:{name:'Pectorales'},routineItems:[{exercise_id:'e1'}],completedExerciseIds:new Set(),sessionId:'s1',sessionCompleted:false,
+    window:{ftMembershipActive:true},document:{querySelector:()=>intro,getElementById:()=>panel,body:{classList:{contains:()=>true}}},
+    ensureWorkoutToolbar(){},updateWorkoutClock(){},updateWorkoutStats(){}});
+  vm.runInContext(extract('  function updateWorkoutEntry', '  function startWorkoutClock'),context);
+  vm.runInContext('setWorkoutFocus(false)',context);
+  assert.equal(classes.has('workout-hub'),true);
+  assert.equal(label.textContent,'Volver al entrenamiento');
+  assert.equal(title.textContent,'Pectorales');
+  vm.runInContext('setWorkoutFocus(true)',context);
+  assert.equal(classes.has('workout-focus'),true);
+  assert.equal(classes.has('workout-hub'),false);
+  assert.equal(routineClicks,1);
+  assert.equal(scrolls,1);
+});
+
 test('home routine button opens the routine panel', () => {
-  let listener, opened=0;
-  const context=vm.createContext({window:{ftClientSections:{showRoutines(){opened++;}}},document:{addEventListener:(_,fn)=>listener=fn,querySelectorAll:()=>[]}});
+  let listener;
+  const openings=[];
+  const context=vm.createContext({window:{ftClientSections:{showRoutines:options=>openings.push(options)}},document:{addEventListener:(_,fn)=>listener=fn,querySelectorAll:()=>[]}});
   vm.runInContext(fs.readFileSync(new URL('../client-navigation-fix.js',import.meta.url),'utf8'),context);
-  listener({target:{closest:()=>({dataset:{homeAction:'routine'}})},preventDefault(){},stopImmediatePropagation(){}});
-  assert.equal(opened,1);
+  for (const workoutEntry of ['hub',undefined]) {
+    listener({target:{closest:()=>({dataset:{homeAction:'routine',workoutEntry}})},preventDefault(){},stopImmediatePropagation(){}});
+  }
+  assert.deepEqual(openings.map(options=>options.focus),[false,true]);
+});
+
+test('the two highlighted home actions open the routine hub', () => {
+  const openings=[];
+  const start={},next={},quick={dataset:{homeAction:'routine',workoutEntry:'hub'}};
+  const context=vm.createContext({window:{ftClientSections:{showRoutines:options=>openings.push(options)}},document:{
+    getElementById:id=>id==='start-training'?start:next,querySelectorAll:()=>[quick]}});
+  const home=fs.readFileSync(new URL('../client-home.js',import.meta.url),'utf8').replace(/\r\n/g,'\n');
+  vm.runInContext(home.slice(home.indexOf('  const scrollRoutine'),home.indexOf('  const notifications')),context);
+  start.onclick();quick.onclick();next.onclick();
+  assert.deepEqual(openings.map(options=>options?.focus),[false,false,undefined]);
 });
 
 test('routine history scopes the latest sessions to the client, routine and day', async()=>{
@@ -193,7 +288,7 @@ test('routine history handles a first session and offers retry after a query err
 test('exercise configuration persists the chosen routine, day, position and zero rest', async () => {
   const feedback={},button={},destination={value:'r1'},savedItems=[];let payload;
   const form={};const overlay={innerHTML:'',querySelector:s=>s==='form'?form:s==='[name="destination"]'?destination:button,remove(){}};
-  const context=vm.createContext({window:{},document:{createElement:()=>overlay,body:{appendChild(){}},querySelector:()=>({click(){}})},esc:String,selectedRoutineDay:1,routine:{id:'r1'},availableRoutines:[{id:'r1',source:'client',name:'Torso'}],personalFolders:[],routineItems:[],allRoutineItems:[],renderRoutine(){},resetSession(){},loadRoutineItems:async()=>{context.allRoutineItems=[...savedItems];},restoreTodaySession:async()=>{},toast(){},checkedQuery:async q=>q,db:{rpc:(name,args)=>{payload=args;savedItems.push({exercise_id:args.p_exercise,day_number:args.p_day});return 'id';}},FormData:class{constructor(form){this.form=form;}get(key){return this.form.values[key];}}});
+  const context=vm.createContext({window:{},document:{createElement:()=>overlay,body:{appendChild(){}},querySelector:()=>({click(){}})},esc:String,selectedRoutineDay:1,routine:{id:'r1'},availableRoutines:[{id:'r1',source:'client',name:'Torso'}],personalFolders:[],routineItems:[],allRoutineItems:[],isFreeWorkout:()=>false,renderRoutine(){},resetSession(){},loadRoutineItems:async()=>{context.allRoutineItems=[...savedItems];},restoreTodaySession:async()=>{},toast(){},checkedQuery:async q=>q,db:{rpc:(name,args)=>{payload=args;savedItems.push({exercise_id:args.p_exercise,day_number:args.p_day});return 'id';}},FormData:class{constructor(form){this.form=form;}get(key){return this.form.values[key];}}});
   vm.runInContext(extract('  function openLibraryExercise', '  function weekKey'),context);
   vm.runInContext('openLibraryExercise({database:{id:"e1",name:"Press"},instrucciones:[]})',context);
   const submitted={values:{day:'2',position:'1',sets:'4',min:'8',max:'12',rest:'0'},querySelector:s=>s==='.form-feedback'?feedback:button};
@@ -205,4 +300,43 @@ test('exercise configuration persists the chosen routine, day, position and zero
   assert.equal(context.routineItems.length,2);
 });
 
- test('routine history is placed after the exercise list',()=>{assert.match(fs.readFileSync(new URL('../client-sections.js',import.meta.url),'utf8'),/getElementById\("exercise-list"\)\.after\(historyHost\)/);});
+test('routine history is placed after the exercise list',()=>{assert.match(fs.readFileSync(new URL('../client-sections.js',import.meta.url),'utf8'),/getElementById\("exercise-list"\)\.after\(historyHost\)/);});
+test('a free workout keeps several exercises and persists its draft', () => {
+  const stored = new Map();
+  const context = vm.createContext({clientId:'c1',routine:{id:null,name:'Entrenamiento libre'},allRoutineItems:[],routineItems:[],sessionId:null,sessionStartedAt:100,selectedRoutineDay:1,
+    localStorage:{setItem:(key,value)=>stored.set(key,value),removeItem:key=>stored.delete(key)},document:{querySelector:()=>null,body:{classList:{remove(){}}}},clearInterval(){},setInterval(){}});
+  vm.runInContext(extract('  const freeDraftKey', '  async function checkedQuery') + extract('  async function startFreeWorkout', '  function renderRoutinePicker'), context);
+  assert.equal(vm.runInContext('addFreeExercise({id:"e1",name:"Press"})',context),true);
+  assert.equal(vm.runInContext('addFreeExercise({id:"e2",name:"Remo"})',context),true);
+  assert.equal(vm.runInContext('addFreeExercise({id:"e1",name:"Press"})',context),false);
+  assert.deepEqual(JSON.parse(stored.get('ft-free-workout-c1')).items.map(item=>item.exercise_id),['e1','e2']);
+  assert.equal(context.routineItems.length,2);
+});
+
+test('batch save adds selected exercises to the chosen routine and skips duplicates', async () => {
+  const calls=[];
+  const db={from:()=>({select:()=>({eq:()=>({eq:()=>Promise.resolve({data:[{exercise_id:'e1',position:2}]})})})}),
+    rpc:(name,args)=>{calls.push({name,args});return Promise.resolve({data:'id'});}};
+  const context=vm.createContext({db,setTimeout,clearTimeout});
+  vm.runInContext(checked+extract('  async function addExercisesToSavedRoutine','  function openBulkExerciseDestination'),context);
+  const added=await vm.runInContext('addExercisesToSavedRoutine([{id:"e1"},{id:"e2"},{id:"e3"}],"routine-1",2)',context);
+  assert.equal(added,2);
+  assert.deepEqual(calls.map(call=>call.args.p_exercise),['e2','e3']);
+  assert.deepEqual(calls.map(call=>call.args.p_position),[3,4]);
+  assert.ok(calls.every(call=>call.name==='ft_add_personal_exercise'&&call.args.p_routine==='routine-1'&&call.args.p_day===2));
+});
+
+test('finalizing a routine completes the session and stops the clock only after the write succeeds', async () => {
+  for (const failure of [false,true]) {
+    const db=database([{error:failure?{message:'offline'}:null}]);
+    const messages=[];
+    let stopped=false;
+    const context=vm.createContext({db,sessionId:'s1',sessionCompleted:false,routine:{id:'r1'},exerciseSaveInFlight:false,dirtyExercises:new Set(),elapsedWorkoutTime:()=>90000,confirm:()=>true,
+      finishWorkoutClock(){stopped=true;},updateWorkoutEntry(){},isFreeWorkout:()=>false,clearFreeDraft(){},toast:message=>messages.push(message),document:{getElementById:()=>null}});
+    vm.runInContext(extract('  async function finishWorkout', '  function showRoutines'),context);
+    await vm.runInContext('finishWorkout()',context);
+    assert.equal(context.sessionCompleted,!failure);
+    assert.equal(stopped,!failure);
+    assert.equal(db.calls[0].operations.find(op=>op[0]==='update')[1].duration_minutes,2);
+  }
+});
