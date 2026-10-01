@@ -251,3 +251,5 @@ body.ft-client-home .inline-registration .hevy-set-row>*{min-width:0!important;m
 body.ft-client-home .inline-registration input.live-complete{width:24px!important}
 body.ft-client-home .inline-registration .hevy-set-head b{font-size:7px!important}
 @media(max-width:360px){body.ft-client-home .client-section-panel>header h1{font-size:18px!important}body.ft-client-home .inline-exercise{padding:8px}body.ft-client-home .inline-registration .last-record>div{padding:8px!important}}
+
+body.ft-client-home .routine-history-toggle>summary{cursor:pointer;font:700 14px/1.5 "DM Sans";color:var(--ft-accent);padding:4px 0}

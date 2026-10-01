@@ -168,6 +168,8 @@ test('routine history scopes the latest sessions to the client, routine and day'
   vm.runInContext(checked+extract('  async function renderRoutineHistory','  function ensureShareButton'),context);
   await vm.runInContext('renderRoutineHistory(host)',context);
   assert.match(host.innerHTML,/Tu ultima sesion/);
+  assert.match(host.innerHTML,/<details class="routine-history-toggle"><summary>Ver historial del día 2/);
+  assert.doesNotMatch(host.innerHTML,/<details[^>]*\sopen(?:\s|>)/);
   assert.match(host.innerHTML,/42.5 kg/);
   assert.match(host.innerHTML,/× 11/);
   assert.match(host.innerHTML,/× 9/);
@@ -202,3 +204,5 @@ test('exercise configuration persists the chosen routine, day, position and zero
   assert.equal(savedItems.length,2);assert.deepEqual(savedItems.map(item=>item.exercise_id),['e1','e2']);
   assert.equal(context.routineItems.length,2);
 });
+
+ test('routine history is placed after the exercise list',()=>{assert.match(fs.readFileSync(new URL('../client-sections.js',import.meta.url),'utf8'),/getElementById\("exercise-list"\)\.after\(historyHost\)/);});

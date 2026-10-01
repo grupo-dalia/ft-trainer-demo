@@ -494,7 +494,7 @@
       historyHost = document.createElement("section");
       historyHost.id = "routine-recent-history";
       historyHost.className = "routine-recent-history";
-      document.getElementById("exercise-list").before(historyHost);
+      document.getElementById("exercise-list").after(historyHost);
     }
     renderRoutineHistory(historyHost);
   }
@@ -512,21 +512,21 @@
         .not("completed_at", "is", null).order("completed_at", { ascending: false }).limit(3));
       if (request !== routineHistoryRequest) return;
       if (!sessions.length) {
-        host.innerHTML = '<div class="routine-history-heading"><div><small>TU PUNTO DE PARTIDA</small><h3>Tu primera marca empieza aqui</h3></div></div><p>Al terminar este dia, veras aqui tus cargas, repeticiones y series para la proxima sesion.</p>';
+        host.innerHTML = '<p>Aún no hay sesiones completadas de este día. Tu primera marca aparecerá aquí.</p>';
         return;
       }
       const logs = await checkedQuery(db.from("set_logs")
         .select("session_id,exercise_id,set_number,reps,weight_kg,exercises(name)")
         .in("session_id", sessions.map(session => session.id)).eq("completed", true).order("set_number"));
       if (request !== routineHistoryRequest) return;
-      host.innerHTML = `<div class="routine-history-heading"><div><small>HISTORIAL · DIA ${day}</small><h3>Tu ultima sesion</h3></div><span>${icon("calendar")}</span></div>${sessions.map((session, index) => {
+      host.innerHTML = `<details class="routine-history-toggle"><summary>Ver historial del día ${day}</summary><div class="routine-history-heading"><div><small>HISTORIAL · DIA ${day}</small><h3>Tu ultima sesion</h3></div><span>${icon("calendar")}</span></div>${sessions.map((session, index) => {
         const sessionLogs = logs.filter(log => log.session_id === session.id);
         const groups = new Map();
         sessionLogs.forEach(log => { if (!groups.has(log.exercise_id)) groups.set(log.exercise_id, []); groups.get(log.exercise_id).push(log); });
         const date = session.planned_for ? new Date(`${session.planned_for}T12:00:00`) : new Date(session.completed_at);
         const volume = sessionLogs.reduce((sum, log) => sum + Number(log.weight_kg || 0) * Number(log.reps || 0), 0);
-        return `<details class="routine-history-session" ${index === 0 ? "open" : ""}><summary><div><b>${esc(date.toLocaleDateString("es-ES", {day:"numeric",month:"long"}))}</b><small>${sessionLogs.length} series · ${Math.round(volume).toLocaleString("es-ES")} kg de volumen${session.duration_minutes ? ` · ${session.duration_minutes} min` : ""}</small></div><span>${index === 0 ? "ULTIMA" : "VER"}</span></summary><div class="routine-history-exercises">${[...groups.values()].map(sets => `<article><b>${esc(sets[0].exercises?.name || allRoutineItems.find(item => item.exercise_id === sets[0].exercise_id)?.exercises?.name || "Ejercicio")}</b><div>${sets.map(set => `<span><small>S${set.set_number}</small> ${set.weight_kg == null ? "Sin carga" : `${esc(set.weight_kg)} kg`} <strong>× ${esc(set.reps ?? "—")}</strong></span>`).join("")}</div></article>`).join("") || '<p>No hay series registradas en esta sesion.</p>'}</div></details>`;
-      }).join("")}`;
+        return `<details class="routine-history-session"><summary><div><b>${esc(date.toLocaleDateString("es-ES", {day:"numeric",month:"long"}))}</b><small>${sessionLogs.length} series · ${Math.round(volume).toLocaleString("es-ES")} kg de volumen${session.duration_minutes ? ` · ${session.duration_minutes} min` : ""}</small></div><span>${index === 0 ? "ULTIMA" : "VER"}</span></summary><div class="routine-history-exercises">${[...groups.values()].map(sets => `<article><b>${esc(sets[0].exercises?.name || allRoutineItems.find(item => item.exercise_id === sets[0].exercise_id)?.exercises?.name || "Ejercicio")}</b><div>${sets.map(set => `<span><small>S${set.set_number}</small> ${set.weight_kg == null ? "Sin carga" : `${esc(set.weight_kg)} kg`} <strong>× ${esc(set.reps ?? "—")}</strong></span>`).join("")}</div></article>`).join("") || '<p>No hay series registradas en esta sesion.</p>'}</div></details>`;
+      }).join("")}</details>`;
     } catch (error) {
       if (request !== routineHistoryRequest) return;
       showLoadError(host, () => renderRoutineHistory(host));
