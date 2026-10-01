@@ -92,13 +92,14 @@ window.addEventListener("pageshow", (event) => {
         .limit(1)
         .maybeSingle();
     membershipIsCurrent = Boolean(currentPayment);
-    if (!membershipIsCurrent && today.getDate() <= 10) {
-      const previousMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0),
+    if (!membershipIsCurrent && today.getDate() <= 5) {
+      const previousMonthEnd = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 0)),
         previousEndIso = previousMonthEnd.toISOString().slice(0, 10),
         { data: previousPayment } = await client
           .from("payments")
           .select("id")
           .eq("client_id", member.id)
+          .lte("period_start", todayIso)
           .gte("period_end", previousEndIso)
           .limit(1)
           .maybeSingle();

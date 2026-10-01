@@ -189,12 +189,16 @@ test('routine history handles a first session and offers retry after a query err
 });
 
 test('exercise configuration persists the chosen routine, day, position and zero rest', async () => {
-  const feedback={},button={},destination={value:'r1'};let payload;
+  const feedback={},button={},destination={value:'r1'},savedItems=[];let payload;
   const form={};const overlay={innerHTML:'',querySelector:s=>s==='form'?form:s==='[name="destination"]'?destination:button,remove(){}};
-  const context=vm.createContext({window:{},document:{createElement:()=>overlay,body:{appendChild(){}},querySelector:()=>({click(){}})},esc:String,selectedRoutineDay:1,routine:{id:'r1'},availableRoutines:[{id:'r1',source:'client',name:'Torso'}],personalFolders:[],routineItems:[],allRoutineItems:[],renderRoutine(){},resetSession(){},loadRoutineItems:async()=>{},restoreTodaySession:async()=>{},toast(){},checkedQuery:async q=>q,db:{rpc:(name,args)=>{payload=args;return 'id';}},FormData:class{constructor(form){this.form=form;}get(key){return this.form.values[key];}}});
+  const context=vm.createContext({window:{},document:{createElement:()=>overlay,body:{appendChild(){}},querySelector:()=>({click(){}})},esc:String,selectedRoutineDay:1,routine:{id:'r1'},availableRoutines:[{id:'r1',source:'client',name:'Torso'}],personalFolders:[],routineItems:[],allRoutineItems:[],renderRoutine(){},resetSession(){},loadRoutineItems:async()=>{context.allRoutineItems=[...savedItems];},restoreTodaySession:async()=>{},toast(){},checkedQuery:async q=>q,db:{rpc:(name,args)=>{payload=args;savedItems.push({exercise_id:args.p_exercise,day_number:args.p_day});return 'id';}},FormData:class{constructor(form){this.form=form;}get(key){return this.form.values[key];}}});
   vm.runInContext(extract('  function openLibraryExercise', '  function weekKey'),context);
   vm.runInContext('openLibraryExercise({database:{id:"e1",name:"Press"},instrucciones:[]})',context);
   const submitted={values:{day:'2',position:'1',sets:'4',min:'8',max:'12',rest:'0'},querySelector:s=>s==='.form-feedback'?feedback:button};
   await form.onsubmit({preventDefault(){},currentTarget:submitted});
   assert.equal(payload.p_routine,'r1');assert.equal(payload.p_day,2);assert.equal(payload.p_position,1);assert.equal(payload.p_sets,4);assert.equal(payload.p_min,8);assert.equal(payload.p_max,12);assert.equal(payload.p_rest,0);
+  vm.runInContext('openLibraryExercise({database:{id:"e2",name:"Remo"},instrucciones:[]})',context);
+  submitted.values.position='2';await form.onsubmit({preventDefault(){},currentTarget:submitted});
+  assert.equal(savedItems.length,2);assert.deepEqual(savedItems.map(item=>item.exercise_id),['e1','e2']);
+  assert.equal(context.routineItems.length,2);
 });

@@ -51,10 +51,10 @@
       prior = feeState.payments.find(
         (payment) =>
           payment.client_id === client.id &&
-          payment.period_end >= priorMonthEnd,
+          payment.period_end >= priorMonthEnd && payment.period_start <= todayIso,
       );
-    if (feeState.grace && today.getDate() <= 10 && prior)
-      return { key: "grace", label: `Tregua hasta el dia 10`, payment: prior };
+    if (feeState.grace && today.getDate() <= 5 && prior)
+      return { key: "grace", label: `Tregua hasta el dia 5`, payment: prior };
     return { key: "due", label: "Pendiente", payment: null };
   }
 
@@ -69,7 +69,7 @@
     <section class="fees-toolbar">
       <label class="fees-search"><span data-icon="search"></span><input id="fee-search" type="search" placeholder="Buscar por nombre, abonado, DNI o telefono"></label>
       <select id="fee-filter" aria-label="Filtrar cuotas"><option value="all">Todos los estados</option><option value="paid">Al dia</option><option value="grace">En tregua</option><option value="due">Pendientes</option></select>
-      <label class="fees-grace"><input id="fee-grace" type="checkbox" ${feeState.grace ? "checked" : ""}> Tregua del dia 1 al 10</label>
+      <label class="fees-grace"><input id="fee-grace" type="checkbox" ${feeState.grace ? "checked" : ""}> Tregua del dia 1 al 5</label>
     </section>
     <section class="card fees-table-card"><table class="fees-table"><thead><tr><th>SOCIO</th><th>ESTADO</th><th>PERIODO PAGADO</th><th>ULTIMO PAGO</th><th>IMPORTE</th><th>ACCIONES</th></tr></thead><tbody id="fee-rows"><tr><td colspan="6" class="fees-empty">Cargando cuotas...</td></tr></tbody></table></section>
   </div>`;
@@ -197,7 +197,7 @@
       localStorage.setItem("ft-fee-grace", grace.checked ? "on" : "off");
       await reconcileAccess();
       renderFees();
-      toast(grace.checked ? "Tregua activada hasta el dia 10" : "Tregua desactivada");
+      toast(grace.checked ? "Tregua activada hasta el dia 5" : "Tregua desactivada");
     };
     add.onclick = () => openPaymentForm("");
   }

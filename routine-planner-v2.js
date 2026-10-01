@@ -9,7 +9,7 @@
   window.openRoutineTemplate = async () => {
     const { data: folders } = await ftSupabase
       .from("routine_folders")
-      .select("id,name")
+      .select("id,name").is("client_id",null)
       .order("name");
     let node = document.getElementById("routine-planner-wizard");
     if (!node) {
