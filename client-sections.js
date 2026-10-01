@@ -73,6 +73,29 @@
   let sessionCompleted = false;
   let routineHistoryRequest = 0;
   const dirtyExercises = new Set();
+  const freeDraftKey = `ft-free-workout-${clientId || "guest"}`;
+  const isFreeWorkout = () => routine && !routine.id;
+  function saveFreeDraft() {
+    if (!isFreeWorkout()) return;
+    try {
+      localStorage.setItem(freeDraftKey, JSON.stringify({ items: allRoutineItems, sessionId, sessionStartedAt }));
+    } catch (error) { /* Storage may be unavailable in private mode. */ }
+  }
+  function clearFreeDraft() {
+    try { localStorage.removeItem(freeDraftKey); } catch (error) { /* Storage may be unavailable. */ }
+  }
+  function finishWorkoutClock() {
+    workoutPausedAt = workoutPausedAt || Date.now();
+    clearInterval(workoutTimerId);
+    clearInterval(restTimerId);
+    document.querySelector(".live-rest-chip")?.remove();
+    document.body.classList.remove("workout-in-progress");
+    document.body.classList.add("workout-completed");
+    updateWorkoutClock();
+    const pause = document.getElementById("pause-live-workout"), finish = document.getElementById("finish-live-workout");
+    if (pause) pause.hidden = true;
+    if (finish) { finish.textContent = "Finalizado"; finish.disabled = true; }
+  }
   function resetSession() {
     dirtyExercises.clear();
     sessionId = null;
@@ -80,12 +103,14 @@
     completedExerciseIds.clear();
     document.querySelector(".live-rest-chip")?.remove();
     const pauseButton = document.getElementById("pause-live-workout");
-    if (pauseButton) pauseButton.textContent = "Pausar";
+    if (pauseButton) { pauseButton.textContent = "Pausar"; pauseButton.hidden = false; }
+    const finishButton = document.getElementById("finish-live-workout");
+    if (finishButton) { finishButton.textContent = "Finalizar"; finishButton.disabled = false; }
     sessionStartedAt = Date.now();
     workoutPausedAt = null;
     clearInterval(workoutTimerId);
     clearInterval(restTimerId);
-    document.body.classList.remove("workout-in-progress");
+    document.body.classList.remove("workout-in-progress", "workout-completed");
   }
 
   async function checkedQuery(query) {
@@ -117,10 +142,53 @@
     if (output) output.textContent = formatWorkoutTime(elapsedWorkoutTime());
   }
 
+  function updateWorkoutStats() {
+    const rows = [...document.querySelectorAll("#exercise-list .hevy-set-row")].filter(row => row.querySelector(".live-complete")?.checked);
+    const volume = rows.reduce((total, row) => total + (Number(String(row.querySelector(".live-weight")?.value || "0").replace(",", ".")) || 0) * (Number(row.querySelector(".live-reps")?.value) || 0), 0);
+    const series = document.getElementById("live-workout-series"), load = document.getElementById("live-workout-volume");
+    if (series) series.textContent = String(rows.length);
+    if (load) load.textContent = `${new Intl.NumberFormat("es-ES", { maximumFractionDigits: 1 }).format(volume)} kg`;
+  }
+
+  function updateWorkoutEntry() {
+    const intro = document.querySelector("#client-routine-panel .routine-hub-intro");
+    if (!intro) return;
+    const active = !sessionCompleted && (Boolean(sessionId) || document.body.classList.contains("workout-in-progress"));
+    const title = intro.querySelector("h2"), detail = intro.querySelector("p"), eyebrow = intro.querySelector("small"), button = intro.querySelector("#begin-live-workout");
+    if (title) title.textContent = routine?.name || "Tu semana de entrenamiento";
+    if (detail) detail.textContent = routineItems.length
+      ? `${routineItems.length} ejercicios · ${completedExerciseIds.size} completados`
+      : "Elige una rutina o crea un entrenamiento libre.";
+    if (eyebrow) eyebrow.textContent = active ? "ENTRENAMIENTO EN CURSO" : "MIS ENTRENAMIENTOS";
+    if (button) {
+      button.hidden = window.ftMembershipActive === false || !routineItems.length;
+      button.disabled = button.hidden;
+      button.querySelector("b").textContent = active ? "Volver al entrenamiento" : sessionCompleted ? "Nuevo entrenamiento" : "Abrir entrenamiento";
+      button.querySelector("small").textContent = active ? "Continúa donde lo dejaste" : "El tiempo empieza al registrar datos";
+    }
+  }
+
+  function setWorkoutFocus(active) {
+    const panel = document.getElementById("client-routine-panel");
+    const showWorkout = Boolean(active && routineItems.length && window.ftMembershipActive !== false);
+    if (showWorkout) panel?.querySelector('[data-workout-view="routines"]')?.click();
+    panel?.classList.toggle("workout-focus", showWorkout);
+    panel?.classList.toggle("workout-hub", !showWorkout);
+    updateWorkoutEntry();
+    if (showWorkout) {
+      ensureWorkoutToolbar();
+      updateWorkoutClock();
+      updateWorkoutStats();
+      panel?.querySelector(".routine-session-host")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    } else if (panel?.classList.contains("open")) panel.scrollTop = 0;
+  }
+
   function startWorkoutClock() {
+    if (sessionCompleted) return;
     if (!document.body.classList.contains("workout-in-progress") && !sessionId) sessionStartedAt = Date.now();
     if (workoutPausedAt) return;
     document.body.classList.add("workout-in-progress");
+    updateWorkoutEntry();
     updateWorkoutClock();
     clearInterval(workoutTimerId);
     workoutTimerId = setInterval(updateWorkoutClock, 1000);
@@ -160,8 +228,9 @@
     if (!content || content.querySelector(".live-workout-toolbar")) return;
     const toolbar = document.createElement("div");
     toolbar.className = "live-workout-toolbar";
-    toolbar.innerHTML = `<div><span>${icon("clock")}</span><small>TIEMPO DE SESION</small><b id="live-workout-time">00:00:00</b></div><button type="button" id="pause-live-workout">Pausar</button><button type="button" id="finish-live-workout">Finalizar</button>`;
+    toolbar.innerHTML = `<div class="workout-focus-controls"><button type="button" id="leave-workout-focus" aria-label="Volver a mis rutinas">⌄</button><strong>Entreno</strong><button type="button" id="pause-live-workout">Pausar</button><button type="button" id="finish-live-workout">Terminar</button></div><div class="workout-live-stats"><div><small>Duración</small><b id="live-workout-time">00:00:00</b></div><div><small>Volumen</small><b id="live-workout-volume">0 kg</b></div><div><small>Series</small><b id="live-workout-series">0</b></div></div>`;
     content.prepend(toolbar);
+    toolbar.querySelector("#leave-workout-focus").onclick = () => setWorkoutFocus(false);
     toolbar.querySelector("#pause-live-workout").onclick = (event) => {
       if (workoutPausedAt) {
         sessionStartedAt += Date.now() - workoutPausedAt;
@@ -180,6 +249,8 @@
 
   async function finishWorkout() {
     if (sessionCompleted) { toast("Este entrenamiento ya esta guardado"); return; }
+    if (exerciseSaveInFlight) { toast("Espera a que terminen de guardarse las series"); return; }
+    if (dirtyExercises.size) { toast("Guarda las series modificadas antes de terminar"); return; }
     if (!sessionId) {
       toast("Completa al menos una serie antes de finalizar");
       return;
@@ -194,27 +265,56 @@
       toast("No se pudo finalizar. Comprueba la conexion.");
       return;
     }
-    clearInterval(workoutTimerId);
-    document.body.classList.remove("workout-in-progress");
-    clearInterval(restTimerId);
     sessionCompleted = true;
-    workoutPausedAt = workoutPausedAt || Date.now();
+    finishWorkoutClock();
+    updateWorkoutEntry();
+    if (isFreeWorkout()) clearFreeDraft();
     const historyHost = document.getElementById("routine-recent-history");
     if (historyHost) renderRoutineHistory(historyHost);
     toast("Entrenamiento guardado · gran trabajo");
   }
 
-  function showRoutines() {
+  function openWorkoutSettings() {
+    const overlay = document.createElement("div");
+    overlay.className = "client-exercise-preview workout-settings-overlay";
+    overlay.innerHTML = `<section role="dialog" aria-modal="true" aria-label="Configuración del entreno"><button type="button" class="exercise-preview-close" aria-label="Cerrar">×</button><h2>Configuración</h2><p>Controla el descanso entre series de este entreno.</p><form class="client-exercise-config"><label class="settings-check"><input type="checkbox" name="rest" ${document.querySelector('.exercise-rest-control[data-rest-enabled="true"]') ? "checked" : ""}><span>Activar descanso automático</span></label><button type="submit">Guardar configuración</button></form></section>`;
+    document.body.appendChild(overlay);
+    overlay.querySelector(".exercise-preview-close").onclick = () => overlay.remove();
+    overlay.onclick = event => { if (event.target === overlay) overlay.remove(); };
+    overlay.querySelector("form").onsubmit = event => {
+      event.preventDefault();
+      const enabled = event.currentTarget.querySelector('[name="rest"]').checked;
+      document.querySelectorAll(".exercise-rest-control").forEach(button => {
+        if ((button.dataset.restEnabled === "true") !== enabled) button.click();
+      });
+      overlay.remove();
+      toast("Configuración guardada para esta sesión");
+    };
+  }
+
+  async function discardFreeWorkout() {
+    if (!isFreeWorkout() || sessionId) return;
+    if (!confirm("¿Descartar este entrenamiento libre? Se perderán los ejercicios seleccionados.")) return;
+    clearFreeDraft();
+    resetSession();
+    routine = availableRoutines[0] || null;
+    allRoutineItems = []; routineItems = [];
+    if (routine) await loadRoutineItems();
+    else renderRoutineEmpty();
+    renderRoutinePicker();
+    setWorkoutFocus(false);
+    toast("Entrenamiento libre descartado");
+  }
+
+  function showRoutines({ focus = true } = {}) {
     const node = panel("client-routine-panel", "Entrenar", "dumbbell"),
       host = node.querySelector(".client-panel-content"),
       session = document.getElementById("routine-session");
     if (!host.querySelector(".routine-hub-intro")) {
-      host.innerHTML = `<section class="routine-hub-intro"><div><small>PLAN DE FERNANDO</small><h2>Tu semana de entrenamiento</h2><p>Elige una rutina y registra cada serie mientras entrenas.</p></div><button type="button" id="begin-live-workout"><span>${icon("play")}</span><b>Iniciar entrenamiento</b><small>Guarda cada ejercicio al terminar</small></button></section><div class="client-workout-actions"><button type="button" data-workout-view="routines">${icon("dumbbell")}<span><b>Mis rutinas</b><small>Planes asignados</small></span></button><button type="button" data-workout-view="history">${icon("calendar")}<span><b>Historial</b><small>Calendario y sesiones</small></span></button><button type="button" data-workout-view="library">${icon("play")}<span><b>Ejercicios</b><small>Biblioteca y tecnica</small></span></button><button type="button" data-workout-view="general">${icon("dumbbell")}<span><b>Rutinas generales</b><small>Planes para copiar</small></span></button></div><section class="routine-picker"><div class="routine-picker-title"><div><small>MIS RUTINAS</small><h3>Mis rutinas</h3></div><button type="button" id="start-empty-workout">+ Crear entrenamiento</button></div><div id="client-routine-cards"></div></section><div class="workout-secondary-view" id="workout-secondary-view"></div><div class="routine-session-host"></div>`;
+      host.innerHTML = `<section class="routine-hub-intro"><div><small>PLAN DE FERNANDO</small><h2>Tu semana de entrenamiento</h2><p>Elige una rutina y registra cada serie mientras entrenas.</p></div><button type="button" id="begin-live-workout"><span>${icon("play")}</span><b>Iniciar entrenamiento</b><small>Guarda cada ejercicio al terminar</small></button></section><div class="client-workout-actions"><button type="button" data-workout-view="routines">${icon("dumbbell")}<span><b>Mis rutinas</b><small>Planes asignados</small></span></button><button type="button" data-workout-view="history">${icon("calendar")}<span><b>Historial</b><small>Calendario y sesiones</small></span></button><button type="button" data-workout-view="library">${icon("play")}<span><b>Ejercicios</b><small>Biblioteca y tecnica</small></span></button><button type="button" data-workout-view="general">${icon("dumbbell")}<span><b>Rutinas generales</b><small>Planes para copiar</small></span></button></div><section class="routine-picker"><div class="routine-picker-title"><div><small>MIS RUTINAS</small><h3>Mis rutinas</h3></div><div class="routine-create-actions"><button type="button" id="start-free-workout">+ Entreno libre</button><button type="button" id="start-empty-workout">+ Crear carpeta</button></div></div><div id="client-routine-cards"></div></section><div class="workout-secondary-view" id="workout-secondary-view"></div><div class="routine-session-host"></div>`;
       host.querySelector("#begin-live-workout").onclick = () => {
-        if (sessionCompleted) { resetSession(); renderRoutine(); }
-        startWorkoutClock();
-        ensureWorkoutToolbar();
-        host.querySelector(".routine-session-host").scrollIntoView({ behavior: "smooth", block: "start" });
+        if (sessionCompleted) { resetSession(); renderRoutine(); saveFreeDraft(); }
+        setWorkoutFocus(true);
       };
       host.querySelectorAll("[data-workout-view]").forEach((button) => button.onclick = () => {
         const view = button.dataset.workoutView;
@@ -225,36 +325,41 @@
         if (view === "history") renderWorkoutHistory(host.querySelector("#workout-secondary-view"));
         if (view === "library") renderClientLibrary(host.querySelector("#workout-secondary-view"));
         if (view === "general") renderGeneralRoutines(host.querySelector("#workout-secondary-view"));
+        if (view !== "routines") setWorkoutFocus(false);
+        else updateWorkoutEntry();
       });
-      host.querySelector("#start-empty-workout").onclick = startEmptyWorkout;
+      host.querySelector("#start-empty-workout").onclick = () => createSavedWorkout();
+      host.querySelector("#start-free-workout").onclick = startFreeWorkout;
     }
     host.querySelector(".routine-session-host").appendChild(session);
     ensureWorkoutToolbar();
     renderRoutinePicker();
     host.querySelector('[data-workout-view="routines"]').click();
     openPanel(node, "routine");
+    setWorkoutFocus(focus && Boolean(routineItems.length));
   }
 
-  function startEmptyWorkout(onCreated) {
-    if(exerciseSaveInFlight){toast("Espera a que terminen de guardarse las series");return;}
-    if (window.ftMembershipActive === false) { toast("Fernando debe confirmar tu cuota para entrenar"); return; }
-    if(dirtyExercises.size && !confirm("Hay series sin guardar. ¿Crear otro entrenamiento y descartarlas?"))return;
+  function createSavedWorkout(onCreated) {
+    if(exerciseSaveInFlight){toast("Espera a que terminen de guardarse las series");return false;}
+    if (window.ftMembershipActive === false) { toast("Fernando debe confirmar tu cuota para entrenar"); return false; }
+    if (sessionId && !sessionCompleted) { toast("Finaliza el entrenamiento actual antes de crear otro"); return false; }
+    if(dirtyExercises.size && !confirm("Hay series sin guardar. ¿Crear otro entrenamiento y descartarlas?"))return false;
     const overlay = document.createElement("div"); overlay.className = "client-exercise-preview";
-    overlay.innerHTML = `<section role="dialog" aria-modal="true" aria-label="Crear entrenamiento"><button type="button" class="exercise-preview-close" aria-label="Cerrar">×</button><h2>Crear entrenamiento</h2><form class="client-exercise-config"><label>Nombre del entrenamiento<input name="name" maxlength="120" placeholder="Ej. Torso A" required></label><label>Carpeta<select name="folder"><option value="new">+ Nueva carpeta</option>${personalFolders.map(folder => `<option value="${esc(folder.id)}">${esc(folder.name)}</option>`).join("")}</select></label><label class="new-folder-name">Nombre de la carpeta<input name="folder_name" maxlength="120" placeholder="Ej. Octubre o Version 2.0" required></label><p class="form-feedback" role="status"></p><button type="submit">Crear entrenamiento</button></form></section>`;
+    overlay.innerHTML = `<section role="dialog" aria-modal="true" aria-label="Crear carpeta"><button type="button" class="exercise-preview-close" aria-label="Cerrar">×</button><h2>Crear carpeta</h2><p>Organiza tus entrenamientos en una carpeta. Puedes añadir más después.</p><form class="client-exercise-config"><label>Nombre de la carpeta<input name="folder_name" maxlength="120" placeholder="Ej. Fuerza · Octubre" required></label><label>Primer entrenamiento<input name="name" maxlength="120" placeholder="Ej. Torso A" required></label><p class="form-feedback" role="status"></p><button type="submit">Crear carpeta y entrenamiento</button></form></section>`;
     document.body.appendChild(overlay);
     overlay.querySelector("button").onclick = () => overlay.remove();
-    const form=overlay.querySelector("form"), select=form.querySelector('[name="folder"]');
-    select.onchange=()=>{const fresh=select.value==='new';form.querySelector('.new-folder-name').hidden=!fresh;form.querySelector('[name="folder_name"]').required=fresh;};
+    const form=overlay.querySelector("form");
     form.onsubmit=async event=>{
       event.preventDefault();const data=new FormData(form),button=form.querySelector('[type="submit"]');button.disabled=true;
       try{
-        const id=await checkedQuery(db.rpc('ft_create_training',{p_client:clientId,p_name:data.get('name').trim(),p_folder:select.value==='new'?null:select.value,p_folder_name:data.get('folder_name').trim()}));
+        const id=await checkedQuery(db.rpc('ft_create_training',{p_client:clientId,p_name:data.get('name').trim(),p_folder:null,p_folder_name:data.get('folder_name').trim()}));
         await loadRoutine();await selectRoutine(id);overlay.remove();
         if(typeof onCreated==='function') onCreated(id); else document.querySelector('[data-workout-view="library"]')?.click();
-        toast('Entrenamiento creado y guardado');
+        toast('Carpeta y primer entrenamiento creados');
       }catch(error){form.querySelector('.form-feedback').textContent='No se pudo crear el entrenamiento. Comprueba la conexion y vuelve a intentarlo.';}
       finally{button.disabled=false;}
     };
+    return true;
   }
 
   async function renderGeneralRoutines(host) {
@@ -273,13 +378,91 @@
     }catch(error){showLoadError(host,()=>renderGeneralRoutines(host));}
   }
 
+  async function startFreeWorkout() {
+    if (window.ftMembershipActive === false) { toast("Fernando debe confirmar tu cuota para entrenar"); return; }
+    if (sessionId && !sessionCompleted) { toast("Finaliza el entrenamiento actual antes de crear otro"); return; }
+    if (!isFreeWorkout()) {
+      try {
+        if (await restoreFreeDraft()) {
+          document.querySelector('[data-workout-view="routines"]')?.click();
+          toast("Entrenamiento libre recuperado");
+          return;
+        }
+      } catch (error) { toast("No se pudo recuperar el entrenamiento libre"); return; }
+    }
+    if ((sessionId || (isFreeWorkout() && allRoutineItems.length)) && !confirm("¿Crear un entrenamiento libre nuevo? Se sustituira la seleccion actual.")) return;
+    routine = { id: null, name: "Entrenamiento libre", description: "Sesion creada por ti", status: "active" };
+    allRoutineItems = [];
+    routineItems = [];
+    selectedRoutineDay = 1;
+    resetSession();
+    saveFreeDraft();
+    renderRoutine();
+    renderRoutinePicker();
+    document.querySelector('[data-workout-view="library"]')?.click();
+    toast("Busca ejercicios y anadelos a tu entrenamiento libre");
+  }
+
+  function prepareFreeWorkout() {
+    if (window.ftMembershipActive === false) { toast("Fernando debe confirmar tu cuota para entrenar"); return false; }
+    if (isFreeWorkout()) {
+      if (sessionCompleted) resetSession();
+      return true;
+    }
+    if (sessionId && !sessionCompleted) { toast("Finaliza el entrenamiento actual antes de crear otro"); return false; }
+    resetSession();
+    routine = { id: null, name: "Entrenamiento libre", description: "Sesion creada por ti", status: "active" };
+    allRoutineItems = [];
+    routineItems = [];
+    selectedRoutineDay = 1;
+    return true;
+  }
+
+  function addFreeExercise(source, options = {}) {
+    if (!source?.id || allRoutineItems.some(item => item.exercise_id === source.id && Number(item.day_number) === 1)) return false;
+    const item = { id: null, exercise_id: source.id, day_number: 1, position: allRoutineItems.length + 1,
+      target_sets: options.sets || 3, target_reps_min: options.min || 8, target_reps_max: options.max || 12,
+      target_weight_kg: null, target_rir: null, rest_seconds: options.rest ?? 90, notes: "", exercises: source };
+    allRoutineItems.push(item);
+    selectedRoutineDay = 1;
+    routineItems = allRoutineItems;
+    saveFreeDraft();
+    return true;
+  }
+
+  async function restoreFreeDraft() {
+    let draft = null;
+    try { draft = JSON.parse(localStorage.getItem(freeDraftKey) || "null"); } catch (error) { clearFreeDraft(); }
+    if (!Array.isArray(draft?.items) || !draft.items.length) return false;
+    if (draft.sessionId) {
+      const { data: savedSession, error } = await db.from("workout_sessions").select("id,started_at,completed_at")
+        .eq("id", draft.sessionId).eq("client_id", clientId).maybeSingle();
+      if (error) throw error;
+      if (savedSession?.completed_at) { clearFreeDraft(); return false; }
+      draft.sessionId = savedSession?.id || null;
+      draft.sessionStartedAt = savedSession?.started_at || draft.sessionStartedAt;
+    }
+    resetSession();
+    routine = { id: null, name: "Entrenamiento libre", description: "Sesion creada por ti", status: "active" };
+    allRoutineItems = draft.items.filter(item => item?.exercise_id && item?.exercises);
+    selectedRoutineDay = 1;
+    routineItems = allRoutineItems.filter(item => (Number(item.day_number) || 1) === 1);
+    sessionId = draft.sessionId || null;
+    sessionStartedAt = sessionId ? new Date(draft.sessionStartedAt || Date.now()).getTime() : Date.now();
+    renderRoutine();
+    renderRoutinePicker();
+    if (sessionId) startWorkoutClock();
+    return true;
+  }
+
   function renderRoutinePicker() {
     const host = document.getElementById("client-routine-cards");
     if (!host) return;
     const locked = window.ftMembershipActive === false;
-    const start = document.getElementById("begin-live-workout"), free = document.getElementById("start-empty-workout");
-    if (start) { start.hidden = locked; start.disabled = locked || !routineItems.length; start.querySelector("b").textContent = locked ? "Cuota pendiente" : "Iniciar entrenamiento"; }
-    if (free) { free.disabled = locked; free.hidden = locked; }
+    const start = document.getElementById("begin-live-workout"), free = document.getElementById("start-free-workout"), create = document.getElementById("start-empty-workout");
+    if (start) { start.hidden = locked || !routineItems.length; start.disabled = start.hidden; }
+    if (free) { free.disabled = locked; free.hidden = locked; free.textContent = isFreeWorkout() ? "+ Nuevo entrenamiento libre" : "+ Entrenamiento libre"; }
+    if (create) { create.disabled = locked; create.hidden = locked; }
     const pickerTitle = document.querySelector(".routine-picker-title h3");
     if (pickerTitle) pickerTitle.textContent = locked ? "Tu acceso" : "Mis rutinas";
     if (locked) {
@@ -290,17 +473,20 @@
     const card = item => `<button type="button" class="client-routine-choice ${item.id === routine?.id ? "active" : ""}" data-select-routine="${item.id}"><span>${icon("dumbbell")}</span><div><b>${esc(item.name)}</b><small>${esc(item.description || item.objective || (item.source==='client'?'Tu entrenamiento':'Plan de Fernando'))}</small></div><strong>${item.id === routine?.id ? "Seleccionada" : "Abrir"}</strong></button>`;
     const personalIds = new Set(personalFolders.map(folder=>folder.id));
     const assigned=availableRoutines.filter(item=>!personalIds.has(item.folder_id));
-    host.innerHTML = `${assigned.length?`<details class="personal-folder" open><summary>Planes asignados</summary>${assigned.map(card).join('')}</details>`:''}${personalFolders.map(folder=>`<details class="personal-folder" open><summary>${esc(folder.name)}</summary>${availableRoutines.filter(item=>item.folder_id===folder.id).map(card).join('')||'<p>Crea un entrenamiento en esta carpeta.</p>'}</details>`).join('')}` || '<div class="client-empty-state">Crea tu entrenamiento o copia un programa de Rutinas generales.</div>';
+    host.innerHTML = `${assigned.length?`<details class="personal-folder" open><summary>Planes asignados</summary>${assigned.map(card).join('')}</details>`:''}${personalFolders.map(folder=>`<details class="personal-folder" open><summary>${esc(folder.name)}</summary>${availableRoutines.filter(item=>item.folder_id===folder.id).map(card).join('')||'<p>Crea un entrenamiento en esta carpeta.</p>'}</details>`).join('')}` || '<div class="client-empty-state">Empieza un entreno libre, crea una carpeta o copia un programa de Rutinas generales.</div>';
     host.querySelectorAll("[data-select-routine]").forEach((button) => button.onclick = () => selectRoutine(button.dataset.selectRoutine));
+    updateWorkoutEntry();
   }
 
   async function selectRoutine(id) {
     if(exerciseSaveInFlight){toast("Espera a que terminen de guardarse las series");return;}
-    if (routine?.id === id && sessionId && !sessionCompleted) return;
+    if (routine?.id === id && routineItems.length && !sessionCompleted) { setWorkoutFocus(true); return; }
     if(dirtyExercises.size && !confirm("Hay series sin guardar. ¿Cambiar de entrenamiento y descartarlas?"))return;
+    if (sessionId && !sessionCompleted) { toast("Finaliza el entrenamiento actual antes de cambiar de rutina"); return; }
+    if (isFreeWorkout() && !sessionCompleted) saveFreeDraft();
     routine = availableRoutines.find((item) => item.id === id);
     resetSession();
-    try { await loadRoutineItems(); renderRoutinePicker(); }
+    try { await loadRoutineItems(); renderRoutinePicker(); setWorkoutFocus(true); }
     catch(error) { showLoadError(document.getElementById("exercise-list"), () => selectRoutine(id)); }
   }
   function renderRoutineLocked() {
@@ -344,6 +530,11 @@
       .order("created_at", { ascending: false }));
     availableRoutines = routines || [];
     personalFolders = await checkedQuery(db.from("routine_folders").select("id,name").eq("client_id",clientId).order("created_at",{ascending:false}));
+    if (isFreeWorkout() && !sessionCompleted && allRoutineItems.length) {
+      renderRoutinePicker();
+      return;
+    }
+    if (!routine && await restoreFreeDraft()) return;
     resetSession();
     routine = availableRoutines.find(item => item.id === routine?.id) || availableRoutines[0] || null;
     if (!routine) {
@@ -413,14 +604,15 @@
       `${esc(routine.name)}<br><mark>${routine.status === "active" ? "Activa" : "Borrador"}</mark>`;
     document.getElementById("next-session-title").textContent = routine.name;
     document.getElementById("next-session-detail").textContent =
-      `${days.length} ${days.length === 1 ? "sesion" : "sesiones"} · ${allRoutineItems.length} ejercicios · Fernando`;
+      `${days.length} ${days.length === 1 ? "sesion" : "sesiones"} · ${allRoutineItems.length} ejercicios${isFreeWorkout() ? " · Seleccionados por ti" : " · Fernando"}`;
     document.getElementById("done-count").textContent = "0";
     document.querySelector(".workout-top b").lastChild.textContent =
       ` de ${routineItems.length} completados`;
     document.getElementById("percent").textContent = "0%";
     document.getElementById("session-progress").style.width = "0%";
     document.getElementById("exercise-list").innerHTML =
-      `<div class="session-plan-head"><div><span>SESION ${selectedRoutineDay}</span><b>${esc(muscles.join(" · ") || "Entrenamiento completo")}</b></div><small>${routineItems.length} ejercicios</small></div>` +
+      `<div class="session-plan-head"><div><span>${isFreeWorkout() ? "ENTRENAMIENTO LIBRE" : `SESION ${selectedRoutineDay}`}</span><b>${esc(muscles.join(" · ") || "Entrenamiento completo")}</b></div><small>${routineItems.length} ejercicios</small></div>` +
+      (isFreeWorkout() ? '<button type="button" class="free-add-exercises">+ Añadir ejercicios</button>' : "") +
       (days.length > 0
         ? `<div class="session-day-tabs weekly-plan-tabs" role="tablist" aria-label="Entrenamiento semanal">${days
             .map((day) => {
@@ -452,16 +644,24 @@
                 ? item.target_reps_min
                 : `${item.target_reps_min || "—"}–${item.target_reps_max || "—"}`,
             image = ex.thumbnail_url || "assets/brand/ft-symbol-color.png";
-          return `<article class="live-exercise inline-exercise ${item.superset_group ? "superset-exercise" : ""}" data-live-index="${index}" ${item.superset_group ? `data-superset="${item.superset_group}"` : ""}><button type="button" class="exercise-row exercise-technique"><span class="exercise-thumb"><img src="${esc(image)}" alt="${esc(ex.name)}" loading="lazy"><i>${icon("play")}</i></span><span>${item.superset_group ? `<mark>SUPERSET ${item.superset_group}</mark>` : ""}<b>${esc(ex.name || "Ejercicio")}</b><small>${item.target_sets} series · ${reps} repeticiones${item.target_weight_kg != null ? ` · ${item.target_weight_kg} kg` : ""}</small><em>Ver video y tecnica</em></span><strong>›</strong></button><div class="inline-registration"><div class="last-record"></div><div class="sets"><p>Cargando series…</p></div><button type="button" class="save-inline-exercise" disabled>Guardar series ✓</button></div></article>`;
+          return `<article class="live-exercise inline-exercise ${item.superset_group ? "superset-exercise" : ""}" data-live-index="${index}" ${item.superset_group ? `data-superset="${item.superset_group}"` : ""}><button type="button" class="exercise-row exercise-technique"><span class="exercise-thumb"><img src="${esc(image)}" alt="${esc(ex.name)}" loading="lazy"></span><span>${item.superset_group ? `<mark>SUPERSET ${item.superset_group}</mark>` : ""}<b>${esc(ex.name || "Ejercicio")}</b><small>${item.target_sets} series · ${reps} repeticiones${item.target_weight_kg != null ? ` · ${item.target_weight_kg} kg` : ""}</small><em>Ver vídeo y técnica</em></span><strong>⋮</strong></button><textarea class="exercise-session-note" rows="1" placeholder="Agregar notas aquí…" aria-label="Notas de ${esc(ex.name || "ejercicio")}"></textarea><button type="button" class="exercise-rest-control" data-rest-enabled="false" aria-pressed="false">${icon("clock")}<span>Descanso: APAGADO</span></button>${isFreeWorkout() ? `<button type="button" class="remove-free-exercise" data-remove-index="${index}" aria-label="Quitar ${esc(ex.name || "Ejercicio")}">Quitar ejercicio</button>` : ""}<div class="inline-registration"><div class="last-record"></div><div class="sets"><p>Cargando series…</p></div><button type="button" class="save-inline-exercise" disabled>Guardar series ✓</button></div></article>`;
         })
         .join("") ||
-        '<div class="client-empty-state">Esta sesion aun no contiene ejercicios.</div>');
+        '<div class="client-empty-state">Esta sesión aún no contiene ejercicios.</div>');
+    document.getElementById("exercise-list").insertAdjacentHTML("beforeend", `<div class="workout-session-actions"><button type="button" class="workout-add-exercise">+ Añadir ejercicio</button><button type="button" class="workout-open-settings">Configuración</button>${isFreeWorkout() && !sessionId ? '<button type="button" class="workout-discard-free">Descartar entreno</button>' : ""}</div>`);
+    document.querySelector(".workout-add-exercise").onclick = () => {
+      if (!isFreeWorkout() && sessionId && !sessionCompleted) { toast("Finaliza la sesión actual antes de editar la rutina"); return; }
+      document.querySelector('[data-workout-view="library"]')?.click();
+    };
+    document.querySelector(".workout-open-settings").onclick = openWorkoutSettings;
+    document.querySelector(".workout-discard-free")?.addEventListener("click", discardFreeWorkout);
     document.querySelectorAll("[data-routine-day]").forEach((button) => {
       button.onclick = () => {
         if(exerciseSaveInFlight){toast("Espera a que terminen de guardarse las series");return;}
         if(dirtyExercises.size && !confirm("Hay series sin guardar. ¿Cambiar de dia y descartarlas?"))return;
         const targetDay = Number(button.dataset.routineDay) || 1;
         if (targetDay === selectedRoutineDay) return;
+        if (sessionId && !sessionCompleted) { toast("Finaliza esta sesion antes de cambiar de dia"); return; }
         if (!confirm(`¿Seguro que quieres empezar el dia ${targetDay}?`))
           return;
         resetSession();
@@ -482,6 +682,35 @@
       const item = routineItems[Number(row.dataset.liveIndex)];
       row.querySelector(".exercise-technique").onclick = () => openExerciseTechnique(item);
       openExercise(item, row, row.querySelector(".inline-registration"));
+      const note = row.querySelector(".exercise-session-note");
+      const noteKey = `ft-workout-note-${clientId}-${routine?.id || "free"}-${localDate()}-${selectedRoutineDay}-${item.exercise_id}`;
+      try { note.value = localStorage.getItem(noteKey) || ""; } catch (error) { /* Local storage may be unavailable. */ }
+      note.oninput = () => {
+        if (note.value.trim() && !document.body.classList.contains("workout-in-progress")) startWorkoutClock();
+        try { localStorage.setItem(noteKey, note.value); } catch (error) { /* Keep the note in the open form. */ }
+      };
+    });
+    document.querySelector(".free-add-exercises")?.addEventListener("click", () => document.querySelector('[data-workout-view="library"]')?.click());
+    document.querySelectorAll(".exercise-rest-control").forEach(button => button.onclick = () => {
+      const enabled = button.dataset.restEnabled !== "true";
+      button.dataset.restEnabled = String(enabled);
+      button.setAttribute("aria-pressed", String(enabled));
+      const item = routineItems[Number(button.closest(".live-exercise").dataset.liveIndex)];
+      button.querySelector("span").textContent = enabled ? `Descanso: ${item.rest_seconds ?? 90} s` : "Descanso: APAGADO";
+      if (!enabled) { clearInterval(restTimerId); document.querySelector(".live-rest-chip")?.remove(); }
+    });
+    document.querySelectorAll("[data-remove-index]").forEach(button => button.onclick = () => {
+      if (sessionId && !sessionCompleted) { toast("Finaliza el entrenamiento antes de quitar ejercicios"); return; }
+      const index = Number(button.dataset.removeIndex);
+      const [removed] = routineItems.splice(index, 1);
+      allRoutineItems = allRoutineItems.filter(item => item !== removed);
+      routineItems.forEach((item, position) => item.position = position + 1);
+      completedExerciseIds.delete(removed.exercise_id);
+      saveFreeDraft();
+      renderRoutine();
+      updateWorkoutProgress(routineItems.filter(item => completedExerciseIds.has(item.exercise_id)).length);
+      renderRoutinePicker();
+      toast("Ejercicio quitado del entrenamiento");
     });
     document.querySelectorAll(".live-exercise").forEach((row, index) => {
       if (!completedExerciseIds.has(routineItems[index]?.exercise_id)) return;
@@ -497,6 +726,8 @@
       document.getElementById("exercise-list").after(historyHost);
     }
     renderRoutineHistory(historyHost);
+    updateWorkoutStats();
+    updateWorkoutEntry();
   }
 
   async function renderRoutineHistory(host) {
@@ -607,7 +838,7 @@
 
   async function openExercise(item, row, inlineHost = null) {
     if (!inlineHost && sessionCompleted) { resetSession(); renderRoutine(); row = [...document.querySelectorAll(".live-exercise")][routineItems.indexOf(item)]; }
-    if (!inlineHost) { if (!document.body.classList.contains("workout-in-progress")) startWorkoutClock(); selectedItem = { item, row }; }
+    if (!inlineHost) selectedItem = { item, row };
     const ex = item.exercises || {},
       sheet = inlineHost || document.getElementById("set-sheet");
     if (!inlineHost) {
@@ -663,15 +894,15 @@
     const sets = sheet.querySelector(".sets");
     sets.classList.add("hevy-set-table");
     sets.innerHTML =
-      `<p class="set-target"><span>OBJETIVO · ${item.target_reps_min ?? "—"}${item.target_reps_max && item.target_reps_max !== item.target_reps_min ? `–${item.target_reps_max}` : ""} REPS</span>Escribe las repeticiones que has hecho en cada serie y marca la casilla al terminar.</p><div class="hevy-set-head"><b>SET</b><b>ANTERIOR</b><b>KG</b><b>REPS</b><b>RIR</b><b>✓</b></div>` +
+      `<p class="set-target"><span>OBJETIVO · ${item.target_reps_min ?? "—"}${item.target_reps_max && item.target_reps_max !== item.target_reps_min ? `–${item.target_reps_max}` : ""} REPS</span>Marca las series terminadas y guarda los cambios.</p><div class="hevy-set-head"><b>SERIE</b><b>ANTERIOR</b><b>KG</b><b>REPS</b><b>RPE</b><b>✓</b></div>` +
       Array.from({ length: Math.max(item.target_sets || 3, ...currentLogs.map(log => log.set_number)) }, (_, index) => {
         const previous = previousSets[index],
           current = currentLogs.find(log => log.set_number === index + 1),
           reps = current?.reps ?? "",
           weight = current?.weight_kg ?? "";
         const previousLabel = previous ? `${previous.weight_kg ?? 0} × ${previous.reps ?? 0}` : "—";
-        return `<label class="hevy-set-row"><select class="live-set-type" aria-label="Tipo de serie ${index + 1}"><option value="normal">${index + 1}</option><option value="warmup">W</option><option value="drop">D</option><option value="failure">F</option></select><small>${previousLabel}</small><input class="live-weight" value="${weight}" inputmode="decimal" aria-label="Peso serie ${index + 1}"><input class="live-reps" type="number" min="1" max="1000" step="1" placeholder="${item.target_reps_min ?? "—"}${item.target_reps_max && item.target_reps_max !== item.target_reps_min ? `–${item.target_reps_max}` : ""}" value="${reps}" inputmode="numeric" aria-label="Repeticiones serie ${index + 1}"><input class="live-rir" value="${current?.rir ?? ""}" inputmode="numeric" aria-label="RIR serie ${index + 1}"><input class="live-complete" type="checkbox" ${current?.completed ? "checked" : ""} aria-label="Completar serie ${index + 1}"></label>`;
-      }).join("") + `<button type="button" class="add-live-set">+ Anadir serie</button><div class="exercise-rest-timer" hidden><span>${icon("clock")}</span><div><small>DESCANSO</small><b class="exercise-rest-time">1:30</b></div><button type="button">Omitir</button></div>`;
+        return `<label class="hevy-set-row"><select class="live-set-type" aria-label="Tipo de serie ${index + 1}"><option value="normal">${index + 1}</option><option value="warmup">W</option><option value="drop">D</option><option value="failure">F</option></select><small>${previousLabel}</small><input class="live-weight" value="${weight}" inputmode="decimal" aria-label="Peso serie ${index + 1}"><input class="live-reps" type="number" min="1" max="1000" step="1" placeholder="${item.target_reps_min ?? "—"}${item.target_reps_max && item.target_reps_max !== item.target_reps_min ? `–${item.target_reps_max}` : ""}" value="${reps}" inputmode="numeric" aria-label="Repeticiones serie ${index + 1}"><input class="live-rir" type="number" min="0" max="10" step="1" value="${current?.rir == null ? "" : 10 - Number(current.rir)}" inputmode="numeric" aria-label="RPE serie ${index + 1}"><input class="live-complete" type="checkbox" ${current?.completed ? "checked" : ""} aria-label="Completar serie ${index + 1}"></label>`;
+      }).join("") + `<button type="button" class="add-live-set">+ Agregar serie</button><div class="exercise-rest-timer" hidden><span>${icon("clock")}</span><div><small>DESCANSO</small><b class="exercise-rest-time">1:30</b></div><button type="button">Omitir</button></div>`;
     sets.querySelectorAll(".live-set-type").forEach((select, index) => { select.value = currentLogs.find(log => log.set_number === index + 1)?.set_type || "normal"; });
     sets.querySelector(".add-live-set").onclick = () => {
       const rows = sets.querySelectorAll(".hevy-set-row"),
@@ -686,17 +917,28 @@
         else input.value = "";
       });
       lastRow.after(clone);
+      if (!document.body.classList.contains("workout-in-progress")) startWorkoutClock();
+      dirtyExercises.add(item.exercise_id);
+      updateWorkoutStats();
     };
     sets.querySelector(".exercise-rest-timer button").onclick = () => {
       clearInterval(restTimerId);
       sets.querySelector(".exercise-rest-timer").hidden = true;
     };
+    const registerSetEdit = () => {
+      if (sessionCompleted) return;
+      if (!document.body.classList.contains("workout-in-progress")) startWorkoutClock();
+      dirtyExercises.add(item.exercise_id);
+      updateWorkoutStats();
+    };
+    sheet.oninput = registerSetEdit;
+    sheet.onchange = registerSetEdit;
     if (inlineHost) {
-      sheet.oninput=()=>dirtyExercises.add(item.exercise_id);
       const button = sheet.querySelector(".save-inline-exercise");
       button.disabled = recordsFailed || sessionCompleted;
       button.onclick = () => persistExercise({item,row}, sheet, button);
     } else { save.disabled = recordsFailed; sheet.classList.add("open"); }
+    updateWorkoutStats();
   }
   async function ensureSession() {
     if (sessionCompleted) resetSession();
@@ -728,6 +970,7 @@
     if (created.error) throw created.error;
     sessionId = created.data.id;
     sessionStartedAt = new Date(startedAt).getTime();
+    saveFreeDraft();
     return sessionId;
   }
   const oldSave = document.getElementById("save-set"),
@@ -739,23 +982,23 @@
     if (!selectedItem || !db || exerciseSaveInFlight) return;
     if (sessionCompleted) { toast("Inicia otro entrenamiento para registrar nuevas series"); return; }
     exerciseSaveInFlight = true;
-    if (!document.body.classList.contains("workout-in-progress")) startWorkoutClock();
     save.disabled = true;
     save.textContent = "Guardando…";
     try {
       const completedRows = [...scope.querySelectorAll(".hevy-set-row")].filter(row => row.querySelector(".live-complete").checked);
       if (completedRows.some(row => {
-        const reps = Number(row.querySelector(".live-reps").value), weight = row.querySelector(".live-weight").value.trim().replace(",", "."), rir = row.querySelector(".live-rir").value.trim();
-        return !Number.isInteger(reps) || reps < 1 || reps > 1000 || (weight !== "" && (!Number.isFinite(Number(weight)) || Number(weight) < 0 || Number(weight) > 99999)) || (rir !== "" && (!Number.isInteger(Number(rir)) || Number(rir) < 0 || Number(rir) > 10));
+        const reps = Number(row.querySelector(".live-reps").value), weight = row.querySelector(".live-weight").value.trim().replace(",", "."), rpe = row.querySelector(".live-rir").value.trim().replace(",", ".");
+        return !Number.isInteger(reps) || reps < 1 || reps > 1000 || (weight !== "" && (!Number.isFinite(Number(weight)) || Number(weight) < 0 || Number(weight) > 99999)) || (rpe !== "" && (!Number.isInteger(Number(rpe)) || Number(rpe) < 0 || Number(rpe) > 10));
       })) {
         toast("Revisa las repeticiones, el peso y el RIR de las series marcadas");
         return;
       }
       if (!completedRows.length && !sessionId) { toast("Marca al menos una serie realizada"); return; }
+      if (!document.body.classList.contains("workout-in-progress")) startWorkoutClock();
       const currentSession = await ensureSession(),
         reps = [...scope.querySelectorAll(".live-reps")],
         weights = [...scope.querySelectorAll(".live-weight")],
-        rirs = [...scope.querySelectorAll(".live-rir")],
+        rpes = [...scope.querySelectorAll(".live-rir")],
         types = [...scope.querySelectorAll(".live-set-type")],
         checked = [...scope.querySelectorAll(".live-complete")],
         logs = reps.map((input, index) => ({
@@ -768,7 +1011,7 @@
             weights[index].value === ""
               ? null
               : Number(String(weights[index].value).replace(",", ".")),
-          rir: rirs[index].value === "" ? null : Number(rirs[index].value),
+          rir: rpes[index].value === "" ? null : 10 - Number(String(rpes[index].value).replace(",", ".")),
           set_type: types[index].value,
           completed: checked[index].checked,
         })).map(log => log.completed ? log : {...log, reps:null, weight_kg:null, rir:null});
@@ -782,33 +1025,11 @@
       selectedItem.row.querySelector("strong").textContent = exerciseComplete ? "✓" : "›";
       if (exerciseComplete) completedExerciseIds.add(selectedItem.item.exercise_id);
       else completedExerciseIds.delete(selectedItem.item.exercise_id);
-      const done = document.querySelectorAll(".live-exercise.done").length,
-        { total } = updateWorkoutProgress(done),
-        duration = Math.max(
-          1,
-          Math.round((elapsedWorkoutTime()) / 60000),
-        );
-      if (done === total && exerciseComplete) {
-        const finished = await db
-          .from("workout_sessions")
-          .update({
-            completed_at: new Date().toISOString(),
-            duration_minutes: duration,
-          })
-          .eq("id", currentSession);
-        if (finished.error) throw finished.error;
-        sessionCompleted = true;
-        document.querySelectorAll(".save-inline-exercise").forEach(button => button.disabled = true);
-        const historyHost = document.getElementById("routine-recent-history");
-        if (historyHost) renderRoutineHistory(historyHost);
-        workoutPausedAt = Date.now();
-        clearInterval(workoutTimerId);
-        document.body.classList.remove("workout-in-progress");
-        toast("¡Entrenamiento completado! Ya puedes compartirlo");
-      }
+      const done = document.querySelectorAll(".live-exercise.done").length;
+      updateWorkoutProgress(done);
       document.getElementById("set-sheet").classList.remove("open");
-      if (!sessionCompleted) startRestTimer(selectedItem.item.rest_seconds ?? 90);
-      toast("Series guardadas correctamente");
+      if (selectedItem.row.querySelector(".exercise-rest-control")?.dataset?.restEnabled === "true") startRestTimer(selectedItem.item.rest_seconds ?? 90);
+      toast("Series guardadas. Pulsa Finalizar cuando acabes el entrenamiento.");
     } catch (error) {
       toast("No se pudo guardar. Comprueba la conexion.");
     } finally {
@@ -1157,29 +1378,45 @@
       stats.set(set.session_id, value);
     });
     const doneDates = new Set((sessions || []).filter((item) => item.completed_at).map((item) => item.planned_for));
+    const historyDates = new Set((sessions || []).map((item) => item.planned_for));
     const now = new Date(), year = now.getFullYear(), month = now.getMonth(), first = new Date(year, month, 1), days = new Date(year, month + 1, 0).getDate(), offset = (first.getDay() + 6) % 7;
-    const calendar = `${Array.from({length: offset}, () => '<i></i>').join("")}${Array.from({length: days}, (_, index) => { const day = index + 1, iso = `${year}-${String(month + 1).padStart(2,"0")}-${String(day).padStart(2,"0")}`; return `<button type="button" class="${doneDates.has(iso) ? "trained" : ""}" data-history-date="${iso}">${day}</button>`; }).join("")}`;
-    host.innerHTML = `<section class="history-calendar client-panel-card"><div class="panel-title"><div><small>CONSTANCIA</small><h2>${now.toLocaleDateString("es-ES", {month:"long",year:"numeric"})}</h2></div><b>${(sessions || []).filter(item => item.completed_at && String(item.planned_for).startsWith(`${year}-${String(month + 1).padStart(2,"0")}`)).length} entrenamientos</b></div><div class="calendar-week"><span>L</span><span>M</span><span>X</span><span>J</span><span>V</span><span>S</span><span>D</span></div><div class="calendar-days">${calendar}</div></section><section class="client-panel-card"><div class="panel-title"><div><small>DIARIO DE ENTRENAMIENTO</small><h2>Sesiones recientes</h2><p class="history-day-summary" aria-live="polite"></p></div><button type="button" class="history-show-all">Ver todas</button></div><div class="client-session-history">${(sessions || []).map((item) => { const stat = stats.get(item.id) || {sets:0,volume:0}; return `<article data-session-date="${item.planned_for}"><span class="history-status ${item.completed_at ? "done" : "open"}">${item.completed_at ? "✓" : "…"}</span><div><small>${new Date(`${item.planned_for}T12:00:00`).toLocaleDateString("es-ES", {weekday:"short",day:"numeric",month:"short"})}</small><b>${esc(item.routines?.name || "Entrenamiento libre")} · Dia ${item.day_number || 1}</b><em>${stat.sets} series · ${Math.round(stat.volume).toLocaleString("es-ES")} kg · ${item.duration_minutes || "—"} min</em></div>${item.routine_id ? `<button type="button" data-repeat-routine="${item.routine_id}" data-repeat-day="${item.day_number || 1}">Repetir</button>` : ""}<details class="history-session-detail"><summary>Ver ejercicios y series</summary>${renderHistorySets(logs.filter(log => log.session_id === item.id && log.completed))}</details></article>`; }).join("") || '<div class="client-empty-state">Todavia no has completado entrenamientos.</div>'}</div></section>`;
-    const filterDate = (date) => {
-      const matching = sessions.filter(item => !date || item.planned_for === date);
-      const count = matching.reduce((total, item) => total + (stats.get(item.id)?.sets || 0), 0);
-      host.querySelectorAll("[data-session-date]").forEach(item => { item.hidden = !!date && item.dataset.sessionDate !== date; });
-      host.querySelectorAll("[data-history-date]").forEach(button => button.setAttribute("aria-pressed", String(button.dataset.historyDate === date)));
-      host.querySelector(".history-day-summary").textContent = date ? `${new Date(`${date}T12:00:00`).toLocaleDateString("es-ES")} · ${matching.length} sesiones · ${count} series realizadas${matching.length ? "" : " · Sin entrenamientos este dia"}` : "";
+    const calendar = `${Array.from({length: offset}, () => '<i></i>').join("")}${Array.from({length: days}, (_, index) => { const day = index + 1, iso = `${year}-${String(month + 1).padStart(2,"0")}-${String(day).padStart(2,"0")}`, hasHistory = historyDates.has(iso); return `<button type="button" class="${doneDates.has(iso) ? "trained" : hasHistory ? "has-history" : ""}" ${hasHistory ? `data-history-date="${iso}"` : "disabled"} aria-label="${hasHistory ? "Ver entrenamientos" : "Sin entrenamientos"} del ${day} de ${now.toLocaleDateString("es-ES", {month:"long"})}">${day}</button>`; }).join("")}`;
+    host.innerHTML = `<section class="history-calendar client-panel-card"><div class="panel-title"><div><small>CONSTANCIA</small><h2>${now.toLocaleDateString("es-ES", {month:"long",year:"numeric"})}</h2></div><b>${(sessions || []).filter(item => item.completed_at && String(item.planned_for).startsWith(`${year}-${String(month + 1).padStart(2,"0")}`)).length} entrenamientos</b></div><div class="calendar-week"><span>L</span><span>M</span><span>X</span><span>J</span><span>V</span><span>S</span><span>D</span></div><div class="calendar-days">${calendar}</div>${sessions.length ? '<button type="button" class="history-show-all">Ver historial completo</button>' : ""}</section>`;
+    const sessionCard = (item, expanded) => {
+      const stat = stats.get(item.id) || {sets:0,volume:0};
+      return `<article><span class="history-status ${item.completed_at ? "done" : "open"}">${item.completed_at ? "✓" : "…"}</span><div><small>${new Date(`${item.planned_for}T12:00:00`).toLocaleDateString("es-ES", {weekday:"short",day:"numeric",month:"short"})}</small><b>${esc(item.routines?.name || "Entrenamiento libre")} · Día ${Number(item.day_number) || 1}</b><em>${stat.sets} series · ${Math.round(stat.volume).toLocaleString("es-ES")} kg · ${item.duration_minutes || "—"} min</em></div>${item.routine_id ? `<button type="button" data-repeat-routine="${esc(item.routine_id)}" data-repeat-day="${Number(item.day_number) || 1}">Repetir</button>` : ""}<details class="history-session-detail" ${expanded ? "open" : ""}><summary>Ver ejercicios y series</summary>${renderHistorySets(logs.filter(log => log.session_id === item.id && log.completed))}</details></article>`;
     };
-    host.querySelectorAll("[data-history-date]").forEach(button => button.onclick = () => filterDate(button.dataset.historyDate));
-    host.querySelector(".history-show-all").onclick = () => filterDate(null);
-    host.querySelectorAll("[data-repeat-routine]").forEach((button) => button.onclick = async () => {
-      resetSession();
-      routine = null;
-      await selectRoutine(button.dataset.repeatRoutine);
-      selectedRoutineDay = Number(button.dataset.repeatDay || 1);
-      routineItems = allRoutineItems.filter(item => (Number(item.day_number) || 1) === selectedRoutineDay);
-      renderRoutine();
-      await restoreTodaySession();
-      host.closest(".client-panel-content").querySelector('[data-workout-view="routines"]').click();
-      toast("Rutina preparada para repetir");
-    });
+    const openHistoryPopup = (date = null) => {
+      const matching = sessions.filter(item => !date || item.planned_for === date);
+      if (!matching.length) return;
+      const series = matching.reduce((total, item) => total + (stats.get(item.id)?.sets || 0), 0);
+      const previousFocus = document.activeElement, overlay = document.createElement("div");
+      overlay.className = "history-day-overlay";
+      const heading = date ? new Date(`${date}T12:00:00`).toLocaleDateString("es-ES", {weekday:"long",day:"numeric",month:"long",year:"numeric"}) : "Todos los entrenamientos";
+      overlay.innerHTML = `<section class="history-day-dialog" role="dialog" aria-modal="true" aria-labelledby="history-day-title"><header><div><small>DIARIO DE ENTRENAMIENTO</small><h2 id="history-day-title">${esc(heading)}</h2><p>${matching.length} ${matching.length === 1 ? "sesión" : "sesiones"} · ${series} series realizadas</p></div><button type="button" class="history-day-close" aria-label="Cerrar historial">×</button></header><div class="client-session-history">${matching.map(item => sessionCard(item, Boolean(date))).join("")}</div></section>`;
+      const onKey = event => { if (event.key === "Escape") close(); };
+      const close = () => { overlay.remove(); document.removeEventListener("keydown", onKey); previousFocus?.focus?.(); };
+      document.body.appendChild(overlay);
+      overlay.querySelector(".history-day-close").onclick = close;
+      overlay.onclick = event => { if (event.target === overlay) close(); };
+      document.addEventListener("keydown", onKey);
+      overlay.querySelector(".history-day-close").focus();
+      overlay.querySelectorAll("[data-repeat-routine]").forEach(button => button.onclick = async () => {
+        if (sessionId && !sessionCompleted) { toast("Finaliza el entrenamiento actual antes de repetir otro"); return; }
+        close();
+        resetSession();
+        routine = null;
+        await selectRoutine(button.dataset.repeatRoutine);
+        selectedRoutineDay = Number(button.dataset.repeatDay || 1);
+        routineItems = allRoutineItems.filter(item => (Number(item.day_number) || 1) === selectedRoutineDay);
+        renderRoutine();
+        await restoreTodaySession();
+        host.closest(".client-panel-content").querySelector('[data-workout-view="routines"]').click();
+        toast("Rutina preparada para repetir");
+      });
+    };
+    host.querySelectorAll("[data-history-date]").forEach(button => button.onclick = () => openHistoryPopup(button.dataset.historyDate));
+    if (sessions.length) host.querySelector(".history-show-all").onclick = () => openHistoryPopup();
     } catch (error) {
       host.innerHTML = '<div class="client-empty-state">No se pudo cargar el historial. Comprueba la conexion.<button type="button">Reintentar</button></div>';
       host.querySelector("button").onclick = () => renderWorkoutHistory(host);
@@ -1187,6 +1424,98 @@
   }
 
   let clientExerciseLibrary = null;
+  const selectedLibraryExercises = new Set();
+
+  async function addExercisesToSavedRoutine(selected, routineId, day) {
+    const current = await checkedQuery(db.from("routine_exercises").select("exercise_id,position").eq("routine_id", routineId).eq("day_number", day));
+    const existing = new Set(current.map(item => item.exercise_id));
+    let position = Math.max(0, ...current.map(item => Number(item.position) || 0));
+    let added = 0;
+    for (const exercise of selected) {
+      if (existing.has(exercise.id)) continue;
+      try {
+        await checkedQuery(db.rpc("ft_add_personal_exercise", {
+          p_routine: routineId, p_exercise: exercise.id, p_day: day, p_position: ++position,
+          p_sets: 3, p_min: 8, p_max: 12, p_rest: 90,
+        }));
+      } catch (error) { error.added = added; throw error; }
+      existing.add(exercise.id);
+      added++;
+    }
+    return added;
+  }
+
+  function openBulkExerciseDestination() {
+    const selected = clientExerciseLibrary.filter(item => selectedLibraryExercises.has(item.id)).map(item => item.database);
+    if (!selected.length) return;
+    const overlay = document.createElement("div");
+    overlay.className = "client-exercise-preview bulk-exercise-destination";
+    overlay.innerHTML = `<section role="dialog" aria-modal="true" aria-label="Añadir ejercicios"><button type="button" class="exercise-preview-close" aria-label="Cerrar">×</button><small class="destination-eyebrow">${selected.length} EJERCICIOS SELECCIONADOS</small><h2>¿Dónde los añadimos?</h2><form class="client-exercise-config"><label class="destination-option"><input type="radio" name="mode" value="free" checked><span><b>Empezar entrenamiento libre</b><small>Una sesión nueva sin guardarla en una carpeta.</small></span></label><label class="destination-option"><input type="radio" name="mode" value="saved"><span><b>Guardar en mis rutinas</b><small>Elige una carpeta y un entrenamiento.</small></span></label><div class="saved-exercise-destination" hidden><label>Carpeta<select name="folder"><option value="new">+ Nueva carpeta</option>${personalFolders.map(folder => `<option value="${esc(folder.id)}">${esc(folder.name)}</option>`).join("")}</select></label><label class="destination-folder-name">Nombre de la nueva carpeta<input name="folder_name" maxlength="120" placeholder="Ej. Fuerza · Octubre"></label><label>Entrenamiento<select name="training"></select></label><label class="destination-training-name">Nombre del nuevo entrenamiento<input name="training_name" maxlength="120" placeholder="Ej. Torso A"></label><label>Día del entrenamiento<input name="day" type="number" min="1" max="14" value="${selectedRoutineDay || 1}"></label></div><p class="form-feedback" role="status"></p><button type="submit">Continuar</button></form></section>`;
+    document.body.appendChild(overlay);
+    overlay.querySelector(".exercise-preview-close").onclick = () => overlay.remove();
+    overlay.onclick = event => { if (event.target === overlay) overlay.remove(); };
+    const form = overlay.querySelector("form"), folder = form.querySelector('[name="folder"]'), training = form.querySelector('[name="training"]');
+    const updateDestination = () => {
+      const saved = form.querySelector('[name="mode"]:checked').value === "saved";
+      form.querySelector(".saved-exercise-destination").hidden = !saved;
+      const newFolder = folder.value === "new";
+      form.querySelector(".destination-folder-name").hidden = !newFolder;
+      const plans = availableRoutines.filter(plan => plan.source === "client" && plan.folder_id === folder.value);
+      training.innerHTML = `${plans.map(plan => `<option value="${esc(plan.id)}">${esc(plan.name)}</option>`).join("")}<option value="new">+ Nuevo entrenamiento</option>`;
+      if (routine?.id && plans.some(plan => plan.id === routine.id)) training.value = routine.id;
+      if (newFolder) training.value = "new";
+      form.querySelector(".destination-training-name").hidden = training.value !== "new";
+    };
+    form.querySelectorAll('[name="mode"]').forEach(input => input.onchange = updateDestination);
+    folder.onchange = () => { pendingRoutineId = null; updateDestination(); };
+    training.onchange = () => { pendingRoutineId = null; form.querySelector(".destination-training-name").hidden = training.value !== "new"; };
+    updateDestination();
+    let pendingRoutineId = null;
+    form.onsubmit = async event => {
+      event.preventDefault();
+      const feedback = form.querySelector(".form-feedback"), button = form.querySelector('[type="submit"]');
+      feedback.textContent = "";
+      if (form.querySelector('[name="mode"]:checked').value === "free") {
+        if (!prepareFreeWorkout()) return;
+        const added = selected.filter(item => addFreeExercise(item)).length;
+        selectedLibraryExercises.clear();
+        renderRoutine(); renderRoutinePicker();
+        overlay.remove();
+        document.querySelector('[data-workout-view="routines"]')?.click();
+        setWorkoutFocus(true);
+        toast(added ? `${added} ejercicios añadidos al entrenamiento libre` : "Los ejercicios ya estaban incluidos");
+        return;
+      }
+      if (sessionId && !sessionCompleted) { feedback.textContent = "Finaliza la sesión actual antes de cambiar de entrenamiento."; return; }
+      if (window.ftMembershipActive === false) { feedback.textContent = "Fernando debe confirmar tu cuota para guardar entrenamientos."; return; }
+      const day = Number(form.querySelector('[name="day"]').value);
+      const folderName = form.querySelector('[name="folder_name"]').value.trim();
+      const trainingName = form.querySelector('[name="training_name"]').value.trim();
+      if (!Number.isInteger(day) || day < 1 || day > 14) { feedback.textContent = "Elige un día entre 1 y 14."; return; }
+      if ((folder.value === "new" && !folderName) || (training.value === "new" && !trainingName)) { feedback.textContent = "Escribe el nombre de la carpeta y del entrenamiento."; return; }
+      button.disabled = true;
+      let targetId = training.value, added = 0;
+      try {
+        if (training.value === "new") {
+          targetId = pendingRoutineId || await checkedQuery(db.rpc("ft_create_training", { p_client: clientId, p_name: trainingName, p_folder: folder.value === "new" ? null : folder.value, p_folder_name: folder.value === "new" ? folderName : null }));
+          pendingRoutineId = targetId;
+        }
+        added = await addExercisesToSavedRoutine(selected, targetId, day);
+        selectedLibraryExercises.clear();
+        await loadRoutine();
+        await selectRoutine(targetId);
+        selectedRoutineDay = day;
+        routineItems = allRoutineItems.filter(item => Number(item.day_number) === day);
+        renderRoutine(); renderRoutinePicker();
+        overlay.remove();
+        document.querySelector('[data-workout-view="routines"]')?.click();
+        toast(added ? `${added} ejercicios guardados en Mis rutinas` : "Los ejercicios ya estaban incluidos en ese día");
+      } catch (error) {
+        feedback.textContent = error.added || pendingRoutineId ? "El entrenamiento está creado y algunos ejercicios pueden estar guardados. Reintenta para añadir los restantes." : "No se pudieron guardar los ejercicios. Comprueba la conexión e inténtalo de nuevo.";
+      } finally { button.disabled = false; }
+    };
+  }
+
   async function renderClientLibrary(host) {
     try {
     host.innerHTML = '<div class="panel-loading">Cargando ejercicios…</div>';
@@ -1194,12 +1523,17 @@
       const data = await checkedQuery(db.from("exercises").select("id,name,body_group,primary_muscle,equipment,instructions,media_url,thumbnail_url,media_type").eq("is_active", true).order("name").limit(1000));
       clientExerciseLibrary = (data || []).map((item) => ({ id:item.id, nombre_es:item.name, grupo:item.primary_muscle || item.body_group, equipo:item.equipment || "Sin material", imagen:item.thumbnail_url || item.media_url || "assets/brand/ft-symbol-color.png", gif:item.media_url || item.thumbnail_url, instrucciones:item.instructions ? [item.instructions] : [], database:item }));
     }
-    host.innerHTML = `<section class="client-panel-card client-library"><div class="panel-title"><div><small>BIBLIOTECA FT</small><h2>Ejercicios y tecnica</h2></div><button type="button" id="create-client-exercise">+ Crear ejercicio</button></div><div class="client-library-tools"><input id="client-exercise-search" placeholder="Buscar ejercicio o musculo…"><select id="client-exercise-group"><option value="">Todos los grupos</option>${[...new Set(clientExerciseLibrary.map((item) => item.grupo).filter(Boolean))].sort().map((group) => `<option>${esc(group)}</option>`).join("")}</select></div><div class="client-library-results"></div></section>`;
+    host.innerHTML = `<section class="client-panel-card client-library"><div class="panel-title"><div><small>BIBLIOTECA FT</small><h2>Ejercicios y tecnica</h2></div><button type="button" id="create-client-exercise">+ Crear ejercicio</button></div><div class="client-library-tools"><input id="client-exercise-search" placeholder="Buscar ejercicio o musculo…"><select id="client-exercise-group"><option value="">Todos los grupos</option>${[...new Set(clientExerciseLibrary.map((item) => item.grupo).filter(Boolean))].sort().map((group) => `<option>${esc(group)}</option>`).join("")}</select></div><div class="client-library-selection"><span>Selecciona varios ejercicios o abre uno para configurar sus series.</span><button type="button" class="add-selected-exercises" disabled>Añadir seleccionados (0)</button></div><div class="client-library-results"></div></section>`;
+    const selectionButton = host.querySelector(".add-selected-exercises");
+    const updateSelection = () => { selectionButton.textContent = `Añadir seleccionados (${selectedLibraryExercises.size})`; selectionButton.disabled = !selectedLibraryExercises.size; };
+    selectionButton.onclick = openBulkExerciseDestination;
     const paint = () => {
       const query = host.querySelector("#client-exercise-search").value.toLocaleLowerCase("es").normalize("NFD").replace(/[\u0300-\u036f]/g,""), group = host.querySelector("#client-exercise-group").value;
       const items = clientExerciseLibrary.filter((item) => (!group || item.grupo === group) && `${item.nombre_es || item.nombre} ${item.grupo} ${item.equipo}`.toLocaleLowerCase("es").normalize("NFD").replace(/[\u0300-\u036f]/g,"").includes(query)).slice(0,80);
-      host.querySelector(".client-library-results").innerHTML = items.map((item) => `<button type="button" class="client-library-exercise"><img src="${esc(item.imagen)}" alt=""><span><b>${esc(item.nombre_es || item.nombre)}</b><small>${esc(item.grupo)} · ${esc(item.equipo)}</small></span><strong>›</strong></button>`).join("") || '<div class="client-empty-state">No se encontraron ejercicios.</div>';
-      host.querySelectorAll(".client-library-exercise").forEach((button, index) => button.onclick = () => openLibraryExercise(items[index]));
+      host.querySelector(".client-library-results").innerHTML = items.map((item) => `<div class="client-library-exercise ${selectedLibraryExercises.has(item.id) ? "selected" : ""}"><label class="library-select"><input type="checkbox" data-select-exercise="${esc(item.id)}" ${selectedLibraryExercises.has(item.id) ? "checked" : ""} aria-label="Seleccionar ${esc(item.nombre_es || item.nombre)}"><span aria-hidden="true">✓</span></label><button type="button" class="library-preview" data-preview-exercise="${esc(item.id)}"><img src="${esc(item.imagen)}" alt=""><span><b>${esc(item.nombre_es || item.nombre)}</b><small>${esc(item.grupo)} · ${esc(item.equipo)}</small></span><strong>›</strong></button></div>`).join("") || '<div class="client-empty-state">No se encontraron ejercicios.</div>';
+      host.querySelectorAll("[data-select-exercise]").forEach(input => input.onchange = () => { input.checked ? selectedLibraryExercises.add(input.dataset.selectExercise) : selectedLibraryExercises.delete(input.dataset.selectExercise); input.closest(".client-library-exercise").classList.toggle("selected", input.checked); updateSelection(); });
+      host.querySelectorAll("[data-preview-exercise]").forEach(button => button.onclick = () => openLibraryExercise(items.find(item => item.id === button.dataset.previewExercise)));
+      updateSelection();
     };
     host.querySelector("#client-exercise-search").oninput = paint;
     host.querySelector("#client-exercise-group").onchange = paint;
@@ -1230,23 +1564,41 @@
     const overlay = document.createElement("div");
     overlay.className = "client-exercise-preview";
     overlay.innerHTML = `<section><button type="button" class="exercise-preview-close">×</button>${window.ftExerciseMedia ? window.ftExerciseMedia.html(exercise.database || {media_url:exercise.gif || exercise.imagen,name:exercise.nombre_es || exercise.nombre}) : `<img src="${esc(exercise.imagen)}" alt="">`}<small>${esc(exercise.grupo)} · ${esc(exercise.equipo)}</small><h2>${esc(exercise.nombre_es || exercise.nombre)}</h2><ol>${(exercise.instrucciones || []).map((step) => `<li>${esc(step)}</li>`).join("") || '<li>Consulta las indicaciones de Fernando antes de realizar el ejercicio.</li>'}</ol><form class="client-exercise-config"><label>Entrenamiento<select name="destination">${availableRoutines.filter(plan=>plan.source==="client").map(plan=>`<option value="${esc(plan.id)}" ${plan.id===routine?.id?"selected":""}>${esc(personalFolders.find(folder=>folder.id===plan.folder_id)?.name || "Mis rutinas")} · ${esc(plan.name)}</option>`).join("")}<option value="new">+ Crear entrenamiento y elegir carpeta</option></select></label><div class="client-form-grid"><label>Dia<input name="day" type="number" min="1" max="14" value="${selectedRoutineDay || 1}" required></label><label>Posicion<input name="position" type="number" min="1" value="${routineItems.length + 1}" required></label><label>Series<input name="sets" type="number" min="1" max="20" value="3" required></label><label>Repeticiones minimas<input name="min" type="number" min="1" max="100" value="8" required></label><label>Repeticiones maximas<input name="max" type="number" min="1" max="100" value="12" required></label><label>Descanso (segundos)<input name="rest" type="number" min="0" max="900" value="90" required></label></div><p class="form-feedback" aria-live="polite"></p><button type="submit" class="client-add-exercise">+ Anadir al entrenamiento</button></form></section>`;
+    overlay.innerHTML = overlay.innerHTML.replace('<option value="new">', `<option value="free" ${isFreeWorkout() || !routine ? "selected" : ""}>Entrenamiento libre</option><option value="new">`);
     document.body.appendChild(overlay);
     overlay.querySelector("button").onclick = () => overlay.remove();
     const destination=overlay.querySelector('[name="destination"]');
-    destination.onchange=()=>{if(destination.value==='new'){overlay.remove();startEmptyWorkout(()=>openLibraryExercise(exercise));}};
+    destination.onchange=()=>{if(destination.value==='new' && createSavedWorkout(()=>openLibraryExercise(exercise))) overlay.remove();};
     overlay.querySelector("form").onsubmit = async event => {
       event.preventDefault();
-      if(destination.value==='new'){overlay.remove();startEmptyWorkout(()=>openLibraryExercise(exercise));return;}
+      if(destination.value==='new'){if(createSavedWorkout(()=>openLibraryExercise(exercise))) overlay.remove();return;}
       const form=event.currentTarget,data=new FormData(form),source=exercise.database,button=form.querySelector('[type="submit"]');
       if(!source)return;
       const min=Number(data.get('min')),max=Number(data.get('max'));
       if(max<min){form.querySelector('.form-feedback').textContent='El maximo debe ser igual o mayor que el minimo.';return;}
+      if (destination.value === 'free') {
+        if (!prepareFreeWorkout()) return;
+        if (allRoutineItems.some(item => item.exercise_id === source.id)) {
+          form.querySelector('.form-feedback').textContent = 'Este ejercicio ya esta incluido en el entrenamiento.';
+          return;
+        }
+        const item = { id:null, exercise_id:source.id, day_number:1, target_sets:Number(data.get('sets')), target_reps_min:min, target_reps_max:max, target_weight_kg:null, target_rir:null, rest_seconds:Number(data.get('rest')), notes:'', exercises:source };
+        const position = Math.min(Math.max(Number(data.get('position')) - 1, 0), allRoutineItems.length);
+        allRoutineItems.splice(position, 0, item);
+        allRoutineItems.forEach((entry, index) => entry.position = index + 1);
+        routineItems = allRoutineItems;
+        selectedRoutineDay = 1;
+        saveFreeDraft(); renderRoutine(); renderRoutinePicker();
+        overlay.remove(); document.querySelector('[data-workout-view="routines"]')?.click(); setWorkoutFocus(true);
+        toast(`${source.name} anadido al entrenamiento libre`);
+        return;
+      }
       button.disabled=true;
       try {
         await checkedQuery(db.rpc('ft_add_personal_exercise',{p_routine:destination.value,p_exercise:source.id,p_day:Number(data.get('day')),p_position:Number(data.get('position')),p_sets:Number(data.get('sets')),p_min:min,p_max:max,p_rest:Number(data.get('rest'))}));
         resetSession();routine=availableRoutines.find(plan=>plan.id===destination.value);await loadRoutineItems();
         selectedRoutineDay=Number(data.get('day'));routineItems=allRoutineItems.filter(item=>Number(item.day_number)===selectedRoutineDay);await restoreTodaySession();renderRoutine();
-        overlay.remove();document.querySelector('[data-workout-view="routines"]')?.click();toast('Ejercicio guardado en tu entrenamiento');
+        overlay.remove();document.querySelector('[data-workout-view="routines"]')?.click();setWorkoutFocus(true);toast('Ejercicio guardado en tu entrenamiento');
       }catch(error){form.querySelector('.form-feedback').textContent='No se pudo anadir. Comprueba que no este repetido en ese dia y vuelve a intentarlo.';}
       finally{button.disabled=false;}
     };

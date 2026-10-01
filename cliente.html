@@ -34,6 +34,7 @@
     <link rel="stylesheet" href="client-hall-of-fame.css?v=1" />
     <link rel="stylesheet" href="pwa-safe-area.css?v=1" />
     <link rel="stylesheet" href="client-premium.css?v=7" />
+    <link rel="stylesheet" href="gym-trainer-fix.css?v=6" />
   </head>
   <body class="client-body ft-client-home">
     <svg class="ft-icon-sprite" aria-hidden="true">
@@ -110,7 +111,7 @@
             <span>FT TRAINER</span>
             <h1>Supera tu<br />ultima sesion.</h1>
             <p>Tus rutinas. Tus marcas. Tu siguiente paso.</p>
-            <button type="button" id="start-training">
+            <button type="button" id="start-training" data-workout-entry="hub">
               Ir a entrenar <b>↗</b>
             </button>
           </div>
@@ -131,7 +132,7 @@
         <section class="ft-section ft-quick-section">
           <h2>Accesos rapidos</h2>
           <div class="ft-quick-grid material-enabled">
-            <button type="button" data-home-action="routine">
+            <button type="button" data-home-action="routine" data-workout-entry="hub">
               <i
                 ><svg><use href="#ico-dumbbell" /></svg></i
               ><b>Rutinas</b>
@@ -349,7 +350,7 @@
     </div>
     <div class="client-toast" id="client-toast">Ejercicio guardado</div>
     <script src="pwa.js?v=3"></script>
-    <script src="cliente.js?v=37"></script>
+    <script src="cliente.js?v=40"></script>
     <script src="coach-engine.js?v=7"></script>
   </body>
 </html>
