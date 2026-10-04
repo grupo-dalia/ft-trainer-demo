@@ -396,3 +396,17 @@ test('personal routine supersets are sent to the authorized database function', 
   assert.equal(rpc.args.p_day,2);
   assert.equal(rpc.args.p_groups.length,2);
 });
+test('timed series store seconds, clear reps and weight, and reject invalid duration',async()=>{
+ const h=saveHarness({weights:['20','',''],reps:['45','','']});h.context.selectedItem.item.exercises={tracking_type:'time'};await h.save();
+ const logs=h.db.calls[0].operations.find(op=>op[0]==='upsert')[1];assert.equal(logs[0].duration_seconds,45);assert.equal(logs[0].reps,null);assert.equal(logs[0].weight_kg,null);assert.equal(logs[1].duration_seconds,null);
+ const invalid=saveHarness({reps:['86401','','']});invalid.context.selectedItem.item.exercises={tracking_type:'time'};assert.equal(await invalid.save(),false);assert.equal(invalid.db.calls.length,0);
+});
+test('history displays seconds for time exercises',()=>{const context=vm.createContext({esc:String});vm.runInContext(extract('  function renderHistorySets','  async function renderWorkoutHistory'),context);context.logs=[{exercise_id:'e',set_number:1,duration_seconds:45,exercises:{name:'Plancha'}}];assert.match(vm.runInContext('renderHistorySets(logs)',context),/45 s/);assert.doesNotMatch(vm.runInContext('renderHistorySets(logs)',context),/kg ×/);});
+test('opening a time exercise restores seconds and hides the weight input',async()=>{
+ const sets={innerHTML:'',classList:{add(){}},querySelector:()=>({}),querySelectorAll:()=>[]},record={innerHTML:''};const sheet={querySelector:()=>sets,classList:{add(){}}};
+ const db=database([{data:[{session_id:'old',set_number:1,duration_seconds:40}]},{data:[{duration_seconds:60}]},{data:[{set_number:1,duration_seconds:45,completed:true}]}]);
+ const context=vm.createContext({db,updateWorkoutStats(){},clientId:'c',sessionId:'current',sessionCompleted:false,selectedItem:null,save:{},setTimeout,clearTimeout,toast(){},icon:()=>'',document:{getElementById:id=>id==='set-sheet'?sheet:id==='sheet-title'?{}:null,querySelector:selector=>selector==='.last-record'?record:null}});
+ vm.runInContext(checked+extract('  async function openExercise','  async function ensureSession'),context);
+ await vm.runInContext('openExercise({exercise_id:"e",target_sets:1,exercises:{tracking_type:"time"}}, {})',context);
+ assert.match(sets.innerHTML,/value="45" inputmode="numeric" aria-label="Segundos serie 1"/);assert.match(sets.innerHTML,/visibility:hidden/);assert.match(record.innerHTML,/60 s/);assert.doesNotMatch(sets.innerHTML,/ REPS<\/span>/);
+});

@@ -17,8 +17,8 @@ window.addEventListener("pageshow", (event) => {
   ) {
     await load("cliente-base.js?v=3");
     await load("client-home.js?v=9");
-    await load("exercise-media.js?v=1");
-    await load("client-sections.js?v=30");
+    await load("exercise-media.js?v=2");
+    await load("client-sections.js?v=31");
     await load("client-materials.js?v=2");
     await load("client-hall-of-fame.js?v=2");
     await load("client-navigation-fix.js?v=3");
@@ -116,8 +116,8 @@ window.addEventListener("pageshow", (event) => {
     member.access_status === "active" && membershipIsCurrent;
   await load("cliente-base.js?v=3");
   await load("client-home.js?v=9");
-  await load("exercise-media.js?v=1");
-  await load("client-sections.js?v=30");
+  await load("exercise-media.js?v=2");
+  await load("client-sections.js?v=31");
   await load("client-materials.js?v=2");
   await load("client-hall-of-fame.js?v=2");
   await load("client-navigation-fix.js?v=3");

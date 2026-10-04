@@ -614,7 +614,7 @@
     const items = await checkedQuery(db
       .from("routine_exercises")
       .select(
-        "id,exercise_id,day_number,position,target_sets,target_reps_min,target_reps_max,target_weight_kg,target_rir,rest_seconds,notes,superset_group,exercises(name,body_group,primary_muscle,instructions,media_url,thumbnail_url,media_type)",
+        "id,exercise_id,day_number,position,target_sets,target_reps_min,target_reps_max,target_weight_kg,target_rir,rest_seconds,notes,superset_group,exercises(name,body_group,primary_muscle,instructions,media_url,thumbnail_url,media_type,tracking_type)",
       )
       .eq("routine_id", routine.id)
       .order("day_number")
@@ -709,7 +709,7 @@
                 ? item.target_reps_min
                 : `${item.target_reps_min || "—"}–${item.target_reps_max || "—"}`,
             image = ex.thumbnail_url || "assets/brand/ft-symbol-color.png";
-          return `<article class="live-exercise inline-exercise ${item.superset_group ? "superset-exercise" : ""}" data-live-index="${index}" ${item.superset_group ? `data-superset="${item.superset_group}"` : ""}><button type="button" class="exercise-row exercise-technique"><span class="exercise-thumb"><img src="${esc(image)}" alt="${esc(ex.name)}" loading="lazy"></span><span>${item.superset_group ? `<mark>SUPERSET ${item.superset_group}</mark>` : ""}<b>${esc(ex.name || "Ejercicio")}</b><small>${item.target_sets} series · ${reps} repeticiones${item.target_weight_kg != null ? ` · ${item.target_weight_kg} kg` : ""}</small><em>Ver vídeo y técnica</em></span><strong>⋮</strong></button><textarea class="exercise-session-note" rows="1" placeholder="Agregar notas aquí…" aria-label="Notas de ${esc(ex.name || "ejercicio")}"></textarea><button type="button" class="exercise-rest-control" data-rest-enabled="true" aria-pressed="true">${icon("clock")}<span>Descanso: ${item.rest_seconds ?? 90} s</span></button>${isFreeWorkout() ? `<button type="button" class="remove-free-exercise" data-remove-index="${index}" aria-label="Quitar ${esc(ex.name || "Ejercicio")}">Quitar ejercicio</button>` : ""}<div class="inline-registration"><div class="last-record"></div><div class="sets"><p>Cargando series…</p></div></div></article>`;
+          return `<article class="live-exercise inline-exercise ${item.superset_group ? "superset-exercise" : ""}" data-live-index="${index}" ${item.superset_group ? `data-superset="${item.superset_group}"` : ""}><button type="button" class="exercise-row exercise-technique"><span class="exercise-thumb"><img src="${esc(image)}" alt="${esc(ex.name)}" loading="lazy"></span><span>${item.superset_group ? `<mark>SUPERSET ${item.superset_group}</mark>` : ""}<b>${esc(ex.name || "Ejercicio")}</b><small>${item.target_sets} series · ${ex.tracking_type==="time"?"Tiempo en segundos":`${reps} repeticiones`}${ex.tracking_type!=="time" && item.target_weight_kg != null ? ` · ${item.target_weight_kg} kg` : ""}</small><em>Ver vídeo y técnica</em></span><strong>⋮</strong></button><textarea class="exercise-session-note" rows="1" placeholder="Agregar notas aquí…" aria-label="Notas de ${esc(ex.name || "ejercicio")}"></textarea><button type="button" class="exercise-rest-control" data-rest-enabled="true" aria-pressed="true">${icon("clock")}<span>Descanso: ${item.rest_seconds ?? 90} s</span></button>${isFreeWorkout() ? `<button type="button" class="remove-free-exercise" data-remove-index="${index}" aria-label="Quitar ${esc(ex.name || "Ejercicio")}">Quitar ejercicio</button>` : ""}<div class="inline-registration"><div class="last-record"></div><div class="sets"><p>Cargando series…</p></div></div></article>`;
         })
         .join("") ||
         '<div class="client-empty-state">Esta sesión aún no contiene ejercicios.</div>');
@@ -814,7 +814,7 @@
         return;
       }
       const logs = await checkedQuery(db.from("set_logs")
-        .select("session_id,exercise_id,set_number,reps,weight_kg,exercises(name)")
+        .select("session_id,exercise_id,set_number,duration_seconds,reps,weight_kg,exercises(name)")
         .in("session_id", sessions.map(session => session.id)).eq("completed", true).order("set_number"));
       if (request !== routineHistoryRequest) return;
       host.innerHTML = `<details class="routine-history-toggle"><summary>Ver historial del día ${day}</summary><div class="routine-history-heading"><div><small>HISTORIAL · DIA ${day}</small><h3>Tu ultima sesion</h3></div><span>${icon("calendar")}</span></div>${sessions.map((session, index) => {
@@ -823,7 +823,7 @@
         sessionLogs.forEach(log => { if (!groups.has(log.exercise_id)) groups.set(log.exercise_id, []); groups.get(log.exercise_id).push(log); });
         const date = session.planned_for ? new Date(`${session.planned_for}T12:00:00`) : new Date(session.completed_at);
         const volume = sessionLogs.reduce((sum, log) => sum + Number(log.weight_kg || 0) * Number(log.reps || 0), 0);
-        return `<details class="routine-history-session"><summary><div><b>${esc(date.toLocaleDateString("es-ES", {day:"numeric",month:"long"}))}</b><small>${sessionLogs.length} series · ${Math.round(volume).toLocaleString("es-ES")} kg de volumen${session.duration_minutes ? ` · ${session.duration_minutes} min` : ""}</small></div><span>${index === 0 ? "ULTIMA" : "VER"}</span></summary><div class="routine-history-exercises">${[...groups.values()].map(sets => `<article><b>${esc(sets[0].exercises?.name || allRoutineItems.find(item => item.exercise_id === sets[0].exercise_id)?.exercises?.name || "Ejercicio")}</b><div>${sets.map(set => `<span><small>S${set.set_number}</small> ${set.weight_kg == null ? "Sin carga" : `${esc(set.weight_kg)} kg`} <strong>× ${esc(set.reps ?? "—")}</strong></span>`).join("")}</div></article>`).join("") || '<p>No hay series registradas en esta sesion.</p>'}</div></details>`;
+        return `<details class="routine-history-session"><summary><div><b>${esc(date.toLocaleDateString("es-ES", {day:"numeric",month:"long"}))}</b><small>${sessionLogs.length} series · ${Math.round(volume).toLocaleString("es-ES")} kg de volumen${session.duration_minutes ? ` · ${session.duration_minutes} min` : ""}</small></div><span>${index === 0 ? "ULTIMA" : "VER"}</span></summary><div class="routine-history-exercises">${[...groups.values()].map(sets => `<article><b>${esc(sets[0].exercises?.name || allRoutineItems.find(item => item.exercise_id === sets[0].exercise_id)?.exercises?.name || "Ejercicio")}</b><div>${sets.map(set => `<span><small>S${set.set_number}</small> ${set.duration_seconds != null ? `${esc(set.duration_seconds)} s` : `${set.weight_kg == null ? "Sin carga" : `${esc(set.weight_kg)} kg`} <strong>× ${esc(set.reps ?? "—")}</strong>`}</span>`).join("")}</div></article>`).join("") || '<p>No hay series registradas en esta sesion.</p>'}</div></details>`;
       }).join("")}</details>`;
     } catch (error) {
       if (request !== routineHistoryRequest) return;
@@ -906,7 +906,7 @@
   async function openExercise(item, row, inlineHost = null) {
     if (!inlineHost && sessionCompleted) { resetSession(); renderRoutine(); row = [...document.querySelectorAll(".live-exercise")][routineItems.indexOf(item)]; }
     if (!inlineHost) selectedItem = { item, row };
-    const ex = item.exercises || {},
+    const ex = item.exercises || {}, timed=ex.tracking_type==="time", noWeight=timed||ex.tracking_type==="reps",
       sheet = inlineHost || document.getElementById("set-sheet");
     if (!inlineHost) {
     document.getElementById("sheet-title").textContent = ex.name || "Ejercicio";
@@ -934,7 +934,7 @@
     try {
     let logsQuery = db
       .from("set_logs")
-      .select("session_id,set_number,reps,weight_kg,rir,set_type,created_at,workout_sessions!inner(client_id)")
+      .select("session_id,set_number,duration_seconds,reps,weight_kg,rir,set_type,created_at,workout_sessions!inner(client_id)")
       .eq("workout_sessions.client_id", clientId)
       .eq("completed", true)
       .eq("exercise_id", item.exercise_id)
@@ -942,8 +942,8 @@
       ;
     if (sessionId) logsQuery = logsQuery.neq("session_id", sessionId);
     recentLogs = await checkedQuery(logsQuery);
-    bestLogs = await checkedQuery(db.from("set_logs").select("weight_kg,reps,workout_sessions!inner(client_id)").eq("workout_sessions.client_id", clientId).eq("exercise_id", item.exercise_id).eq("completed", true).not("weight_kg", "is", null).order("weight_kg", { ascending: false }).order("reps", { ascending: false, nullsFirst: false }).limit(1));
-    if (sessionId) currentLogs = await checkedQuery(db.from("set_logs").select("set_number,reps,weight_kg,rir,set_type,completed").eq("session_id", sessionId).eq("exercise_id", item.exercise_id).order("set_number"));
+    bestLogs = await checkedQuery(db.from("set_logs").select("weight_kg,reps,duration_seconds,workout_sessions!inner(client_id)").eq("workout_sessions.client_id", clientId).eq("exercise_id", item.exercise_id).eq("completed", true).not(timed?"duration_seconds":"weight_kg", "is", null).order(timed?"duration_seconds":"weight_kg", { ascending: false }).order("reps", { ascending: false, nullsFirst: false }).limit(1));
+    if (sessionId) currentLogs = await checkedQuery(db.from("set_logs").select("set_number,duration_seconds,reps,weight_kg,rir,set_type,completed").eq("session_id", sessionId).eq("exercise_id", item.exercise_id).order("set_number"));
     } catch (error) { recordsFailed = true; toast("No se pudieron cargar los registros anteriores"); }
     const previousSessionId = recentLogs?.[0]?.session_id,
       previousSets = (recentLogs || [])
@@ -953,22 +953,22 @@
     if (last) {
       const top = bestLogs.reduce(
         (best, set) =>
-          set.weight_kg != null && (!best || Number(set.weight_kg) > Number(best.weight_kg)) ? set : best,
+          (timed?set.duration_seconds:set.weight_kg) != null && (!best || Number(timed?set.duration_seconds:set.weight_kg) > Number(timed?best.duration_seconds:best.weight_kg)) ? set : best,
         null,
       );
-      last.innerHTML = `<div><span>ULTIMA SESION</span><b>${previousSets[0] ? `${previousSets[0].weight_kg ?? 0} kg × ${previousSets[0].reps ?? 0}` : recordsFailed ? "No se pudieron cargar" : "Sin registros"}</b></div><div><span>MEJOR CARGA</span><b>${top ? `${top.weight_kg || 0} kg${top.reps != null ? ` × ${top.reps}` : ""}` : "—"}</b></div>`;
+      last.innerHTML = `<div><span>ULTIMA SESION</span><b>${previousSets[0] ? previousSets[0].duration_seconds != null ? `${previousSets[0].duration_seconds} s` : `${previousSets[0].weight_kg ?? 0} kg × ${previousSets[0].reps ?? 0}` : recordsFailed ? "No se pudieron cargar" : "Sin registros"}</b></div><div><span>${timed?"MEJOR TIEMPO":"MEJOR CARGA"}</span><b>${top ? top.duration_seconds != null ? `${top.duration_seconds} s` : `${top.weight_kg || 0} kg${top.reps != null ? ` × ${top.reps}` : ""}` : "—"}</b></div>`;
     }
     const sets = sheet.querySelector(".sets");
     sets.classList.add("hevy-set-table");
     sets.innerHTML =
-      `<p class="set-target"><span>OBJETIVO · ${item.target_reps_min ?? "—"}${item.target_reps_max && item.target_reps_max !== item.target_reps_min ? `–${item.target_reps_max}` : ""} REPS</span>Marca las series terminadas. Se guardarán al finalizar el entrenamiento.</p><div class="hevy-set-head"><b>SERIE</b><b>ANTERIOR</b><b>KG</b><b>REPS</b><b>RPE</b><b>✓</b></div>` +
+      `<p class="set-target"><span>${timed?"REGISTRO · TIEMPO EN SEGUNDOS":"OBJETIVO · "+(item.target_reps_min ?? "—")}${!timed && item.target_reps_max && item.target_reps_max !== item.target_reps_min ? `–${item.target_reps_max}` : ""}${timed?"":" REPS"}</span>Marca las series terminadas. Se guardarán al finalizar el entrenamiento.</p><div class="hevy-set-head"><b>SERIE</b><b>ANTERIOR</b><b>${noWeight?"—":"KG"}</b><b>${timed?"SEG":"REPS"}</b><b>RPE</b><b>✓</b></div>` +
       Array.from({ length: Math.max(item.target_sets || 3, ...currentLogs.map(log => log.set_number)) }, (_, index) => {
         const previous = previousSets[index],
           current = currentLogs.find(log => log.set_number === index + 1),
-          reps = current?.reps ?? "",
+          reps = (timed?current?.duration_seconds:current?.reps) ?? "",
           weight = current?.weight_kg ?? "";
-        const previousLabel = previous ? `${previous.weight_kg ?? 0} × ${previous.reps ?? 0}` : "—";
-        return `<label class="hevy-set-row"><select class="live-set-type" aria-label="Tipo de serie ${index + 1}"><option value="normal">${index + 1}</option><option value="warmup">C</option></select><small>${previousLabel}</small><input class="live-weight" value="${weight}" inputmode="decimal" aria-label="Peso serie ${index + 1}"><input class="live-reps" type="number" min="1" max="1000" step="1" placeholder="${item.target_reps_min ?? "—"}${item.target_reps_max && item.target_reps_max !== item.target_reps_min ? `–${item.target_reps_max}` : ""}" value="${reps}" inputmode="numeric" aria-label="Repeticiones serie ${index + 1}"><input class="live-rir" type="number" min="0" max="10" step="1" value="${current?.rir == null ? "" : 10 - Number(current.rir)}" inputmode="numeric" aria-label="RPE serie ${index + 1}"><input class="live-complete" type="checkbox" ${current?.completed ? "checked" : ""} aria-label="Completar serie ${index + 1}"></label>`;
+        const previousLabel = previous ? previous.duration_seconds != null ? `${previous.duration_seconds} s` : `${previous.weight_kg ?? 0} × ${previous.reps ?? 0}` : "—";
+        return `<label class="hevy-set-row"><select class="live-set-type" aria-label="Tipo de serie ${index + 1}"><option value="normal">${index + 1}</option><option value="warmup">C</option></select><small>${previousLabel}</small><input class="live-weight" ${noWeight?'style="visibility:hidden" disabled':''} value="${weight}" inputmode="decimal" aria-label="Peso serie ${index + 1}"><input class="live-reps" type="number" min="1" max="${timed?86400:1000}" step="1" placeholder="${timed?"Segundos":item.target_reps_min ?? "—"}${!timed && item.target_reps_max && item.target_reps_max !== item.target_reps_min ? `–${item.target_reps_max}` : ""}" value="${reps}" inputmode="numeric" aria-label="${timed?"Segundos":"Repeticiones"} serie ${index + 1}"><input class="live-rir" type="number" min="0" max="10" step="1" value="${current?.rir == null ? "" : 10 - Number(current.rir)}" inputmode="numeric" aria-label="RPE serie ${index + 1}"><input class="live-complete" type="checkbox" ${current?.completed ? "checked" : ""} aria-label="Completar serie ${index + 1}"></label>`;
       }).join("") + `<button type="button" class="add-live-set">+ Agregar serie</button>`;
     sets.querySelectorAll(".live-set-type").forEach((select, index) => { select.value = currentLogs.find(log => log.set_number === index + 1)?.set_type === "warmup" ? "warmup" : "normal"; });
     sets.querySelector(".add-live-set").onclick = () => {
@@ -1042,13 +1042,14 @@
     if (scope?.dataset?.recordsFailed === "true") { toast("No se pudieron cargar las series. Vuelve a abrir el entrenamiento e inténtalo de nuevo."); return false; }
     if (sessionCompleted) return false;
     exerciseSaveInFlight = true;
+    const timed=selectedItem.item.exercises?.tracking_type==="time", noWeight=timed||selectedItem.item.exercises?.tracking_type==="reps";
     try {
       const completedRows = [...scope.querySelectorAll(".hevy-set-row")].filter(row => row.querySelector(".live-complete").checked);
       if (completedRows.some(row => {
         const reps = Number(row.querySelector(".live-reps").value), weight = row.querySelector(".live-weight").value.trim().replace(",", "."), rpe = row.querySelector(".live-rir").value.trim().replace(",", ".");
-        return !Number.isInteger(reps) || reps < 1 || reps > 1000 || (weight !== "" && (!Number.isFinite(Number(weight)) || Number(weight) < 0 || Number(weight) > 99999)) || (rpe !== "" && (!Number.isInteger(Number(rpe)) || Number(rpe) < 0 || Number(rpe) > 10));
+        return !Number.isInteger(reps) || reps < 1 || reps > (timed?86400:1000) || (!noWeight && weight !== "" && (!Number.isFinite(Number(weight)) || Number(weight) < 0 || Number(weight) > 99999)) || (rpe !== "" && (!Number.isInteger(Number(rpe)) || Number(rpe) < 0 || Number(rpe) > 10));
       })) {
-        toast("Revisa las repeticiones, el peso y el RPE de las series marcadas");
+        toast("Revisa las repeticiones o segundos, el peso y el RPE de las series marcadas");
         return false;
       }
       const currentSession = await ensureSession(),
@@ -1062,15 +1063,16 @@
           routine_exercise_id: selectedItem.item.id || null,
           exercise_id: selectedItem.item.exercise_id,
           set_number: index + 1,
-          reps: Number(input.value) || null,
+          reps: timed?null:Number(input.value) || null,
+          duration_seconds:timed?Number(input.value)||null:null,
           weight_kg:
-            weights[index].value === ""
+            (noWeight || weights[index].value === "")
               ? null
               : Number(String(weights[index].value).replace(",", ".")),
           rir: rpes[index].value === "" ? null : 10 - Number(String(rpes[index].value).replace(",", ".")),
           set_type: types[index].value,
           completed: checked[index].checked,
-        })).map(log => log.completed ? log : {...log, reps:null, weight_kg:null, rir:null});
+        })).map(log => log.completed ? log : {...log, reps:null, duration_seconds:null, weight_kg:null, rir:null});
       const { error } = await db
         .from("set_logs")
         .upsert(logs, { onConflict: "session_id,exercise_id,set_number" });
@@ -1153,7 +1155,7 @@
     if (db && sessionId) {
       const result = await db
         .from("set_logs")
-        .select("exercise_id,set_number,reps,weight_kg")
+        .select("exercise_id,set_number,duration_seconds,reps,weight_kg")
         .eq("session_id", sessionId)
         .eq("completed", true)
         .order("set_number");
@@ -1313,7 +1315,7 @@
       ctx.fillStyle = "#9db9ad";
       ctx.font = '19px "DM Sans", Arial';
       ctx.fillText(
-        `${exercise.sets.length} series · ${best.weight_kg || 0} kg × ${best.reps || 0}`,
+        `${exercise.sets.length} series · ${best.duration_seconds != null ? `${best.duration_seconds} s` : `${best.weight_kg || 0} kg × ${best.reps || 0}`}`,
         170,
         y + 69,
       );
@@ -1409,7 +1411,7 @@
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key).push(log);
     });
-    return [...groups.values()].map(sets => `<section><h4>${esc(sets[0].exercises?.name || "Ejercicio")}</h4>${sets.map(set => `<p>Serie ${Number(set.set_number) || 1}<strong>${Number(set.weight_kg) || 0} kg × ${Number(set.reps) || 0}</strong>${set.rir != null ? `<small>RIR ${Number(set.rir)}</small>` : ""}</p>`).join("")}</section>`).join("") || '<p>No hay series completadas en esta sesion.</p>';
+    return [...groups.values()].map(sets => `<section><h4>${esc(sets[0].exercises?.name || "Ejercicio")}</h4>${sets.map(set => `<p>Serie ${Number(set.set_number) || 1}<strong>${set.duration_seconds != null ? `${set.duration_seconds} s` : `${Number(set.weight_kg) || 0} kg × ${Number(set.reps) || 0}`}</strong>${set.rir != null ? `<small>RIR ${Number(set.rir)}</small>` : ""}</p>`).join("")}</section>`).join("") || '<p>No hay series completadas en esta sesion.</p>';
   }
 
   async function renderWorkoutHistory(host) {
@@ -1422,7 +1424,7 @@
     const ids = (sessions || []).map((item) => item.id);
     let logs = [];
     if (ids.length) {
-      logs = await checkedQuery(db.from("set_logs").select("session_id,exercise_id,set_number,weight_kg,reps,rir,completed,exercises(name)").in("session_id", ids).order("set_number"));
+      logs = await checkedQuery(db.from("set_logs").select("session_id,exercise_id,set_number,duration_seconds,weight_kg,reps,rir,completed,exercises(name)").in("session_id", ids).order("set_number"));
     }
     const stats = new Map();
     logs.forEach((set) => {
@@ -1573,7 +1575,7 @@
     try {
     host.innerHTML = '<div class="panel-loading">Cargando ejercicios…</div>';
     if (!clientExerciseLibrary) {
-      const data = await checkedQuery(db.from("exercises").select("id,name,body_group,primary_muscle,equipment,instructions,media_url,thumbnail_url,media_type").eq("is_active", true).order("name").limit(1000));
+      const data = await checkedQuery(db.from("exercises").select("id,name,body_group,primary_muscle,equipment,instructions,media_url,thumbnail_url,media_type,tracking_type").eq("is_active", true).order("name").limit(1000));
       clientExerciseLibrary = (data || []).map((item) => ({ id:item.id, nombre_es:item.name, grupo:item.primary_muscle || item.body_group, equipo:item.equipment || "Sin material", imagen:item.thumbnail_url || item.media_url || "assets/brand/ft-symbol-color.png", gif:item.media_url || item.thumbnail_url, instrucciones:item.instructions ? [item.instructions] : [], database:item }));
     }
     host.innerHTML = `<section class="client-panel-card client-library"><div class="panel-title"><div><small>BIBLIOTECA FT</small><h2>Ejercicios y tecnica</h2></div><button type="button" id="create-client-exercise">+ Crear ejercicio</button></div><div class="client-library-tools"><input id="client-exercise-search" placeholder="Buscar ejercicio o musculo…"><select id="client-exercise-group"><option value="">Todos los grupos</option>${[...new Set(clientExerciseLibrary.map((item) => item.grupo).filter(Boolean))].sort().map((group) => `<option>${esc(group)}</option>`).join("")}</select></div><div class="client-library-selection"><span>Selecciona varios ejercicios o abre uno para configurar sus series.</span><button type="button" class="add-selected-exercises" disabled>Añadir seleccionados (0)</button></div><div class="client-library-results"></div></section>`;
@@ -1620,6 +1622,7 @@
     overlay.innerHTML = overlay.innerHTML.replace('<option value="new">', `<option value="free" ${isFreeWorkout() || !routine ? "selected" : ""}>Entrenamiento libre</option><option value="new">`);
     document.body.appendChild(overlay);
     overlay.querySelector("button").onclick = () => overlay.remove();
+    if(exercise.database?.tracking_type==='time')overlay.querySelectorAll('[name="min"],[name="max"]').forEach(input=>{input.closest('label').hidden=true;});
     const destination=overlay.querySelector('[name="destination"]');
     destination.onchange=()=>{if(destination.value==='new' && createSavedWorkout(()=>openLibraryExercise(exercise))) overlay.remove();};
     overlay.querySelector("form").onsubmit = async event => {

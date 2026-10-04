@@ -6,8 +6,8 @@
   async function fetchRoutine(id){
     const [{data:routine,error:routineError},{data:items,error:itemsError},{data:exercises,error:exerciseError},catalogResponse]=await Promise.all([
       ftSupabase.from('routines').select('id,name,description,status').eq('id',id).single(),
-      ftSupabase.from('routine_exercises').select('id,exercise_id,day_number,position,target_sets,target_reps_min,target_reps_max,target_weight_kg,target_rir,rest_seconds,notes,exercises(name,body_group,primary_muscle)').eq('routine_id',id).order('day_number').order('position'),
-      ftSupabase.from('exercises').select('id,name,body_group,primary_muscle,equipment,thumbnail_url').eq('is_active',true).order('body_group').order('name').limit(1500),
+      ftSupabase.from('routine_exercises').select('id,exercise_id,day_number,position,target_sets,target_reps_min,target_reps_max,target_weight_kg,target_rir,rest_seconds,notes,exercises(name,body_group,primary_muscle,tracking_type)').eq('routine_id',id).order('day_number').order('position'),
+      ftSupabase.from('exercises').select('id,name,body_group,primary_muscle,equipment,thumbnail_url,tracking_type').eq('is_active',true).order('body_group').order('name').limit(1500),
       fetch('data/ejercicios-es.json?v=2')
     ]);
     if(routineError||itemsError||exerciseError)throw routineError||itemsError||exerciseError;
@@ -24,7 +24,7 @@
     return`<article class="routine-exercise-row" data-item="${item.id}">
       <div class="routine-exercise-order">Dia ${item.day_number}</div>
       <div class="routine-exercise-name"><b>${esc(ex.name||'Ejercicio')}</b><small>${esc(ex.primary_muscle||ex.body_group||'')}</small></div>
-      <div class="routine-exercise-target"><b>${item.target_sets} × ${esc(reps)}</b><small>${item.rest_seconds||0} s descanso${item.target_weight_kg!=null?` · ${item.target_weight_kg} kg`:''}</small></div>
+      <div class="routine-exercise-target"><b>${item.target_sets} ${ex.tracking_type==='time'?'series por tiempo':`× ${esc(reps)}`}</b><small>${item.rest_seconds||0} s descanso${item.target_weight_kg!=null?` · ${item.target_weight_kg} kg`:''}</small></div>
       <button type="button" class="secondary edit-routine-exercise" data-item="${item.id}">Editar</button><button type="button" class="secondary remove-routine-exercise" data-item="${item.id}">Quitar</button>
     </article>`;
   }
@@ -52,7 +52,7 @@
       const renderChoices=()=>{
         const query=search.value.trim(),matches=exercises.filter(ex=>matchesQuery(`${ex.name} ${ex.body_group} ${ex.primary_muscle} ${ex.equipment||''} ${(ex.catalog?.musculos||[]).join(' ')} ${ex.catalog?.nombre||''}`,query));
         exerciseSelect.innerHTML=matches.map(ex=>{const key=`${ex.source}:${ex.sourceId}`,image=ex.thumbnail_url||ex.catalog?.imagen;return `<label class="exercise-pick"><input type="checkbox" value="${esc(key)}" ${selectedExercises.has(key)?'checked':''}>${image?`<img src="${esc(image)}" loading="lazy" alt="">`:'<span aria-hidden="true">＋</span>'}<span><b>${esc(ex.name)}</b><small>${esc(ex.primary_muscle||ex.body_group)}</small></span></label>`}).join('')||'<p>No hay ejercicios con ese filtro.</p>';
-        exerciseSelect.querySelectorAll('input').forEach(input=>input.onchange=()=>{if(input.checked)selectedExercises.add(input.value);else selectedExercises.delete(input.value);host.querySelector('.exercise-selection-count').textContent=`${selectedExercises.size} seleccionados`;});
+        exerciseSelect.querySelectorAll('input').forEach(input=>input.onchange=()=>{if(input.checked)selectedExercises.add(input.value);else selectedExercises.delete(input.value);host.querySelector('.exercise-selection-count').textContent=`${selectedExercises.size} seleccionados`;const chosen=exercises.filter(ex=>selectedExercises.has(`${ex.source}:${ex.sourceId}`)),onlyTime=chosen.length>0&&chosen.every(ex=>ex.tracking_type==='time');host.querySelectorAll('[name="target_reps_min"],[name="target_reps_max"],[name="target_weight_kg"]').forEach(input=>input.closest('label').hidden=onlyTime);});
       };
       search.oninput=renderChoices;renderChoices();
       host.querySelectorAll('.remove-routine-exercise').forEach(button=>button.onclick=async()=>{
@@ -65,7 +65,7 @@
         const item=items.find(entry=>entry.id===button.dataset.item),row=button.closest('article');
         let editor=row.querySelector('form');if(editor){editor.remove();return;}
         editor=document.createElement('form');editor.className='routine-inline-edit';
-        editor.innerHTML=`<div class="routine-fields">${[['target_sets','Series',1,20],['target_reps_min','Reps mín.',1,100],['target_reps_max','Reps máx.',1,100],['rest_seconds','Descanso (s)',0,900]].map(([name,label,min,max])=>`<label>${label}<input name="${name}" type="number" min="${min}" max="${max}" value="${item[name]??min}" required></label>`).join('')}</div><p aria-live="polite"></p><button type="submit" class="primary">Guardar cambios</button>`;
+        editor.innerHTML=`<div class="routine-fields">${[['target_sets','Series',1,20],['target_reps_min','Reps mín.',1,100],['target_reps_max','Reps máx.',1,100],['rest_seconds','Descanso (s)',0,900]].filter(([name])=>item.exercises?.tracking_type!=='time'||!name.startsWith('target_reps')).map(([name,label,min,max])=>`<label>${label}<input name="${name}" type="number" min="${min}" max="${max}" value="${item[name]??min}" required></label>`).join('')}</div><p aria-live="polite"></p><button type="submit" class="primary">Guardar cambios</button>`;
         row.append(editor);editor.onsubmit=async event=>{event.preventDefault();const values=Object.fromEntries([...new FormData(editor)].map(([key,value])=>[key,Number(value)])),feedback=editor.querySelector('p'),save=editor.querySelector('button');if(values.target_reps_max<values.target_reps_min){feedback.textContent='Revisa el rango de repeticiones.';return;}save.disabled=true;try{const {error}=await ftSupabase.from('routine_exercises').update(values).eq('id',item.id).eq('routine_id',id);if(error)throw error;toast('Ejercicio actualizado');await window.openRoutineEditor(id);}catch(error){feedback.textContent='No se pudo guardar. Inténtalo de nuevo.';save.disabled=false;}};
       });
       host.querySelector('#add-routine-exercise').onsubmit=async event=>{

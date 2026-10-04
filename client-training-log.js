@@ -54,7 +54,7 @@
     }
     const { data: logs, error: logsError } = await ftSupabase
       .from("set_logs")
-      .select("session_id,exercise_id,set_number,weight_kg,reps,rir,pain_level,completed,exercises(name)")
+      .select("session_id,exercise_id,set_number,duration_seconds,weight_kg,reps,rir,pain_level,completed,exercises(name)")
       .in(
         "session_id",
         sessions.map((s) => s.id),
@@ -86,12 +86,12 @@
     function compactSets(sets) {
       const grouped = [];
       sets.forEach((set) => {
-        const key = `${number(set.reps)}|${number(set.weight_kg)}`;
+        const key = `${number(set.reps)}|${number(set.weight_kg)}|${set.duration_seconds??""}`;
         const last = grouped[grouped.length - 1];
         if (last?.key === key) last.count += 1;
-        else grouped.push({ key, count: 1, reps: number(set.reps), weight: number(set.weight_kg) });
+        else grouped.push({ key, count: 1, duration_seconds:set.duration_seconds, reps: number(set.reps), weight: number(set.weight_kg) });
       });
-      return grouped.map((group) => `<span class="training-set-summary"><b>${group.count} series</b><em>${group.reps} rep · ${weightLabel(group.weight)}</em></span>`).join("");
+      return grouped.map((group) => `<span class="training-set-summary"><b>${group.count} series</b><em>${group.duration_seconds != null ? `${group.duration_seconds} s` : `${group.reps} rep · ${weightLabel(group.weight)}`}</em></span>`).join("");
     }
     function renderDetail(sessionIndex) {
       const session = ordered[sessionIndex], exercises = exercisesFor(session), volume = sessionVolume(session);

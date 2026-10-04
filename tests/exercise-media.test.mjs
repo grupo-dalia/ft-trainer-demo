@@ -18,3 +18,9 @@ test('YouTube uses a player with a fallback link, while GIF and video keep their
   assert.match(media.html({media_url:'https://example.com/demo.mp4',media_type:'video'}),/<video.*controls playsinline/);
   assert.doesNotMatch(media.html({media_url:'javascript:alert(1)'}),/src=/);
 });
+test('Vimeo keeps unlisted privacy hashes and rejects lookalike hosts',()=>{
+ assert.equal(media.vimeoVideo('https://vimeo.com/123456789/abcdef1234').embed,'https://player.vimeo.com/video/123456789?h=abcdef1234');
+ assert.equal(media.vimeoVideo('https://player.vimeo.com/video/123456789?h=abcdef1234').url,'https://vimeo.com/123456789/abcdef1234');
+ assert.equal(media.vimeoVideo('https://vimeo.com.evil.test/123456789'),null);
+ assert.match(media.html({media_url:'https://vimeo.com/123456789/abcdef1234'}),/player.vimeo.com\/video\/123456789\?h=abcdef1234/);
+});

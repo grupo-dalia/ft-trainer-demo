@@ -35,21 +35,21 @@ if (!session) {
   } else {
     window.ftSupabase = client;
     await load("app.js");
-    await load("catalogo.js?v=4");
-    await load("admin-features.js?v=4");
-    await load("exercise-media.js?v=1");
-    await load("trainer-exercise-videos.js?v=2");
+    await load("catalogo.js?v=5");
+    await load("admin-features.js?v=5");
+    await load("exercise-media.js?v=2");
+    await load("trainer-exercise-videos.js?v=3");
     await load("supabase-data.js?v=8");
     await load("admin-live.js?v=7");
     await load("terms-viewer.js?v=1");
     await load("routine-folders.js?v=14");
     await load("admin-enhancements.js?v=7");
     await load("client-groups.js?v=1");
-    await load("routine-editor.js?v=6");
+    await load("routine-editor.js?v=7");
     await load("routine-planner-v2.js?v=5");
     await load("client-import.js?v=3");
     await load("payments-manager.js?v=3");
-    await load("client-training-log.js?v=3");
+    await load("client-training-log.js?v=4");
     await load("trainer-materials-admin.js?v=2");
     document.body.style.visibility = "visible";
   }
