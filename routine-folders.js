@@ -43,7 +43,7 @@ async function loadRoutineFolders() {
     [
       ...current.map(
         (folder) =>
-          `<article class="folder-card" data-folder="${folder.id}" tabindex="0" role="button"><div class="file-icon folder-icon">▰</div><b>${escapeHtml(folder.name)}</b><small>Abrir carpeta</small><div class="card-actions"><button type="button" class="rename-folder" title="Renombrar carpeta">Renombrar</button><button type="button" class="publish-folder">${folder.is_published ? "Retirar de generales" : "Publicar en generales"}</button></div></article>`,
+          `<article class="folder-card" data-folder="${folder.id}" tabindex="0" role="button"><div class="file-icon folder-icon">▰</div><b>${escapeHtml(folder.name)}</b><small>Abrir carpeta</small><div class="card-actions"><button type="button" class="rename-folder" title="Renombrar carpeta">Renombrar</button><label class="folder-public-control"><input type="checkbox" class="publish-folder" ${folder.is_published ? "checked" : ""}> Pública en Rutinas generales</label></div></article>`,
       ),
       ...folderState.routines.map(
         (routine) =>
@@ -70,24 +70,24 @@ async function loadRoutineFolders() {
       loadRoutineFolders();
     };
     card.onclick = (event) => {
-      if (!event.target.closest("button")) open();
+      if (!event.target.closest("button,input,label")) open();
     };
     card.onkeydown = (event) => {
       if (
         (event.key === "Enter" || event.key === " ") &&
-        !event.target.closest("button")
+        !event.target.closest("button,input,label")
       ) {
         event.preventDefault();
         open();
       }
     };
   });
-  grid.querySelectorAll(".publish-folder").forEach(button => button.onclick = async event => {
+  grid.querySelectorAll(".publish-folder").forEach(button => button.onchange = async event => {
     event.stopPropagation();
     const folder=folderState.folders.find(item=>item.id===button.closest('[data-folder]').dataset.folder);
     button.disabled=true;
-    const {error}=await ftSupabase.rpc('ft_publish_routine_folder',{p_folder:folder.id,p_publish:!folder.is_published});
-    if(error){toast('No se pudo publicar. La carpeta debe contener al menos una rutina guardada.');button.disabled=false;return;}
+    const {error}=await ftSupabase.rpc('ft_publish_routine_folder',{p_folder:folder.id,p_publish:button.checked});
+    if(error){toast('No se pudo publicar. La carpeta debe contener al menos una rutina guardada.');button.checked=folder.is_published;button.disabled=false;return;}
     toast(folder.is_published?'Carpeta retirada de Rutinas generales':'Carpeta publicada en Rutinas generales');
     await loadRoutineFolders();
   });

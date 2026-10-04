@@ -33,27 +33,8 @@
       feedback.textContent = '';
       form.closest('.admin-form-overlay').classList.remove('open');
       toast('Ejercicio guardado. Ya puedes buscarlo y anadirlo a una rutina.');
-      await renderOwnExercises();
+      if(typeof ensureCatalog==='function')await ensureCatalog();
     } catch (error) { feedback.textContent = 'No se pudo guardar el ejercicio. Revisa la conexion y vuelve a intentarlo.'; }
     finally { button.disabled = false; }
   };
-  async function renderOwnExercises() {
-    const catalog = document.getElementById('catalog-results');
-    if (!catalog) return;
-    let host = document.getElementById('trainer-own-exercises');
-    if (!host) { host=document.createElement('section'); host.id='trainer-own-exercises'; catalog.before(host); }
-    host.replaceChildren();
-    const title=document.createElement('h3');title.textContent='Ejercicios propios de Fernando';host.append(title);
-    const {data,error}=await ftSupabase.from('exercises').select('id,name,media_url,media_type,thumbnail_url').eq('is_custom',true).eq('is_active',true).order('name');
-    if(error){const message=document.createElement('p');message.textContent='No se pudieron cargar los ejercicios propios.';host.append(message);return;}
-    for(const exercise of data || []) {
-      const row=document.createElement('details');row.style.margin='12px 0';
-      const summary=document.createElement('summary');summary.textContent=exercise.name;row.append(summary);
-      const content=document.createElement('div');row.append(content);
-      row.ontoggle=()=>{content.innerHTML=row.open?window.ftExerciseMedia.html(exercise):'';};
-      host.append(row);
-    }
-    if(!data?.length){const p=document.createElement('p');p.textContent='Anade tu primer ejercicio con el boton Ejercicio propio.';host.append(p);}
-  }
-  document.querySelector('[data-page="exercises"]').addEventListener('click',()=>setTimeout(renderOwnExercises));
 })();

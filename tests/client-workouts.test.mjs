@@ -185,6 +185,7 @@ test('new sets are blank and unchecked, with previous performance visible', asyn
   assert.doesNotMatch(sets.innerHTML,/<option value="(?:drop|failure)">/);
   assert.match(sets.innerHTML,/type="number" min="1" max="1000" step="1" placeholder="8–12" value=""/);
   assert.doesNotMatch(sets.innerHTML,/type="checkbox" checked/);
+  for(const n of [1,2,3])assert.ok(sets.innerHTML.includes(`<option value="normal">${n}</option>`));
   assert.ok(db.calls[0].operations.some(op=>op[0]==='eq' && op[1]==='workout_sessions.client_id' && op[2]==='c1'));
 });
 

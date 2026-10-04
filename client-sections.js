@@ -968,7 +968,7 @@
           reps = current?.reps ?? "",
           weight = current?.weight_kg ?? "";
         const previousLabel = previous ? `${previous.weight_kg ?? 0} × ${previous.reps ?? 0}` : "—";
-        return `<label class="hevy-set-row"><select class="live-set-type" aria-label="Tipo de serie ${index + 1}"><option value="normal">1</option><option value="warmup">C</option></select><small>${previousLabel}</small><input class="live-weight" value="${weight}" inputmode="decimal" aria-label="Peso serie ${index + 1}"><input class="live-reps" type="number" min="1" max="1000" step="1" placeholder="${item.target_reps_min ?? "—"}${item.target_reps_max && item.target_reps_max !== item.target_reps_min ? `–${item.target_reps_max}` : ""}" value="${reps}" inputmode="numeric" aria-label="Repeticiones serie ${index + 1}"><input class="live-rir" type="number" min="0" max="10" step="1" value="${current?.rir == null ? "" : 10 - Number(current.rir)}" inputmode="numeric" aria-label="RPE serie ${index + 1}"><input class="live-complete" type="checkbox" ${current?.completed ? "checked" : ""} aria-label="Completar serie ${index + 1}"></label>`;
+        return `<label class="hevy-set-row"><select class="live-set-type" aria-label="Tipo de serie ${index + 1}"><option value="normal">${index + 1}</option><option value="warmup">C</option></select><small>${previousLabel}</small><input class="live-weight" value="${weight}" inputmode="decimal" aria-label="Peso serie ${index + 1}"><input class="live-reps" type="number" min="1" max="1000" step="1" placeholder="${item.target_reps_min ?? "—"}${item.target_reps_max && item.target_reps_max !== item.target_reps_min ? `–${item.target_reps_max}` : ""}" value="${reps}" inputmode="numeric" aria-label="Repeticiones serie ${index + 1}"><input class="live-rir" type="number" min="0" max="10" step="1" value="${current?.rir == null ? "" : 10 - Number(current.rir)}" inputmode="numeric" aria-label="RPE serie ${index + 1}"><input class="live-complete" type="checkbox" ${current?.completed ? "checked" : ""} aria-label="Completar serie ${index + 1}"></label>`;
       }).join("") + `<button type="button" class="add-live-set">+ Agregar serie</button>`;
     sets.querySelectorAll(".live-set-type").forEach((select, index) => { select.value = currentLogs.find(log => log.set_number === index + 1)?.set_type === "warmup" ? "warmup" : "normal"; });
     sets.querySelector(".add-live-set").onclick = () => {
@@ -977,6 +977,8 @@
         clone = lastRow.cloneNode(true),
         number = rows.length + 1;
       clone.querySelector(".live-set-type").value = "normal";
+      clone.querySelector('.live-set-type option[value="normal"]').textContent = number;
+      clone.querySelector('.live-set-type').setAttribute('aria-label',`Tipo de serie ${number}`);
       clone.querySelector("small").textContent = "—";
       clone.querySelectorAll("input").forEach((input) => {
         input.setAttribute("aria-label", input.getAttribute("aria-label").replace(/\d+$/, number));
