@@ -34,7 +34,7 @@ if (!session) {
     location.replace("cliente.html?auth=3");
   } else {
     window.ftSupabase = client;
-    await load("app.js");
+    await load("app.js?v=2");
     await load("catalogo.js?v=5");
     await load("admin-features.js?v=5");
     await load("exercise-media.js?v=2");
@@ -52,6 +52,7 @@ if (!session) {
     await load("payments-manager.js?v=3");
     await load("client-training-log.js?v=4");
     await load("trainer-materials-admin.js?v=2");
+    await load("admin-notifications.js?v=1");
     document.body.style.visibility = "visible";
   }
 }
