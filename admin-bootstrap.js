@@ -53,7 +53,9 @@ if (!session) {
     await load("client-training-log.js?v=4");
     await load("trainer-materials-admin.js?v=2");
     await load("admin-notifications.js?v=2");
-    await load("admin-training-feed.js?v=3");
+    await load("admin-training-feed.js?v=4");
+    await load("vendor/jspdf.umd.min.js");
+    await load("admin-month-details.js?v=1");
     document.body.style.visibility = "visible";
   }
 }
