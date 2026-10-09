@@ -404,7 +404,7 @@ function decorateRoutineWorkspace() {
   if (!explorer || explorer.querySelector(".routine-method-card")) return;
   const card = document.createElement("section");
   card.className = "routine-method-card";
-  card.innerHTML = '<div><p class="eyebrow">METODOLOGIA FT</p><h3>Programa → asignacion → seguimiento</h3><p>Trabaja con plantillas reutilizables. Ajusta solo lo necesario para cada cliente y conserva el historial de cada semana.</p></div><div class="routine-method-days"><span>Lun<br><b>Pecho</b></span><span>Mar<br><b>Hombro</b></span><span>Mie<br><b>Pierna</b></span><span>Jue<br><b>Espalda</b></span><span>Vie<br><b>Brazo</b></span></div>';
+  card.innerHTML = '<div><p class="eyebrow">METODOLOGIA FT</p><h3>Programa → asignacion → seguimiento</h3><p>Trabaja con plantillas reutilizables. Ajusta solo lo necesario para cada cliente y conserva el historial de cada semana.</p></div>';
   explorer.querySelector(".routine-location")?.before(card);
 }
 

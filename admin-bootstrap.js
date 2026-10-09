@@ -42,7 +42,7 @@ if (!session) {
     await load("supabase-data.js?v=11");
     await load("admin-live.js?v=7");
     await load("terms-viewer.js?v=1");
-    await load("routine-folders.js?v=14");
+    await load("routine-folders.js?v=15");
     await load("admin-enhancements.js?v=7");
     await load("client-groups.js?v=1");
     await load("routine-editor.js?v=7");
