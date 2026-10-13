@@ -46,6 +46,7 @@
           </form>
           <section class="routine-current"><div class="routine-current-head"><div><h3>Ejercicios incluidos</h3><p class="muted">${items.length} ${items.length===1?'ejercicio':'ejercicios'}</p></div></div><div class="routine-exercise-list">${items.map(itemMarkup).join('')||'<div class="routine-empty"><b>La rutina todavia esta vacia</b><p>Selecciona un ejercicio en el formulario para empezar.</p></div>'}</div></section>
         </div>
+        <footer class="routine-save-footer"><p class="routine-save-status" role="status"></p><button type="button" class="primary" id="save-routine-changes">Guardar cambios</button></footer>
       </section>`;
       host.querySelector('.admin-form-close').onclick=()=>host.classList.remove('open');
       const search=host.querySelector('#routine-exercise-search'),exerciseSelect=host.querySelector('.exercise-picker'),selectedExercises=new Set();
@@ -55,6 +56,12 @@
         exerciseSelect.querySelectorAll('input').forEach(input=>input.onchange=()=>{if(input.checked)selectedExercises.add(input.value);else selectedExercises.delete(input.value);host.querySelector('.exercise-selection-count').textContent=`${selectedExercises.size} seleccionados`;const chosen=exercises.filter(ex=>selectedExercises.has(`${ex.source}:${ex.sourceId}`)),onlyTime=chosen.length>0&&chosen.every(ex=>ex.tracking_type==='time');host.querySelectorAll('[name="target_reps_min"],[name="target_reps_max"],[name="target_weight_kg"]').forEach(input=>input.closest('label').hidden=onlyTime);});
       };
       search.oninput=renderChoices;renderChoices();
+      host.querySelector('#save-routine-changes').onclick=async()=>{
+        const save=host.querySelector('#save-routine-changes'),status=host.querySelector('.routine-save-status'),editors=[...host.querySelectorAll('.routine-inline-edit')];
+        const updates=[];for(const editor of editors){if(!editor.reportValidity())return;const values=Object.fromEntries([...new FormData(editor)].map(([key,value])=>[key,Number(value)]));if(values.target_reps_max<values.target_reps_min){status.textContent='Revisa el rango de repeticiones.';return}updates.push({entry:editor.closest('[data-item]').dataset.item,values})}
+        save.disabled=true;status.textContent='Guardando…';try{for(const update of updates){const {error}=await ftSupabase.from('routine_exercises').update(update.values).eq('id',update.entry).eq('routine_id',id).select('id').single();if(error)throw error}if(selectedExercises.size){status.textContent='Guardando los ejercicios seleccionados…';host.querySelector('#add-routine-exercise').requestSubmit();return}await fetchRoutine(id);status.textContent='Todos los cambios están guardados.';toast('Rutina guardada')}catch{status.textContent='No se pudieron guardar todos los cambios. Reintenta.'}finally{save.disabled=false}
+      };
+
       host.querySelectorAll('.remove-routine-exercise').forEach(button=>button.onclick=async()=>{
         button.disabled=true;
         const {error}=await ftSupabase.from('routine_exercises').delete().eq('id',button.dataset.item);

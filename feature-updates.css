@@ -684,3 +684,52 @@
 #custom-exercise-form .exercise-chip-group{display:flex;flex-wrap:wrap;gap:9px;margin-top:12px}#custom-exercise-form .exercise-option-chip{font-family:"DM Sans",sans-serif;letter-spacing:0;font-size:14px;font-weight:500;line-height:1.4;border:1px solid #d7e4dc;border-radius:999px;background:#f4f7f5;color:#536d5d;padding:11px 18px;cursor:pointer;min-height:44px}#custom-exercise-form .exercise-option-chip[aria-pressed="true"]{background:#2dac6c;border-color:#2dac6c;color:white}#custom-exercise-form .exercise-option-chip:hover{border-color:#2dac6c}#custom-exercise-form .exercise-option-chip:focus-visible{outline:3px solid #2dac6c;outline-offset:3px}#custom-exercise-form select[hidden]{display:none!important}#custom-exercise-form .exercise-custom-muscle{font-size:14px;margin-top:10px}#custom-exercise-form .exercise-choice-field{margin-bottom:8px}@media(max-width:650px){#custom-exercise-form .exercise-option-chip{padding:9px 14px;font-size:13px}}
 
 .catalog-manage{display:flex;gap:8px;margin-top:14px}.catalog-manage button{flex:1;padding:9px;border:1px solid #d4e5da;border-radius:8px;background:#f2f8f4;color:#205839;font:600 12px "DM Sans",sans-serif;cursor:pointer}.catalog-manage button[data-delete-exercise]{color:#a13c32;border-color:#eed8d5;background:#fff7f5}
+
+.routine-public-bulk{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px}.routine-public-bulk button{padding:10px 14px;border:1px solid #cfe4d7;background:#f2f8f4;border-radius:9px;color:#205839;cursor:pointer}.folder-public-control{display:flex;align-items:center;gap:9px}.publish-routine,.publish-folder{width:18px;height:18px;accent-color:#2dac6c}
+
+/* Administrator routine library: card hierarchy and consistent actions. */
+#routine-explorer{padding:28px;border:1px solid #e2ebe5;border-radius:20px;box-shadow:0 4px 18px #173c2805}
+#routine-explorer>.section-head{align-items:center;gap:24px;margin-bottom:24px}
+#routine-explorer>.section-head h2{font-size:25px;line-height:1.35;margin:8px 0}
+#routine-explorer>.section-head .muted{font-size:14px;line-height:1.6;max-width:650px}
+#routine-explorer .routine-steps{display:none}
+#routine-explorer .routine-method-card{padding:18px 22px;margin-bottom:22px;background:#f4f9f6;border:1px solid #e3eee7;box-shadow:none}
+#routine-explorer .routine-method-card h3{font-size:15px;line-height:1.7;margin:6px 0}
+#routine-explorer .routine-method-card p{font-size:12px;line-height:1.6}
+#routine-explorer .routine-location{padding:14px 0;border-bottom:1px solid #e6eee9;margin:0 0 22px}
+#routine-explorer .breadcrumbs{font-size:13px;color:#4a6655}
+#routine-explorer .folder-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+#routine-explorer .folder-card,#routine-explorer .routine-file{position:relative;display:flex;flex-direction:column;align-items:stretch;gap:0;padding:22px;border:1px solid #e0eae3;border-radius:16px;background:white;box-shadow:none;min-width:0;transition:border-color .15s,box-shadow .15s;grid-column:auto}
+#routine-explorer .folder-card:hover,#routine-explorer .routine-file:hover{border-color:#a6ceb7;box-shadow:0 6px 22px #1a573b0a}
+#routine-explorer .file-icon{display:grid;place-items:center;width:44px;height:44px;border-radius:13px;font-size:23px;margin-bottom:16px;background:#edf7f0;color:#299863}
+#routine-explorer .routine-icon{background:#edf3f9;color:#4381a6}
+#routine-explorer .folder-card>b,#routine-explorer .routine-copy>b{font-family:"DM Sans",sans-serif;font-size:16px;line-height:1.4;font-weight:600;color:#233d2f;overflow-wrap:anywhere}
+#routine-explorer .folder-card>small,#routine-explorer .routine-copy>small{font-size:12px;line-height:1.6;color:#7b8c82;margin-top:6px}
+#routine-explorer .routine-copy{display:flex;flex-direction:column;margin-bottom:18px;min-height:56px}
+#routine-explorer .card-actions{display:flex;flex-direction:column;gap:14px;margin-top:20px;padding-top:16px;border-top:1px solid #edf2ef}
+#routine-explorer .folder-public-control{display:flex;align-items:center;gap:10px;padding:11px 12px;background:#f4f8f5;border-radius:10px;font-family:"DM Sans",sans-serif;font-size:12px;font-weight:500;color:#4a6755;cursor:pointer;line-height:1.4}
+#routine-explorer .folder-public-control:has(input:checked){background:#eaf7ef;color:#207549}
+#routine-explorer input[type=checkbox]{accent-color:#2dac6c;width:18px;height:18px;flex-shrink:0;margin:0}
+#routine-explorer .routine-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:18px 0 14px}
+#routine-explorer .routine-actions button,#routine-explorer .rename-folder{min-height:40px;padding:10px 12px;border-radius:9px;font-family:"DM Sans",sans-serif;font-size:12px;font-weight:600;letter-spacing:0;white-space:normal;line-height:1.4}
+#routine-explorer .rename-folder{align-self:flex-start;color:#587262;background:white;border:1px solid #dde8e1;cursor:pointer}
+#routine-explorer .move-control{margin-top:auto;padding-top:12px;border-top:1px solid #edf2ef;display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:11px;color:#7a8d80}
+#routine-explorer .move-control select{max-width:70%;height:36px;border:1px solid #e1e9e4;border-radius:8px;background:white;padding:0 10px;font:12px "DM Sans",sans-serif;color:#44604f}
+#routine-explorer .routine-public-bulk{grid-column:1/-1;display:flex;align-items:center;gap:10px;padding:18px 20px;margin:0 0 2px;background:#f5f8f6;border:1px solid #e3ece6;border-radius:13px}
+#routine-explorer .routine-public-bulk>span{display:grid;gap:4px;margin-right:auto;flex:1;min-width:180px}
+#routine-explorer .routine-public-bulk b{font-size:13px;font-weight:600;color:#35533f}
+#routine-explorer .routine-public-bulk small{font-size:12px;color:#7b8d80}
+#routine-explorer .routine-public-bulk button{font:600 12px "DM Sans",sans-serif;min-height:38px;white-space:nowrap;background:white}
+#routine-explorer .routine-public-bulk button[data-public-all]{color:#217e4e;border-color:#b8dec6}
+#routine-explorer button:focus-visible,#routine-explorer .folder-card:focus-visible{outline:3px solid #2dac6c;outline-offset:3px}
+@media(max-width:1150px){#routine-explorer .folder-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:650px){#routine-explorer{padding:18px}#routine-explorer>.section-head{align-items:flex-start;flex-wrap:wrap}#routine-explorer .folder-grid{grid-template-columns:1fr}#routine-explorer .routine-public-bulk{flex-wrap:wrap;padding:15px}#routine-explorer .routine-public-bulk>span{flex-basis:100%;margin-bottom:5px}#routine-explorer .routine-public-bulk button{flex:1}#routine-explorer .routine-actions{grid-template-columns:1fr 1fr}}
+@media(prefers-reduced-motion:reduce){#routine-explorer .folder-card,#routine-explorer .routine-file{transition:none}}
+
+#routine-explorer .edit-folder-routines{min-height:40px;border:1px solid #bedecb;border-radius:9px;background:#eaf7ef;color:#237d4e;padding:10px 12px;font:600 12px "DM Sans",sans-serif;cursor:pointer}
+
+.routine-save-footer{position:sticky;bottom:0;display:flex;align-items:center;justify-content:flex-end;gap:16px;padding:18px 24px;background:white;border-top:1px solid #e3ece6;z-index:2}.routine-save-status{margin:0;font-size:13px;color:#47644f}#routine-explorer .move-control{flex-wrap:wrap}#routine-explorer .move-routine-button{flex-basis:100%;padding:10px;border:1px solid #cfe4d7;border-radius:9px;background:#f0f8f3;color:#267749;font:600 12px "DM Sans",sans-serif;cursor:pointer}
+
+.folder-rename-dialog{width:min(440px,calc(100vw - 32px));padding:26px;border:1px solid #dce8e1;border-radius:18px;background:white}.folder-rename-dialog::backdrop{background:#10271f88}.folder-rename-dialog h2{font-size:18px;line-height:1.7;margin:0 0 20px}.folder-rename-dialog label{display:grid;gap:9px;font-size:13px}.folder-rename-dialog input{width:100%;height:44px;padding:0 12px;border:1px solid #cfe1d5;border-radius:9px;font:14px "DM Sans",sans-serif}.folder-rename-dialog form>div{display:flex;justify-content:flex-end;gap:10px}.rename-feedback{font-size:13px;color:#506b59;min-height:20px}
+
+#routine-explorer .folder-card{background:#f0f8f3;border-color:#cce3d4}#routine-explorer .folder-card .folder-icon{background:#dcefe3;color:#278454}#routine-explorer .routine-file{background:#f3f7fc;border-color:#d4e1ef}#routine-explorer .routine-file .routine-icon{background:#e0ebf8;color:#3b76a4}#routine-explorer .routine-actions .rename-routine{grid-column:1/-1;background:transparent;border:1px solid #d0dfed;color:#466785}

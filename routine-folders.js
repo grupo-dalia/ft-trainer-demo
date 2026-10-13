@@ -13,7 +13,7 @@ async function loadRoutineFolders() {
   await ensureBasicWeeklyRoutine();
   const routineQuery = ftSupabase
     .from("routines")
-    .select("id,name,folder_id,description")
+    .select("id,name,folder_id,description,is_published")
     .is("client_id", null);
   const [folders, routines] = await Promise.all([
     ftSupabase
@@ -43,11 +43,11 @@ async function loadRoutineFolders() {
     [
       ...current.map(
         (folder) =>
-          `<article class="folder-card" data-folder="${folder.id}" tabindex="0" role="button"><div class="file-icon folder-icon">▰</div><b>${escapeHtml(folder.name)}</b><small>Abrir carpeta</small><div class="card-actions"><button type="button" class="rename-folder" title="Renombrar carpeta">Renombrar</button><label class="folder-public-control"><input type="checkbox" class="publish-folder" ${folder.is_published ? "checked" : ""}> Pública en Rutinas generales</label></div></article>`,
+          `<article class="folder-card" data-folder="${folder.id}" tabindex="0" role="button"><div class="file-icon folder-icon">▰</div><b>${escapeHtml(folder.name)}</b><small>${folderState.folders.filter(child=>child.parent_id===folder.id).length} subcarpetas · Abrir carpeta</small><div class="card-actions"><button type="button" class="edit-folder-routines" data-edit-folder="${folder.id}">Editar rutinas</button><button type="button" class="rename-folder" title="Renombrar carpeta">Renombrar</button><label class="folder-public-control"><input type="checkbox" class="publish-folder" ${folder.is_published ? "checked" : ""}> Visible para usuarios</label></div></article>`,
       ),
       ...folderState.routines.map(
         (routine) =>
-          `<article class="routine-file"><div class="file-icon routine-icon">▤</div><div class="routine-copy"><b>${escapeHtml(routine.name)}</b><small>${escapeHtml(routine.description || "Sin descripcion")}</small></div><div class="routine-actions"><button type="button" class="secondary edit-routine" data-routine="${routine.id}">Editar ejercicios</button><button type="button" class="primary assign-routine" data-routine="${routine.id}">Asignar a cliente</button></div><label class="move-control">Carpeta<select class="folder-move" data-routine="${routine.id}" aria-label="Mover rutina"><option value="">Rutinas (raiz)</option>${options}</select></label></article>`,
+          `<article class="routine-file"><div class="file-icon routine-icon">▤</div><div class="routine-copy"><b>${escapeHtml(routine.name)}</b><small>${escapeHtml(routine.description || "Sin descripcion")}</small></div><label class="folder-public-control"><input type="checkbox" class="publish-routine" data-routine="${routine.id}" ${routine.is_published?"checked":""}> Visible para usuarios</label><div class="routine-actions"><button type="button" class="secondary rename-routine" data-rename-routine="${routine.id}">Renombrar</button><button type="button" class="secondary edit-routine" data-routine="${routine.id}">Editar ejercicios</button><button type="button" class="primary assign-routine" data-routine="${routine.id}">Asignar a cliente</button></div><label class="move-control">Guardar en<select class="folder-move" data-routine="${routine.id}" aria-label="Mover rutina"><option value="">Rutinas (raiz)</option>${options}</select><button type="button" class="move-routine-button" data-move-routine="${routine.id}">Añadir a carpeta</button></label></article>`,
       ),
     ].join("") ||
     '<div class="routine-empty"><b>Esta carpeta esta vacia</b><p>Crea una rutina o mueve una existente hasta aqui.</p></div>';
@@ -64,6 +64,8 @@ async function loadRoutineFolders() {
       (button) =>
         (button.onclick = () => openRoutineAssignment(button.dataset.routine)),
     );
+  grid.querySelectorAll('[data-rename-routine]').forEach(button=>button.onclick=event=>{event.stopPropagation();const routine=folderState.routines.find(item=>item.id===button.dataset.renameRoutine);if(routine)openFolderRename(routine,'routines')});
+  grid.querySelectorAll('[data-edit-folder]').forEach(button=>button.onclick=event=>{event.stopPropagation();folderState.parent=button.dataset.editFolder;loadRoutineFolders()});
   grid.querySelectorAll(".folder-card").forEach((card) => {
     const open = () => {
       folderState.parent = card.dataset.folder;
@@ -82,6 +84,8 @@ async function loadRoutineFolders() {
       }
     };
   });
+  grid.querySelectorAll('.publish-routine').forEach(check=>check.onchange=async()=>{const item=folderState.routines.find(r=>r.id===check.dataset.routine);check.disabled=true;try{const {error}=await ftSupabase.rpc('ft_publish_routines',{p_ids:[item.id],p_publish:check.checked});if(error)throw error;item.is_published=check.checked;toast(check.checked?'Rutina publicada':'Rutina privada')}catch{check.checked=item.is_published;toast('No se pudo cambiar la publicación')}finally{check.disabled=false}});
+  const bulk=document.createElement('div');bulk.className='routine-public-bulk';bulk.innerHTML='<span><b>Visibilidad de las rutinas</b><small>Marca las que quieres mostrar en el catálogo de usuarios.</small></span><button type="button" data-public-all>Publicar todas</button><button type="button" data-private-all>Ocultar todas</button>';grid.prepend(bulk);for(const [selector,publish]of [['[data-public-all]',true],['[data-private-all]',false]])bulk.querySelector(selector).onclick=async()=>{const buttons=bulk.querySelectorAll('button');buttons.forEach(b=>b.disabled=true);try{const {error}=await ftSupabase.rpc('ft_publish_routines',{p_ids:folderState.routines.map(r=>r.id),p_publish:publish});if(error)throw error;await loadRoutineFolders()}catch{toast('No se pudo cambiar la publicación');buttons.forEach(b=>b.disabled=false)}};
   grid.querySelectorAll(".publish-folder").forEach(button => button.onchange = async event => {
     event.stopPropagation();
     const folder=folderState.folders.find(item=>item.id===button.closest('[data-folder]').dataset.folder);
@@ -91,29 +95,12 @@ async function loadRoutineFolders() {
     toast(folder.is_published?'Carpeta retirada de Rutinas generales':'Carpeta publicada en Rutinas generales');
     await loadRoutineFolders();
   });
-  grid.querySelectorAll(".rename-folder").forEach(
-    (button) =>
-      (button.onclick = async (event) => {
-        event.stopPropagation();
-        const card = button.closest("[data-folder]"),
-          name = prompt("Nuevo nombre de carpeta");
-        if (name?.trim())
-          await ftSupabase
-            .from("routine_folders")
-            .update({ name: name.trim(), updated_at: new Date().toISOString() })
-            .eq("id", card.dataset.folder);
-        loadRoutineFolders();
-      }),
-  );
+  grid.querySelectorAll('.rename-folder').forEach(button=>button.onclick=event=>{event.stopPropagation();const folder=folderState.folders.find(item=>item.id===button.closest('[data-folder]').dataset.folder);if(folder)openFolderRename(folder)});
   grid.querySelectorAll(".folder-move").forEach((select) => {
     select.value = folderState.parent || "";
-    select.onchange = async () => {
-      await ftSupabase
-        .from("routines")
-        .update({ folder_id: select.value || null })
-        .eq("id", select.dataset.routine);
-      loadRoutineFolders();
-    };
+    const move=select.closest('article').querySelector('[data-move-routine]');
+    move.textContent=folderState.parent?'Mover a carpeta':'Añadir a carpeta';
+    move.onclick=async()=>{if(!select.value){toast('Selecciona una carpeta de destino');return}move.disabled=true;try{const {error}=await ftSupabase.from('routines').update({folder_id:select.value}).eq('id',select.dataset.routine).select('id').single();if(error)throw error;toast('Rutina añadida a la carpeta');await loadRoutineFolders()}catch{toast('No se pudo mover la rutina');move.disabled=false}};
   });
   grid.querySelectorAll(".routine-file").forEach((file) => {
     const routineId = file.querySelector(".assign-routine")?.dataset.routine;
@@ -451,3 +438,12 @@ render = (page) => {
   renderWithFolders(page);
   if (page === "routines") setTimeout(loadRoutineFolders, 0);
 };
+
+function openFolderRename(folder,table='routine_folders'){
+ const label=table==='routines'?'rutina':'carpeta';
+ const dialog=document.createElement('dialog');dialog.className='folder-rename-dialog';dialog.innerHTML=`<form><h2>Renombrar ${label}</h2><label>Nombre de la ${label}<input name="folder_name" required maxlength="120" value="${escapeHtml(folder.name)}" autocomplete="off"></label><p class="rename-feedback" role="status"></p><div><button type="button" class="secondary" data-cancel>Cancelar</button><button type="submit" class="primary">Guardar nombre</button></div></form>`;document.body.appendChild(dialog);
+ dialog.addEventListener('close',()=>dialog.remove());dialog.querySelector('[data-cancel]').onclick=()=>dialog.close();dialog.onclick=event=>{if(event.target===dialog)dialog.close()};
+ const form=dialog.querySelector('form'),input=form.querySelector('input'),feedback=form.querySelector('.rename-feedback'),save=form.querySelector('[type="submit"]');
+ form.onsubmit=async event=>{event.preventDefault();const name=input.value.trim();if(!name){feedback.textContent='Escribe el nombre de la '+label+'.';input.focus();return}save.disabled=true;feedback.textContent='Guardando…';try{const {data,error}=await ftSupabase.from(table).update({name,updated_at:new Date().toISOString()}).eq('id',folder.id).is('client_id',null).select('id,name').single();if(error||!data)throw error||Error('No se confirmó el cambio');dialog.close();toast(label==='rutina'?'Rutina renombrada':'Carpeta renombrada');await loadRoutineFolders()}catch{feedback.textContent='No se pudo guardar el nombre. Revisa la conexión y vuelve a intentarlo.';save.disabled=false}};
+ dialog.showModal();input.focus();input.select();
+}

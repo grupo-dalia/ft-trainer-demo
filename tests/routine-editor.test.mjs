@@ -6,7 +6,7 @@ const source=fs.readFileSync(new URL('../routine-editor.js',import.meta.url),'ut
 function harness(){
  const nodes=new Map(),insertions=[],updates=[];
  const node=()=>({innerHTML:'',value:'',classList:{add(){},remove(){}},querySelectorAll(){return[];}});
- for(const key of ['.admin-form-close','#routine-exercise-search','.exercise-picker','.exercise-selection-count','#add-routine-exercise'])nodes.set(key,node());
+ for(const key of ['#save-routine-changes','.routine-save-status','.admin-form-close','#routine-exercise-search','.exercise-picker','.exercise-selection-count','#add-routine-exercise'])nodes.set(key,node());
  const editButton={dataset:{item:'item1'},closest:()=>row};
  const row={querySelector:()=>null,append(editor){this.editor=editor;}};
  const host={...node(),querySelector:key=>nodes.get(key),querySelectorAll:key=>key==='.edit-routine-exercise'?[editButton]:[]};

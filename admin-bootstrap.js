@@ -43,10 +43,10 @@ if (!session) {
     await load("supabase-data.js?v=11");
     await load("admin-live.js?v=13");
     await load("terms-viewer.js?v=1");
-    await load("routine-folders.js?v=15");
+    await load("routine-folders.js?v=21");
     await load("admin-enhancements.js?v=7");
     await load("client-groups.js?v=1");
-    await load("routine-editor.js?v=7");
+    await load("routine-editor.js?v=8");
     await load("routine-planner-v2.js?v=5");
     await load("client-import-core.js?v=6");
     await load("client-import.js?v=11");

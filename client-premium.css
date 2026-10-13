@@ -253,3 +253,16 @@ body.ft-client-home .inline-registration .hevy-set-head b{font-size:7px!importan
 @media(max-width:360px){body.ft-client-home .client-section-panel>header h1{font-size:18px!important}body.ft-client-home .inline-exercise{padding:8px}body.ft-client-home .inline-registration .last-record>div{padding:8px!important}}
 
 body.ft-client-home .routine-history-toggle>summary{cursor:pointer;font:700 14px/1.5 "DM Sans";color:var(--ft-accent);padding:4px 0}
+
+/* Personal workout edit controls. */
+body.ft-client-home .series-edit-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;padding-top:12px;border-top:1px solid #ffffff0d}
+body.ft-client-home .series-edit-actions .add-live-set,body.ft-client-home .series-edit-actions .remove-live-set{display:inline-flex!important;align-items:center;justify-content:center;gap:9px;flex:1;min-height:44px;width:auto!important;margin:0!important;padding:10px 12px!important;border-radius:12px!important;font:500 12px/1.4 "DM Sans",sans-serif!important;letter-spacing:0!important;cursor:pointer}
+body.ft-client-home .series-edit-actions .add-live-set{background:#54e39c0b!important;border:1px solid #54e39c30!important;color:#78e7ab!important}
+body.ft-client-home .series-edit-actions .remove-live-set{background:#ffffff04!important;border:1px solid #ffffff18!important;color:#b2bbb6!important}
+body.ft-client-home .series-action-icon{display:grid;place-items:center;width:20px;height:20px;border-radius:6px;background:#ffffff08;font:18px/1 Arial,sans-serif}
+body.ft-client-home .remove-free-exercise{display:inline-flex!important;align-items:center;justify-content:center;gap:8px;min-height:40px;width:auto!important;padding:9px 13px!important;margin:8px 0 14px auto!important;border:1px solid #ef8b7e25!important;border-radius:11px!important;background:#ef8b7e08!important;color:#db9e94!important;font:500 12px/1.4 "DM Sans",sans-serif!important;letter-spacing:0!important;cursor:pointer}
+body.ft-client-home .remove-free-exercise svg{width:16px;height:16px;flex-shrink:0}
+body.ft-client-home .series-edit-actions button:hover{filter:brightness(1.15)}body.ft-client-home .remove-free-exercise:hover{background:#ef8b7e12!important}
+body.ft-client-home .series-edit-actions button:focus-visible,body.ft-client-home .remove-free-exercise:focus-visible{outline:2px solid #54e39c;outline-offset:3px}
+body.ft-client-home .series-edit-actions button:disabled{opacity:.45;cursor:wait}
+@media(max-width:380px){body.ft-client-home .series-edit-actions{gap:7px}body.ft-client-home .series-edit-actions button{font-size:11px!important;padding:9px!important}}
