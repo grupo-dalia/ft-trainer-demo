@@ -947,7 +947,7 @@
     try {
     let logsQuery = db
       .from("set_logs")
-      .select("session_id,set_number,duration_seconds,reps,weight_kg,rir,set_type,created_at,workout_sessions!inner(client_id)")
+      .select("session_id,set_number,duration_seconds,reps,weight_kg,rir,set_type,created_at,workout_sessions!inner(client_id,routine_id,day_number,completed_at)")
       .eq("workout_sessions.client_id", clientId)
       .eq("completed", true)
       .eq("exercise_id", item.exercise_id)
@@ -955,13 +955,14 @@
       ;
     if (sessionId) logsQuery = logsQuery.neq("session_id", sessionId);
     recentLogs = await checkedQuery(logsQuery);
-    bestLogs = await checkedQuery(db.from("set_logs").select("weight_kg,reps,duration_seconds,workout_sessions!inner(client_id)").eq("workout_sessions.client_id", clientId).eq("exercise_id", item.exercise_id).eq("completed", true).not(timed?"duration_seconds":"weight_kg", "is", null).order(timed?"duration_seconds":"weight_kg", { ascending: false }).order("reps", { ascending: false, nullsFirst: false }).limit(1));
+    bestLogs = await checkedQuery(db.from("set_logs").select("weight_kg,reps,duration_seconds,workout_sessions!inner(client_id,routine_id,day_number,completed_at)").eq("workout_sessions.client_id", clientId).eq("exercise_id", item.exercise_id).eq("completed", true).not(timed?"duration_seconds":"weight_kg", "is", null).order(timed?"duration_seconds":"weight_kg", { ascending: false }).order("reps", { ascending: false, nullsFirst: false }).limit(1));
     if (sessionId) currentLogs = await checkedQuery(db.from("set_logs").select("set_number,duration_seconds,reps,weight_kg,rir,set_type,completed").eq("session_id", sessionId).eq("exercise_id", item.exercise_id).order("set_number"));
     } catch (error) { recordsFailed = true; toast("No se pudieron cargar los registros anteriores"); }
     const previousSessionId = recentLogs?.[0]?.session_id,
       previousSets = (recentLogs || [])
         .filter((log) => log.session_id === previousSessionId)
         .sort((a, b) => a.set_number - b.set_number);
+    const comparisonSets=globalThis.FtSetProgress?.comparisonSets(recentLogs,new Date(),routine?.id||null,item.day_number??null)||[];
     const last = inlineHost ? sheet.querySelector(".last-record") : document.querySelector(".last-record");
     if (last) {
       const top = bestLogs.reduce(
@@ -1008,7 +1009,10 @@
       dirtyExercises.add(item.exercise_id);
       updateWorkoutStats();
     };
+    function updateSetChecks(){if(!globalThis.FtSetProgress)return;sets.querySelectorAll('.hevy-set-row').forEach((setRow,index)=>{const check=setRow.querySelector('.live-complete');if(!check)return;const previous=comparisonSets.find(log=>log.set_number===index+1);const result=timed||!check.checked?{state:'neutral',crown:false}:globalThis.FtSetProgress.compare(setRow.querySelector('.live-weight')?.value,setRow.querySelector('.live-reps')?.value,previous);check.dataset.progress=result.state;check.title={lower:'Menos peso que la semana anterior',fewer:'Mismo peso, menos repeticiones',higher:'Más peso que la semana anterior',equal:'Peso igual o mantenido',neutral:'Sin comparación disponible'}[result.state];let crown=setRow.querySelector('.set-progress-crown');if(result.crown&&!crown){crown=document.createElement('span');crown.className='set-progress-crown';crown.textContent='♛';crown.title='Más peso que la semana anterior';crown.setAttribute('aria-label',crown.title);setRow.appendChild(crown)}else if(!result.crown&&crown)crown.remove()})}
+    updateSetChecks();
     const registerSetEdit = event => {
+      updateSetChecks();
       if (sessionCompleted) return;
       if (!document.body.classList.contains("workout-in-progress")) startWorkoutClock();
       dirtyExercises.add(item.exercise_id);
