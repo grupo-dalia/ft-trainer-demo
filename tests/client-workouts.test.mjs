@@ -412,3 +412,5 @@ test('opening a time exercise restores seconds and hides the weight input',async
 });
 
 test('routine editing requires client source and the authenticated creator',()=>{const ctx=vm.createContext({routine:{source:'trainer',created_by:'user'},routineOwnerUserId:'user',isFreeWorkout:()=>false});vm.runInContext(extract('  function canEditRoutine','  function supersetStorageKey'),ctx);assert.equal(ctx.canEditRoutine(),false);ctx.routine={source:'client',created_by:'other'};assert.equal(ctx.canEditRoutine(),false);ctx.routine.created_by='user';assert.equal(ctx.canEditRoutine(),true)});
+
+test('successful finish exits to home while an unfinished session stays open',()=>{let closed=0,home=0,focus=0;const ctx=vm.createContext({sessionCompleted:false,document:{querySelectorAll:()=>[{classList:{remove(){closed++}}}],body:{classList:{remove(){}}}},setActive:()=>home++,setWorkoutFocus:()=>focus++});vm.runInContext(extract('  function exitFinishedWorkout','  function openWorkoutSettings'),ctx);ctx.exitFinishedWorkout();assert.equal(closed,0);ctx.sessionCompleted=true;ctx.exitFinishedWorkout();assert.equal(closed,1);assert.equal(home,1);assert.equal(focus,1)});

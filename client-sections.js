@@ -71,6 +71,10 @@
   let restTimerId = null;
   let workoutPausedAt = null;
   let sessionCompleted = false;
+  function hasLockedWorkout(){return !sessionCompleted&&(!!sessionId||document.body.classList.contains('workout-in-progress'))}
+  document.addEventListener('click',event=>{if(!hasLockedWorkout())return;const exit=event.target.closest('[data-client-nav],[data-home-action],.client-panel-back,.ft-home-brand,[data-workout-view],.workout-discard-free,[data-select-routine],[data-routine-day]');if(!exit)return;event.preventDefault();event.stopImmediatePropagation();toast('Pulsa Terminar antes de salir del entrenamiento.');},true);
+  window.addEventListener('beforeunload',event=>{if(hasLockedWorkout()){event.preventDefault();event.returnValue='';}});
+
   let routineHistoryRequest = 0;
   const dirtyExercises = new Set();
   const freeDraftKey = `ft-free-workout-${clientId || "guest"}`;
@@ -334,12 +338,22 @@
     if (isFreeWorkout()) clearFreeDraft();
     const historyHost = document.getElementById("routine-recent-history");
     if (historyHost) renderRoutineHistory(historyHost);
+    exitFinishedWorkout();
     toast("Entrenamiento guardado · gran trabajo");
     } catch (error) {
       toast("No se pudo finalizar. Comprueba la conexión e inténtalo de nuevo.");
     } finally {
       if (finishButton && !sessionCompleted) finishButton.disabled = false;
     }
+  }
+
+  function exitFinishedWorkout(){
+    if(!sessionCompleted)return;
+    if(typeof setWorkoutFocus==='function')setWorkoutFocus(false);
+    document.querySelectorAll('.client-section-panel.open').forEach(panel=>panel.classList.remove('open'));
+    document.body?.classList?.remove('client-panel-open');
+    if(typeof setActive==='function')setActive('home');
+    if(typeof window!=='undefined')window.scrollTo?.({top:0,behavior:'smooth'});
   }
 
   function openWorkoutSettings() {
@@ -1009,7 +1023,7 @@
       dirtyExercises.add(item.exercise_id);
       updateWorkoutStats();
     };
-    function updateSetChecks(){if(!globalThis.FtSetProgress)return;sets.querySelectorAll('.hevy-set-row').forEach((setRow,index)=>{const check=setRow.querySelector('.live-complete');if(!check)return;const previous=comparisonSets.find(log=>log.set_number===index+1);const result=timed||!check.checked?{state:'neutral',crown:false}:globalThis.FtSetProgress.compare(setRow.querySelector('.live-weight')?.value,setRow.querySelector('.live-reps')?.value,previous);check.dataset.progress=result.state;check.title={lower:'Menos peso que la semana anterior',fewer:'Mismo peso, menos repeticiones',higher:'Más peso que la semana anterior',equal:'Peso igual o mantenido',neutral:'Sin comparación disponible'}[result.state];check.setAttribute('aria-label',result.crown?'Serie completada: más peso que la semana anterior':check.title);})}
+    function updateSetChecks(){if(!globalThis.FtSetProgress)return;sets.querySelectorAll('.hevy-set-row').forEach((setRow,index)=>{const check=setRow.querySelector('.live-complete');if(!check)return;const previous=comparisonSets.find(log=>log.set_number===index+1);const result=timed||!check.checked?{state:'neutral',crown:false}:globalThis.FtSetProgress.compare(setRow.querySelector('.live-weight')?.value,setRow.querySelector('.live-reps')?.value,previous);check.dataset.progress=result.state;check.title={lower:'Menos peso que la semana anterior',fewer:'Mismo peso, menos repeticiones',higher:'Más peso que la semana anterior',equal:'Peso igual o mantenido',neutral:'Sin comparación disponible'}[result.state];check.setAttribute('aria-label',result.crown?'Serie completada: más peso que la semana anterior':check.title);let confirmation=setRow.querySelector('.series-confirm-button');if(!confirmation){confirmation=document.createElement('button');confirmation.type='button';confirmation.className='series-confirm-button';setRow.appendChild(confirmation);check.classList.add('series-hidden-check');check.tabIndex=-1;confirmation.onclick=event=>{event.preventDefault();event.stopPropagation();if(sessionCompleted)return;check.checked=!check.checked;check.dispatchEvent(new Event('change',{bubbles:true}));updateSetChecks()}}confirmation.dataset.progress=result.state;confirmation.dataset.checked=String(check.checked);confirmation.textContent=check.checked?(result.crown?'♛':'✓'):'✓';confirmation.title=check.title;confirmation.setAttribute('aria-label',check.getAttribute('aria-label'));confirmation.setAttribute('aria-pressed',String(check.checked));confirmation.disabled=sessionCompleted;const fill=check.checked?({lower:'#ec6262',fewer:'#f4a44b',higher:'#54e39c',equal:'#54e39c',neutral:'#54e39c'}[result.state]):'#16251d';confirmation.style.setProperty('background',fill,'important');confirmation.style.setProperty('border-color',fill,'important');confirmation.style.setProperty('box-shadow','none','important');confirmation.style.setProperty('color',check.checked?'#17291d':'#9aaa9f','important');})}
     updateSetChecks();
     const registerSetEdit = event => {
       updateSetChecks();
