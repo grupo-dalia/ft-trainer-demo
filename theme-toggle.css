@@ -1,0 +1,24 @@
+
+.theme-toggle{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;width:42px;height:42px;padding:9px;border:1px solid #d6e4db;border-radius:12px;background:#f3f8f5;color:#246343;cursor:pointer}.theme-toggle svg{width:22px;height:22px}.theme-toggle:focus-visible{outline:3px solid #2dac6c;outline-offset:3px}
+html[data-theme="dark"]{color-scheme:dark}html[data-theme="light"]{color-scheme:light}
+html[data-theme-scope="admin"][data-theme="dark"]{--bg:#101715;--white:#1a2420;--ink:#e8efea;--muted:#a0b3a7;--line:#33483c;--green-soft:#1f3d2b}
+html[data-theme-scope="admin"][data-theme="dark"] body{background:#101715;color:#e8efea}
+html[data-theme-scope="admin"][data-theme="dark"] :is(main,header,.card,.admin-form,.routine-editor-panel,.import-dialog,.exercise-detail>div,.notification-panel,.training-summary-dialog,.month-details-dialog,.folder-rename-dialog){background:#1a2420!important;color:#e8efea!important;border-color:#33483c!important}
+html[data-theme-scope="admin"][data-theme="dark"] :is(input,select,textarea,.training-feed-columns,.routine-public-bulk,.routine-method-card,.folder-public-control,.training-feed-row:hover){background:#16251d!important;color:#d5e5da!important;border-color:#33483c!important}
+html[data-theme-scope="admin"][data-theme="dark"] :is(.folder-card,.routine-file){background:#1b3025!important;border-color:#355440!important}html[data-theme-scope="admin"][data-theme="dark"] .routine-file{background:#1c2a36!important}
+html[data-theme-scope="admin"][data-theme="dark"] :is(.routine-copy>b,.folder-card>b,.training-person-copy>b,.training-routine>b,.training-date>b,.routine-public-bulk b){color:#e3efe7!important}
+html[data-theme-scope="admin"][data-theme="dark"] :is(.training-feed-row,.table td,.routine-save-footer){border-color:#33483c!important;background:transparent!important}
+html[data-theme="dark"] .theme-toggle{background:#203c2c;color:#a9e3bb;border-color:#3b5b46}
+html[data-theme-scope="client"][data-theme="light"]{--ft-bg:#f5f8f6;--ft-card:#fff;--ft-raised:#edf4ef;--ft-line:#dbe5df;--ft-text:#21382a;--ft-muted:#657b6d;--ft-accent:#208a54;--ft-shadow:0 8px 24px #143c2510;--app-bg:var(--ft-bg);--app-card:var(--ft-card);--app-ink:var(--ft-text);--app-muted:var(--ft-muted)}
+html[data-theme-scope="client"][data-theme="light"] .ft-home-header{background:#fffffff5!important}
+html[data-theme-scope="client"][data-theme="light"] .ft-home-brand{background-image:url('assets/brand/ft-horizontal-color.png')!important;mix-blend-mode:normal!important}
+html[data-theme-scope="client"][data-theme="light"] :is(.client-panel-card,.client-section-panel,.set-sheet,.live-exercise,.client-routine-choice,.client-exercise-preview>section,.workout-share-modal,.client-bottom-nav,.ft-bottom-nav,.general-folder){background:#fff!important;color:#21382a!important;border-color:#dbe5df!important}
+html[data-theme-scope="client"][data-theme="light"] :is(input,select,textarea){background:#f3f7f4!important;color:#21382a!important;border-color:#ccded1!important}
+html[data-theme-scope="client"][data-theme="light"] .hevy-set-row input:not([type="checkbox"]){background:#f3f7f4!important;color:#21382a!important;border-color:#ccded1!important}
+html[data-theme-scope="client"][data-theme="light"] :is(.series-edit-actions button,.remove-free-exercise,.hevy-set-row small){color:#3c6850!important}
+html[data-theme-scope="client"][data-theme="light"] .theme-toggle{background:#edf6f0;color:#236a42;border-color:#cfe3d5}
+@media(max-width:420px){.theme-toggle{width:36px;height:36px;padding:7px}.ft-home-user{gap:7px!important}}
+
+html[data-theme-scope="client"] body.ft-client-home .hevy-set-row input.live-complete:checked[data-progress="lower"]{background:#ec6262!important;border-color:#ec6262!important;box-shadow:none!important}
+html[data-theme-scope="client"] body.ft-client-home .hevy-set-row input.live-complete:checked[data-progress="fewer"]{background:#f4a44b!important;border-color:#f4a44b!important;box-shadow:none!important}
+html[data-theme-scope="client"] body.ft-client-home .hevy-set-row input.live-complete:checked[data-progress="higher"]{background:#54e39c!important;border-color:#54e39c!important;box-shadow:none!important}
