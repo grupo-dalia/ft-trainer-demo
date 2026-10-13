@@ -733,3 +733,49 @@
 .folder-rename-dialog{width:min(440px,calc(100vw - 32px));padding:26px;border:1px solid #dce8e1;border-radius:18px;background:white}.folder-rename-dialog::backdrop{background:#10271f88}.folder-rename-dialog h2{font-size:18px;line-height:1.7;margin:0 0 20px}.folder-rename-dialog label{display:grid;gap:9px;font-size:13px}.folder-rename-dialog input{width:100%;height:44px;padding:0 12px;border:1px solid #cfe1d5;border-radius:9px;font:14px "DM Sans",sans-serif}.folder-rename-dialog form>div{display:flex;justify-content:flex-end;gap:10px}.rename-feedback{font-size:13px;color:#506b59;min-height:20px}
 
 #routine-explorer .folder-card{background:#f0f8f3;border-color:#cce3d4}#routine-explorer .folder-card .folder-icon{background:#dcefe3;color:#278454}#routine-explorer .routine-file{background:#f3f7fc;border-color:#d4e1ef}#routine-explorer .routine-file .routine-icon{background:#e0ebf8;color:#3b76a4}#routine-explorer .routine-actions .rename-routine{grid-column:1/-1;background:transparent;border:1px solid #d0dfed;color:#466785}
+
+/* Compact desktop routine editor; retain comfortable mobile controls. */
+@media(min-width:900px){
+#routine-editor-overlay .routine-editor-panel{width:min(1100px,calc(100vw - 64px))!important;max-height:90vh;overflow:auto;border-radius:18px;padding:22px!important}
+#routine-editor-overlay .routine-editor-header{padding:0 0 16px!important;margin-bottom:16px!important}
+#routine-editor-overlay .routine-editor-header h2{font-size:20px!important;line-height:1.6!important;margin:4px 0!important}
+#routine-editor-overlay .routine-editor-header p{font-size:12px!important;margin:5px 0!important}
+#routine-editor-overlay .routine-editor-layout{grid-template-columns:minmax(280px,340px) minmax(0,1fr)!important;gap:20px!important}
+#routine-editor-overlay .routine-add-form{padding:16px!important}
+#routine-editor-overlay .routine-add-form h3{font-size:16px!important;line-height:1.6!important;margin:0 0 14px!important}
+#routine-editor-overlay label{font-size:12px!important}
+#routine-editor-overlay input:not([type=checkbox]),#routine-editor-overlay select{height:36px!important;min-height:36px!important;padding:6px 10px!important;font-size:13px!important}
+#routine-editor-overlay textarea{min-height:58px!important;font-size:13px!important}
+#routine-editor-overlay .muscle-filter-grid{gap:6px!important;margin:10px 0!important}
+#routine-editor-overlay .muscle-filter-grid button{padding:7px 10px!important;font-size:11px!important;min-height:32px!important;font-family:"DM Sans",sans-serif!important;letter-spacing:0!important}
+#routine-editor-overlay .exercise-picker{max-height:280px!important;overflow:auto;gap:6px!important}
+#routine-editor-overlay .exercise-pick{padding:8px!important;gap:8px!important}
+#routine-editor-overlay .exercise-pick img{width:38px!important;height:38px!important}
+#routine-editor-overlay .exercise-pick b{font-size:12px!important}
+#routine-editor-overlay .exercise-pick small{font-size:10px!important}
+#routine-editor-overlay .routine-exercise-row{padding:12px!important;gap:10px!important;grid-template-columns:48px minmax(100px,1fr) minmax(100px,.8fr) auto!important}
+#routine-editor-overlay .routine-exercise-name b,#routine-editor-overlay .routine-exercise-target b{font-size:12px!important}
+#routine-editor-overlay .routine-exercise-row button{padding:7px 10px!important;min-height:32px!important;font:600 11px "DM Sans",sans-serif!important;letter-spacing:0!important}
+#routine-editor-overlay .routine-fields{gap:8px!important}
+#routine-editor-overlay .planner-day-tabs button{min-width:86px!important;padding:8px 10px!important;font-size:12px!important}
+#routine-editor-overlay .routine-save-footer{padding:12px 0!important}
+}
+
+/* Explicit picker geometry prevents generic form input rules enlarging checks. */
+#routine-editor-overlay .exercise-picker .exercise-pick{display:grid!important;grid-template-columns:18px 42px minmax(0,1fr)!important;align-items:center!important;gap:10px!important;padding:9px 10px!important;min-height:62px!important;width:100%!important;box-sizing:border-box}
+#routine-editor-overlay .exercise-picker .exercise-pick input[type="checkbox"]{width:18px!important;height:18px!important;min-width:18px!important;min-height:18px!important;max-width:18px!important;margin:0!important;padding:0!important;border-radius:4px!important;accent-color:#2dac6c;justify-self:center}
+#routine-editor-overlay .exercise-picker .exercise-pick img{width:42px!important;height:42px!important;object-fit:contain!important;margin:0!important}
+#routine-editor-overlay .exercise-picker .exercise-pick>span{min-width:0!important;display:block!important}
+#routine-editor-overlay .exercise-picker .exercise-pick b{display:block;font:600 13px/1.4 "DM Sans",sans-serif!important;overflow-wrap:break-word}
+#routine-editor-overlay .exercise-picker .exercise-pick small{display:block;margin-top:3px;font:400 11px/1.4 "DM Sans",sans-serif!important}
+@media(min-width:900px){#routine-editor-overlay .routine-editor-layout{grid-template-columns:minmax(260px,310px) minmax(0,1fr)!important;align-items:start!important}#routine-editor-overlay .exercise-picker{max-height:300px!important}#routine-editor-overlay .routine-add-form{min-width:0!important}#routine-editor-overlay .routine-current{min-width:0!important}}
+
+.catalog-manage{justify-content:flex-end}.catalog-manage button{flex:0 0 36px;width:36px;height:36px;padding:8px;display:inline-grid;place-items:center}.catalog-manage svg,.edit-own-exercise svg{width:18px;height:18px}.edit-own-exercise{min-width:36px;padding:9px}.catalog-manage button:focus-visible{outline:3px solid #2dac6c;outline-offset:3px}
+
+.catalog-manage{justify-content:center!important;align-items:center;gap:12px;width:100%}.catalog-manage button{margin:0!important}
+
+.payment-month-selector{margin:0;padding:16px;border:1px solid var(--line);border-radius:13px;background:var(--green-soft)}.payment-month-selector legend{font:600 13px "DM Sans",sans-serif;padding:0 6px}.payment-month-selector>div{display:grid;grid-template-columns:1fr 1fr;gap:14px}.payment-month-selector label{font-size:12px}.payment-month-selector select{font:500 14px "DM Sans",sans-serif;height:44px}
+
+.payment-form [hidden]{display:none!important}
+
+.payment-month-selector .quota-period-label{margin:0 0 14px;font:600 14px "DM Sans",sans-serif;color:var(--ink)}

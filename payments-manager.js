@@ -64,7 +64,7 @@
     return normalize(query).trim().split(/\s+/).every(term=>normalize([clientName(client),client.subscriber_number,client.dni,client.phone,client.email].join(' ')).includes(term));
   }
   function periodPayments(clientId) {
-    return feeState.payments.filter(payment=>(!clientId||payment.client_id===clientId)&&payment.period_start?.startsWith(feeState.period));
+    return feeState.payments.filter(payment=>(!clientId||payment.client_id===clientId)&&(payment.payment_kind==='daily_entry'?payment.paid_on:payment.period_start)?.startsWith(feeState.period));
   }
   function periodStatus(client) {
     if(feeState.period===currentMonth())return feeStatus(client);
@@ -102,7 +102,7 @@
       ftSupabase
         .from("payments")
         .select(
-          "id,client_id,amount_eur,paid_on,period_start,period_end,method,notes,created_at",
+          "id,client_id,amount_eur,paid_on,period_start,period_end,method,notes,created_at,payment_kind",
         )
         .order("paid_on", { ascending: false }),
     ]);
@@ -229,8 +229,10 @@
 
   function openPaymentForm(selectedClient) {
     const node = overlay("payment-form-overlay"),
-      month = feeState.period;
-    node.innerHTML = `<form class="admin-form payment-form"><button type="button" class="admin-form-close" aria-label="Cerrar">×</button><p class="eyebrow">REGISTRAR CUOTA</p><h2>Confirmar pago en efectivo</h2><p class="muted">Al guardar, el socio recupera todo el acceso durante el periodo elegido.</p><div class="admin-fields"><label class="wide">Buscar socio<input type="search" id="payment-client-search" placeholder="Nombre, abonado, DNI o teléfono" autocomplete="off"></label><label class="wide">Socio<select name="client_id" required><option value="">Selecciona un socio</option>${feeState.clients.map((client) => `<option value="${client.id}" ${client.id === selectedClient ? "selected" : ""}>#${esc(client.subscriber_number || "--")} · ${esc(clientName(client))} · ${esc(client.phone || "")}</option>`).join("")}</select></label><label>Mes de la cuota<input type="month" name="period" value="${month}" required></label><label>Importe<input type="number" name="amount" value="45" min="0" step="0.01" required></label><label>Fecha del pago<input type="date" name="paid_on" value="${iso(new Date())}" required></label><label>Metodo<input value="Efectivo" disabled></label><label class="wide">Nota<textarea name="notes" placeholder="Opcional: descuento, beca, ajuste..."></textarea></label></div><div class="payment-period-preview"><span><small>Acceso desde</small><b id="payment-period-start"></b></span><span><small>Acceso hasta</small><b id="payment-period-end"></b></span></div><p class="form-feedback" aria-live="polite"></p><button class="primary full" type="submit">Guardar pago y activar acceso</button></form>`;
+      month = currentMonth(),
+      year = Number(new Intl.DateTimeFormat('en',{timeZone:'Europe/Madrid',year:'numeric'}).format(new Date())),
+      months = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    node.innerHTML = `<form class="admin-form payment-form"><button type="button" class="admin-form-close" aria-label="Cerrar">×</button><p class="eyebrow">REGISTRAR CUOTA</p><h2>Registrar pago de cuota</h2><p class="muted">Al guardar, el socio recupera todo el acceso durante el periodo elegido.</p><div class="admin-fields"><label class="wide">Tipo de cobro<select name="payment_kind"><option value="membership">Cuota de socio</option><option value="daily_entry">Entrada diaria</option></select></label><label class="wide">Buscar socio<input type="search" id="payment-client-search" placeholder="Nombre, abonado, DNI o teléfono" autocomplete="off"></label><label class="wide">Socio<select name="client_id" required><option value="">Selecciona un socio</option>${feeState.clients.map((client) => `<option value="${client.id}" ${client.id === selectedClient ? "selected" : ""}>#${esc(client.subscriber_number || "--")} · ${esc(clientName(client))} · ${esc(client.phone || "")}</option>`).join("")}</select></label><fieldset class="payment-month-selector wide" aria-labelledby="quota-period-label"><p id="quota-period-label" class="quota-period-label">Mes de la cuota</p><div><label>Mes<select name="quota_month" required>${months.map((name,index)=>`<option value="${String(index+1).padStart(2,'0')}" ${index+1===Number(month.slice(5,7))?'selected':''}>${name}</option>`).join('')}</select></label><label>Año<select name="quota_year" required>${Array.from({length:21},(_,index)=>year-10+index).map(value=>`<option value="${value}" ${value===year?'selected':''}>${value}</option>`).join('')}</select></label></div><input type="hidden" name="period" value="${year}-${month.slice(5,7)}"></fieldset><label>Importe<input type="number" name="amount" value="45" min="0" step="0.01" required></label><label>Fecha del pago<input type="date" name="paid_on" value="${iso(new Date())}" required></label><label>Método de pago<select name="method" required><option value="cash">Efectivo</option><option value="bizum">Bizum</option><option value="transfer">Transferencia</option></select></label><label class="wide">Nota<textarea name="notes" placeholder="Opcional: descuento, beca, ajuste..."></textarea></label></div><div class="payment-period-preview"><span><small>Acceso desde</small><b id="payment-period-start"></b></span><span><small>Acceso hasta</small><b id="payment-period-end"></b></span></div><p class="form-feedback" aria-live="polite"></p><button class="primary full" type="submit">Guardar pago y activar acceso</button></form>`;
     const form = node.querySelector("form"),
       period = form.querySelector('[name="period"]'),
       updatePreview = () => {
@@ -244,21 +246,28 @@
       clientSelect.innerHTML=`<option value="">${matches.length?'Selecciona un socio':'Sin resultados'}</option>${matches.map(client=>`<option value="${esc(client.id)}">#${esc(client.subscriber_number||'--')} · ${esc(clientName(client))} · ${esc(client.phone||'')}</option>`).join('')}`;
       clientSelect.value=matches.some(client=>client.id===previous)?previous:'';
     };
-    updatePreview();
+    const quotaMonth=form.querySelector('[name="quota_month"]'),quotaYear=form.querySelector('[name="quota_year"]');
+    const syncPeriod=()=>{period.value=quotaYear.value+'-'+quotaMonth.value;updatePreview()};
+    quotaMonth.onchange=syncPeriod;quotaYear.onchange=syncPeriod;
+    syncPeriod();
+    const kind=form.querySelector('[name="payment_kind"]'),submit=form.querySelector('[type="submit"]');
+    kind.onchange=()=>{const daily=kind.value==='daily_entry';clientSearch.closest('label').hidden=daily;clientSelect.closest('label').hidden=daily;clientSelect.required=!daily;form.querySelector('.payment-month-selector').hidden=daily;form.querySelector('.payment-period-preview').hidden=daily;submit.textContent=daily?'Guardar entrada diaria':'Guardar pago y activar acceso';form.querySelector('[name="amount"]').value=daily?'':'45'};
     period.onchange = updatePreview;
     form.querySelector(".admin-form-close").onclick = () => node.classList.remove("open");
     form.onsubmit = async (event) => {
       event.preventDefault();
       const data = new FormData(form),
-        clientId = String(data.get("client_id")),
+        daily = data.get("payment_kind")==="daily_entry",
+        clientId = daily?null:String(data.get("client_id")),
         range = monthRange(String(data.get("period"))),
         feedback = form.querySelector(".form-feedback"),
         button = form.querySelector('[type="submit"]');
-      if (!clientId) {
+      if (!daily&&!clientId) {
         feedback.textContent = "Selecciona un socio.";
         return;
       }
-      const duplicate = feeState.payments.some(
+      if(daily&&(!Number.isFinite(Number(data.get('amount')))||Number(data.get('amount'))<=0)){feedback.textContent='Introduce un importe mayor que cero.';return;}
+      const duplicate = !daily&&feeState.payments.some(
         (payment) =>
           payment.client_id === clientId && payment.period_start === range.start,
       );
@@ -268,11 +277,12 @@
       const { data: auth } = await ftSupabase.auth.getUser(),
         { error } = await ftSupabase.from("payments").insert({
           client_id: clientId,
+          payment_kind: daily?"daily_entry":"membership",
           amount_eur: Number(data.get("amount")),
           paid_on: String(data.get("paid_on")),
-          period_start: range.start,
-          period_end: range.end,
-          method: "cash",
+          period_start: daily?null:range.start,
+          period_end: daily?null:range.end,
+          method: String(data.get("method")),
           recorded_by: auth.user?.id || null,
           notes: String(data.get("notes") || "").trim() || null,
         });
@@ -282,7 +292,7 @@
         button.textContent = "Guardar pago y activar acceso";
         return;
       }
-      await ftSupabase
+      if(!daily)await ftSupabase
         .from("clients")
         .update({
           access_status: "active",
@@ -291,7 +301,7 @@
         })
         .eq("id", clientId);
       node.classList.remove("open");
-      toast("Pago registrado y acceso activado");
+      toast(daily?"Entrada diaria registrada":"Pago registrado y acceso activado");
       await loadFees();
     };
   }
@@ -300,7 +310,7 @@
     const client = feeState.clients.find((item) => item.id === clientId),
       history = periodPayments(clientId),
       node = overlay("payment-history-overlay");
-    node.innerHTML = `<section class="admin-form payment-form"><button type="button" class="admin-form-close" aria-label="Cerrar">×</button><p class="eyebrow">HISTORIAL DE CUOTAS</p><h2>${esc(clientName(client))}</h2><p class="muted">${history.length} pagos registrados para ${esc(feeState.period)}. El perfil y este historial nunca se borran al pausar el acceso.</p><div class="payment-history-list">${history.length ? history.map((payment) => `<article class="payment-history-row"><div><b>${formatDate(payment.period_start)} - ${formatDate(payment.period_end)}</b><small>Pagado el ${formatDate(payment.paid_on)} · Efectivo${payment.notes ? ` · ${esc(payment.notes)}` : ""}</small></div><strong>${euro(payment.amount_eur)}</strong><span class="fee-status ${new Date(payment.period_end + "T23:59:59") >= new Date() ? "paid" : "due"}">${new Date(payment.period_end + "T23:59:59") >= new Date() ? "Vigente" : "Finalizada"}</span></article>`).join("") : '<div class="fees-empty">Todavia no hay pagos registrados.</div>'}</div><button type="button" class="primary full" data-history-pay>Registrar nueva cuota</button></section>`;
+    node.innerHTML = `<section class="admin-form payment-form"><button type="button" class="admin-form-close" aria-label="Cerrar">×</button><p class="eyebrow">HISTORIAL DE CUOTAS</p><h2>${esc(clientName(client))}</h2><p class="muted">${history.length} pagos registrados para ${esc(feeState.period)}. El perfil y este historial nunca se borran al pausar el acceso.</p><div class="payment-history-list">${history.length ? history.map((payment) => `<article class="payment-history-row"><div><b>${formatDate(payment.period_start)} - ${formatDate(payment.period_end)}</b><small>Pagado el ${formatDate(payment.paid_on)} · ${({cash:"Efectivo",bizum:"Bizum",transfer:"Transferencia"})[payment.method]||payment.method}${payment.notes ? ` · ${esc(payment.notes)}` : ""}</small></div><strong>${euro(payment.amount_eur)}</strong><span class="fee-status ${new Date(payment.period_end + "T23:59:59") >= new Date() ? "paid" : "due"}">${new Date(payment.period_end + "T23:59:59") >= new Date() ? "Vigente" : "Finalizada"}</span></article>`).join("") : '<div class="fees-empty">Todavia no hay pagos registrados.</div>'}</div><button type="button" class="primary full" data-history-pay>Registrar nueva cuota</button></section>`;
     node.querySelector(".admin-form-close").onclick = () => node.classList.remove("open");
     node.querySelector("[data-history-pay]").onclick = () => {
       node.classList.remove("open");

@@ -33,3 +33,43 @@ html[data-theme-scope="client"][data-theme="light"] :is(.client-section-panel>he
 html[data-theme-scope="admin"][data-theme="dark"] :is(.page-placeholder,.routine-add-form,.routine-current,.routine-inline-edit,.exercise-picker,.routine-save-footer,.routine-exercise-row,.routine-quick-start,.import-preview,.mapping-grid,.catalog-tools,.catalog-results,.request-row,.payment-history-row,.fees-toolbar){background:#1a2420!important;color:#e8efea!important;border-color:#33483c!important}
 html[data-theme-scope="admin"][data-theme="dark"] :is(h1,h2,h3,h4,label,td,th,.intro p,.routine-exercise-name b,.exercise-info h3){color:#e8efea!important}
 .series-confirm-button:before,.series-confirm-button:after{content:none!important;display:none!important}.series-confirm-button{background-image:none!important;box-shadow:none!important;overflow:hidden}
+
+html[data-theme-scope="client"][data-theme="light"] body.ft-client-home #client-routine-panel.workout-focus,html[data-theme-scope="client"][data-theme="light"] body.ft-client-home #client-routine-panel.workout-focus :is(.workout-card,.workout-content,.workout-live-stats){background:var(--ft-bg)!important;color:var(--ft-text)!important}html[data-theme-scope="client"][data-theme="light"] body.ft-client-home #client-routine-panel.workout-focus .live-workout-toolbar{background:var(--ft-card)!important}html[data-theme-scope="client"][data-theme="light"] body.ft-client-home #client-routine-panel.workout-focus .workout-live-stats small{color:var(--ft-muted)!important}
+
+button.theme-toggle{width:42px!important;min-width:42px!important;padding:9px!important;gap:0!important}@media(max-width:420px){button.theme-toggle{width:36px!important;min-width:36px!important;height:36px!important;padding:7px!important}}
+
+/* Theme-aware contrast for shared controls and icons. */
+html[data-theme-scope="admin"][data-theme="dark"]{--ink:#edf4ef;--muted:#aebfb4;--green-dark:#85d8ab}
+html[data-theme-scope="admin"][data-theme="dark"] body :is(p,small,.muted,.breadcrumbs,.cash-badge,.training-feed-description,.training-feed-columns,.training-date span,.routine-copy small,.folder-card small,.routine-public-bulk small,.request-person small,.form-feedback,.rename-feedback,.routine-save-status){color:#b9cabf!important}
+html[data-theme-scope="admin"][data-theme="dark"] body :is(button.secondary,.rename-folder,.move-routine-button,.training-summary-button,.training-refresh,.routine-public-bulk button,.month-details-close,.admin-form-close,.icon-btn,.table-sort,.back-button){background:#24392c!important;color:#e3f2e8!important;border-color:#46644f!important}
+html[data-theme-scope="admin"][data-theme="dark"] body :is(svg,.file-icon,.stat-icon,.search>span,.notification-heading button){color:#a9dfbe}
+html[data-theme-scope="admin"][data-theme="dark"] body :is(input,select,textarea){color:#eff6f1!important;caret-color:#eff6f1}
+html[data-theme-scope="admin"][data-theme="dark"] body ::placeholder{color:#9fb5a7!important;opacity:1}
+html[data-theme-scope="admin"][data-theme="dark"] body :is(.folder-public-control,.routine-public-bulk b,.move-control,.mapping-grid label){color:#c8e3d1!important}
+html[data-theme-scope="admin"][data-theme="dark"] body .primary{color:#0a2817!important}
+html[data-theme-scope="client"][data-theme="light"] body :is(.ft-notification,.ft-bottom-nav button,.bottom-nav button,.client-bottom-nav button,.client-panel-back,.exercise-rest-control,.history-show-all,[data-repeat-routine],.workout-focus-controls #pause-live-workout){color:#356247!important;border-color:#cbded1!important}
+html[data-theme-scope="client"][data-theme="light"] body :is(.ft-bottom-nav,.client-bottom-nav,.bottom-nav) :is(svg,span,b){color:#356247!important}
+html[data-theme-scope="client"][data-theme="light"] body :is(.exercise-technique,.library-preview,.workout-top,.ft-section,.client-panel-content) svg{color:#356247}
+html[data-theme-scope="client"][data-theme="light"] body :is(input,textarea)::placeholder{color:#6c8073!important;opacity:1}
+html[data-theme-scope="client"][data-theme="dark"] body :is(.client-panel-content,.workout-content,.client-profile-hero,.client-library,.general-folder){color:#edf4ef!important}
+html[data-theme-scope="client"][data-theme="dark"] body :is(.client-panel-content,.workout-content) :is(h1,h2,h3,h4,label,summary){color:#edf4ef!important}
+html[data-theme-scope="client"][data-theme="dark"] body :is(.client-panel-content,.workout-content) :is(p,small){color:#b2c4b8!important}
+html[data-theme-scope="client"][data-theme="dark"] body :is(.client-panel-back,.exercise-rest-control,.ft-notification,.history-show-all,[data-repeat-routine]){color:#bde7cb!important}
+html[data-theme-scope="client"][data-theme="dark"] body :is(input,textarea)::placeholder{color:#a0b7a8!important;opacity:1}
+html[data-theme-scope="client"] body .series-confirm-button[data-checked="true"]{color:#132b1b!important}
+
+html[data-theme-scope="admin"][data-theme="dark"] body #routine-explorer :is(.folder-card,.routine-file) :is(.edit-folder-routines,.edit-routine,.assign-routine,.rename-folder,.rename-routine,.move-routine-button){background:#304c3a!important;color:#f0fff4!important;border:1px solid #739d80!important;min-height:44px;box-shadow:none!important}
+html[data-theme-scope="admin"][data-theme="dark"] body #routine-explorer :is(.edit-folder-routines,.assign-routine){background:#80dfaa!important;color:#103d23!important;border-color:#9cebbb!important}
+html[data-theme-scope="admin"][data-theme="dark"] body #routine-explorer :is(.delete-folder,.delete-routine){background:#4b292c!important;color:#ffd4d0!important;border:1px solid #b96c6c!important;min-height:44px;font:600 13px "DM Sans",sans-serif!important;letter-spacing:0!important}
+html[data-theme-scope="admin"][data-theme="dark"] body #routine-explorer .folder-public-control{background:#263e30!important;color:#e4f7e9!important;border:1px solid #67836e!important;min-height:44px}
+html[data-theme-scope="admin"][data-theme="dark"] body #routine-explorer .folder-public-control:has(input:checked){background:#365b42!important;border-color:#8ad8a5!important}
+html[data-theme-scope="admin"][data-theme="dark"] body #routine-explorer :is(.folder-card,.routine-file) button:hover{filter:brightness(1.12)}
+#routine-explorer :is(.folder-card,.routine-file) .card-actions{align-items:stretch!important}#routine-explorer .edit-folder-routines{width:100%}#routine-explorer :is(.delete-folder,.delete-routine){font:600 13px "DM Sans",sans-serif!important;letter-spacing:0!important;border-radius:10px;padding:11px 16px}
+
+html[data-theme-scope="admin"][data-theme="dark"] body .routine-editor-panel .muscle-filter-grid button{background:#294334!important;color:#ebf8ef!important;border:1px solid #73917d!important;font:600 12px "DM Sans",sans-serif!important;letter-spacing:0!important;min-height:38px}
+html[data-theme-scope="admin"][data-theme="dark"] body .routine-editor-panel .muscle-filter-grid button.active{background:#89dfad!important;color:#113e25!important;border-color:#a4eabe!important}
+html[data-theme-scope="admin"][data-theme="dark"] body .routine-editor-panel :is(.planner-day-tabs button,.exercise-pick,.planner-editor-summary span){background:#263e30!important;color:#e6f4eb!important;border-color:#577961!important}
+html[data-theme-scope="admin"][data-theme="dark"] body .routine-editor-panel :is(.planner-day-tabs b,.exercise-pick b,.exercise-pick small){color:#e6f4eb!important}
+html[data-theme-scope="admin"][data-theme="dark"] body .routine-editor-panel .planner-day-tabs button.active{background:#365b43!important;border-color:#8bd6a6!important}
+
+html[data-theme-scope="client"][data-theme="light"] .profile-fees-table .fee-attendance{background:#fdebea;color:#b52d2d!important}html[data-theme-scope="client"][data-theme="light"] .profile-fees-table .fee-attendance.paid{background:#e4f5e9;color:#187643!important}

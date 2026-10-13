@@ -51,7 +51,7 @@ body.ft-client-home #client-routine-panel.workout-hub .routine-hub-intro h2{marg
 body.ft-client-home #client-routine-panel.workout-hub .routine-hub-intro p{margin:0;color:var(--ft-muted);font:400 13px/1.4 "DM Sans",system-ui,sans-serif}
 body.ft-client-home #client-routine-panel.workout-hub #begin-live-workout b::after{content:none!important}
 body.ft-client-home #begin-live-workout[hidden]{display:none!important}
-body.ft-client-home #client-routine-panel.workout-focus{background:#080d0b!important}
+body.ft-client-home #client-routine-panel.workout-focus{background:var(--ft-bg)!important}
 body.ft-client-home #client-routine-panel.workout-focus>header,
 body.ft-client-home #client-routine-panel.workout-focus .routine-hub-intro,
 body.ft-client-home #client-routine-panel.workout-focus .client-workout-actions,
@@ -63,16 +63,16 @@ body.ft-client-home #client-routine-panel.workout-focus .routine-recent-history{
 body.ft-client-home #client-routine-panel.workout-focus .client-panel-content{padding:0!important;max-width:760px;margin:auto}
 body.ft-client-home #client-routine-panel.workout-focus .routine-session-host,
 body.ft-client-home #client-routine-panel.workout-focus .ft-session-area{margin:0!important}
-body.ft-client-home #client-routine-panel.workout-focus .workout-card{border:0!important;border-radius:0!important;background:#080d0b!important;box-shadow:none!important}
-body.ft-client-home #client-routine-panel.workout-focus .workout-content{padding:0!important;background:#080d0b!important}
-body.ft-client-home #client-routine-panel.workout-focus .live-workout-toolbar{display:block!important;position:sticky!important;top:0!important;z-index:12;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;background:#101714!important;box-shadow:0 10px 20px #0005}
+body.ft-client-home #client-routine-panel.workout-focus .workout-card{border:0!important;border-radius:0!important;background:var(--ft-bg)!important;box-shadow:none!important}
+body.ft-client-home #client-routine-panel.workout-focus .workout-content{padding:0!important;background:var(--ft-bg)!important}
+body.ft-client-home #client-routine-panel.workout-focus .live-workout-toolbar{display:block!important;position:sticky!important;top:0!important;z-index:12;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;background:var(--ft-card)!important;box-shadow:0 10px 20px #0005}
 body.ft-client-home .live-workout-toolbar{flex-wrap:wrap}
 body.ft-client-home .live-workout-toolbar .workout-focus-controls{display:flex;align-items:center;gap:10px;width:100%;padding:12px 15px;min-width:0}
 body.ft-client-home .workout-focus-controls strong{flex:1;color:var(--ft-text);font:600 19px "DM Sans",system-ui,sans-serif}
-body.ft-client-home .workout-focus-controls #leave-workout-focus{width:40px;height:40px;padding:0!important;border-radius:50%!important;background:#19241e!important;color:var(--ft-text)!important;font:700 27px "DM Sans",system-ui,sans-serif!important}
+body.ft-client-home .workout-focus-controls #leave-workout-focus{width:40px;height:40px;padding:0!important;border-radius:50%!important;background:var(--ft-raised)!important;color:var(--ft-text)!important;font:700 27px "DM Sans",system-ui,sans-serif!important}
 body.ft-client-home .workout-focus-controls #finish-live-workout{min-height:40px!important;padding:9px 18px!important;border:0!important;border-radius:999px!important;background:var(--ft-accent)!important;color:#092618!important;font:700 13px "DM Sans",system-ui,sans-serif!important}
 body.ft-client-home .workout-focus-controls #pause-live-workout{min-height:40px!important;padding:8px 11px!important;border-radius:50px!important;font-size:11px!important}
-body.ft-client-home .live-workout-toolbar .workout-live-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;width:100%;padding:18px 17px;border-top:1px solid #ffffff13;border-bottom:1px solid #ffffff1b;background:#090e0b}
+body.ft-client-home .live-workout-toolbar .workout-live-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;width:100%;padding:18px 17px;border-top:1px solid #ffffff13;border-bottom:1px solid #ffffff1b;background:var(--ft-bg)}
 body.ft-client-home .workout-live-stats>div{display:grid;gap:7px;min-width:0}
 body.ft-client-home .workout-live-stats small{color:#9aa9a0!important;font:400 12px "DM Sans",system-ui,sans-serif!important}
 body.ft-client-home .workout-live-stats b{color:var(--ft-text)!important;font:600 20px "DM Sans",system-ui,sans-serif!important;white-space:nowrap}
@@ -80,7 +80,7 @@ body.ft-client-home .workout-live-stats>div:first-child b{color:var(--ft-accent)
 body.ft-client-home #client-routine-panel.workout-focus #exercise-list{padding:0 13px 40px}
 body.ft-client-home #client-routine-panel.workout-focus .session-plan-head{margin:18px 0 10px!important;padding:0 4px}
 body.ft-client-home #client-routine-panel.workout-focus .session-plan-head b{font-size:14px!important}
-body.ft-client-home #client-routine-panel.workout-focus .inline-exercise{margin:0!important;padding:20px 2px 25px!important;border:0!important;border-bottom:1px solid #ffffff20!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
+body.ft-client-home #client-routine-panel.workout-focus .inline-exercise{margin:0!important;padding:20px 2px 25px!important;border:0!important;border-bottom:1px solid var(--ft-line)!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
 body.ft-client-home #client-routine-panel.workout-focus .inline-exercise>.exercise-technique{display:grid!important;grid-template-columns:52px minmax(0,1fr) 24px!important;align-items:center;gap:12px;min-height:60px!important;margin:0!important;padding:0!important;box-shadow:none!important}
 body.ft-client-home #client-routine-panel.workout-focus .exercise-thumb{width:52px!important;height:52px!important;border-radius:50%!important;background:#e3e9e4!important;overflow:hidden}
 body.ft-client-home #client-routine-panel.workout-focus .exercise-thumb img{object-fit:contain!important}
@@ -102,7 +102,7 @@ body.ft-client-home #client-routine-panel.workout-focus .hevy-set-head{padding-t
 body.ft-client-home #client-routine-panel.workout-focus .hevy-set-head b{font:500 10px "DM Sans",system-ui,sans-serif!important;color:#9ba9a0!important;text-align:center}
 body.ft-client-home #client-routine-panel.workout-focus .hevy-set-row small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#aab7ad!important;font:400 11px "DM Sans",system-ui,sans-serif!important}
 body.ft-client-home #client-routine-panel.workout-focus .hevy-set-row select{min-height:39px!important;border:0!important;border-radius:8px!important;background:#1d2420!important;font:700 14px "DM Sans",system-ui,sans-serif!important}
-body.ft-client-home #client-routine-panel.workout-focus .hevy-set-row input:not([type="checkbox"]){min-height:39px!important;padding:3px!important;border:1px solid #ffffff25!important;border-radius:8px!important;background:#080d0b!important;color:var(--ft-text)!important;font:500 14px "DM Sans",system-ui,sans-serif!important}
+body.ft-client-home #client-routine-panel.workout-focus .hevy-set-row input:not([type="checkbox"]){min-height:39px!important;padding:3px!important;border:1px solid #ffffff25!important;border-radius:8px!important;background:var(--ft-bg)!important;color:var(--ft-text)!important;font:500 14px "DM Sans",system-ui,sans-serif!important}
 body.ft-client-home #client-routine-panel.workout-focus .hevy-set-row .live-rir{background:#1d2420!important;border:0!important}
 body.ft-client-home #client-routine-panel.workout-focus .hevy-set-row input.live-complete{width:34px!important;height:39px!important;min-height:39px!important;margin:0!important;border-radius:8px!important;background:#1d2420!important}
 body.ft-client-home #client-routine-panel.workout-focus .hevy-set-row input.live-complete:checked{background:var(--ft-accent)!important}

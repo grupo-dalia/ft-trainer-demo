@@ -63,6 +63,7 @@
       };
 
       host.querySelectorAll('.remove-routine-exercise').forEach(button=>button.onclick=async()=>{
+        if(!confirm('¿Quitar este ejercicio de la rutina? Los resultados anteriores se conservarán.'))return;
         button.disabled=true;
         const {error}=await ftSupabase.from('routine_exercises').delete().eq('id',button.dataset.item);
         if(error){toast('No se pudo quitar el ejercicio');button.disabled=false;return}
