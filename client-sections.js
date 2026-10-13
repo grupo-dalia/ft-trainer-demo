@@ -84,17 +84,20 @@
   function clearFreeDraft() {
     try { localStorage.removeItem(freeDraftKey); } catch (error) { /* Storage may be unavailable. */ }
   }
+  let routineOwnerUserId=null;
+  function canEditRoutine(){return isFreeWorkout()||!!(routine?.source==='client'&&routine.created_by&&routine.created_by===routineOwnerUserId)}
   function supersetStorageKey() {
     return `ft-supersets-${clientId}-${routine?.id || "free"}-${selectedRoutineDay}`;
   }
   function restoreSessionSupersets() {
-    if (isFreeWorkout() || routine?.source === "client") return;
+    return; // Assigned routine supersets are defined by the trainer.
     try {
       const groups = JSON.parse(localStorage.getItem(supersetStorageKey()) || "{}");
       routineItems.forEach(item => { if (Object.prototype.hasOwnProperty.call(groups, item.exercise_id)) item.superset_group = groups[item.exercise_id]; });
     } catch (error) { /* Keep the assigned routine if storage is unavailable. */ }
   }
   async function applySupersetGroups(next) {
+    if(!canEditRoutine())throw Error("Rutina del entrenador protegida");
     if (routine?.id && routine.source === "client") {
       await checkedQuery(db.rpc("ft_set_personal_supersets", {
         p_routine: routine.id, p_day: selectedRoutineDay,
@@ -109,6 +112,7 @@
     renderRoutine();
   }
   function openSupersetPicker() {
+    if(!canEditRoutine()){toast("Esta rutina solo puede modificarla Fernando");return;}
     if (routineItems.length < 2) { toast("Añade al menos dos ejercicios para crear una superserie"); return; }
     if (dirtyExercises.size) { toast("Finaliza el entrenamiento antes de reorganizar ejercicios con series editadas"); return; }
     const overlay = document.createElement("div");
@@ -586,9 +590,10 @@
       return;
     }
     try {
+    const identity=await db.auth.getUser();routineOwnerUserId=identity.data?.user?.id||null;
     const routines = await checkedQuery(db
       .from("routines")
-      .select("id,name,description,objective,status,week_start,created_at,source,folder_id")
+      .select("id,name,description,objective,status,week_start,created_at,source,folder_id,created_by")
       .eq("client_id", clientId)
       .in("status", ["active", "draft"])
       .order("created_at", { ascending: false }));
@@ -709,12 +714,15 @@
                 ? item.target_reps_min
                 : `${item.target_reps_min || "—"}–${item.target_reps_max || "—"}`,
             image = ex.thumbnail_url || "assets/brand/ft-symbol-color.png";
-          return `<article class="live-exercise inline-exercise ${item.superset_group ? "superset-exercise" : ""}" data-live-index="${index}" ${item.superset_group ? `data-superset="${item.superset_group}"` : ""}><button type="button" class="exercise-row exercise-technique"><span class="exercise-thumb"><img src="${esc(image)}" alt="${esc(ex.name)}" loading="lazy"></span><span>${item.superset_group ? `<mark>SUPERSET ${item.superset_group}</mark>` : ""}<b>${esc(ex.name || "Ejercicio")}</b><small>${item.target_sets} series · ${ex.tracking_type==="time"?"Tiempo en segundos":`${reps} repeticiones`}${ex.tracking_type!=="time" && item.target_weight_kg != null ? ` · ${item.target_weight_kg} kg` : ""}</small><em>Ver vídeo y técnica</em></span><strong>⋮</strong></button><textarea class="exercise-session-note" rows="1" placeholder="Agregar notas aquí…" aria-label="Notas de ${esc(ex.name || "ejercicio")}"></textarea><button type="button" class="exercise-rest-control" data-rest-enabled="true" aria-pressed="true">${icon("clock")}<span>Descanso: ${item.rest_seconds ?? 90} s</span></button>${isFreeWorkout() ? `<button type="button" class="remove-free-exercise" data-remove-index="${index}" aria-label="Quitar ${esc(ex.name || "Ejercicio")}">Quitar ejercicio</button>` : ""}<div class="inline-registration"><div class="last-record"></div><div class="sets"><p>Cargando series…</p></div></div></article>`;
+          return `<article class="live-exercise inline-exercise ${item.superset_group ? "superset-exercise" : ""}" data-live-index="${index}" ${item.superset_group ? `data-superset="${item.superset_group}"` : ""}><button type="button" class="exercise-row exercise-technique"><span class="exercise-thumb"><img src="${esc(image)}" alt="${esc(ex.name)}" loading="lazy"></span><span>${item.superset_group ? `<mark>SUPERSET ${item.superset_group}</mark>` : ""}<b>${esc(ex.name || "Ejercicio")}</b><small>${item.target_sets} series · ${ex.tracking_type==="time"?"Tiempo en segundos":`${reps} repeticiones`}${ex.tracking_type!=="time" && item.target_weight_kg != null ? ` · ${item.target_weight_kg} kg` : ""}</small><em>Ver vídeo y técnica</em></span><strong>⋮</strong></button><textarea class="exercise-session-note" rows="1" placeholder="Agregar notas aquí…" aria-label="Notas de ${esc(ex.name || "ejercicio")}"></textarea><button type="button" class="exercise-rest-control" data-rest-enabled="true" aria-pressed="true">${icon("clock")}<span>Descanso: ${item.rest_seconds ?? 90} s</span></button>${canEditRoutine() ? `<button type="button" class="remove-free-exercise" data-remove-index="${index}" aria-label="Quitar ${esc(ex.name || "Ejercicio")}">Quitar ejercicio</button>` : ""}<div class="inline-registration"><div class="last-record"></div><div class="sets"><p>Cargando series…</p></div></div></article>`;
         })
         .join("") ||
         '<div class="client-empty-state">Esta sesión aún no contiene ejercicios.</div>');
     document.getElementById("exercise-list").insertAdjacentHTML("beforeend", `<div class="workout-session-actions"><button type="button" class="workout-add-exercise">+ Añadir ejercicio</button><button type="button" class="workout-add-superset">+ Superserie</button><button type="button" class="workout-open-settings">Configuración</button>${isFreeWorkout() && !sessionId ? '<button type="button" class="workout-discard-free">Descartar entreno</button>' : ""}</div>`);
+    document.querySelector(".workout-add-exercise").hidden=!canEditRoutine();
+    document.querySelector(".workout-add-superset").hidden=!canEditRoutine();
     document.querySelector(".workout-add-exercise").onclick = () => {
+      if(!canEditRoutine())return;
       if (!isFreeWorkout() && sessionId && !sessionCompleted) { toast("Finaliza la sesión actual antes de editar la rutina"); return; }
       document.querySelector('[data-workout-view="library"]')?.click();
     };
@@ -766,9 +774,12 @@
       button.querySelector("span").textContent = enabled ? `Descanso: ${item.rest_seconds ?? 90} s` : "Descanso: APAGADO";
       if (!enabled) { clearInterval(restTimerId); document.querySelector(".live-rest-timer")?.remove(); }
     });
-    document.querySelectorAll("[data-remove-index]").forEach(button => button.onclick = () => {
+    document.querySelectorAll("[data-remove-index]").forEach(button => button.onclick = async () => {
+      if(!canEditRoutine())return;
       if (sessionId && !sessionCompleted) { toast("Finaliza el entrenamiento antes de quitar ejercicios"); return; }
       const index = Number(button.dataset.removeIndex);
+      const candidate=routineItems[index];
+      if(!isFreeWorkout()){button.disabled=true;try{await checkedQuery(db.rpc('ft_remove_personal_exercise',{p_entry:candidate.id}));}catch{button.disabled=false;toast('No se pudo quitar el ejercicio');return}}
       const [removed] = routineItems.splice(index, 1);
       allRoutineItems = allRoutineItems.filter(item => item !== removed);
       routineItems.forEach((item, position) => item.position = position + 1);
@@ -969,9 +980,14 @@
           weight = current?.weight_kg ?? "";
         const previousLabel = previous ? previous.duration_seconds != null ? `${previous.duration_seconds} s` : `${previous.weight_kg ?? 0} × ${previous.reps ?? 0}` : "—";
         return `<label class="hevy-set-row"><select class="live-set-type" aria-label="Tipo de serie ${index + 1}"><option value="normal">${index + 1}</option><option value="warmup">C</option></select><small>${previousLabel}</small><input class="live-weight" ${noWeight?'style="visibility:hidden" disabled':''} value="${weight}" inputmode="decimal" aria-label="Peso serie ${index + 1}"><input class="live-reps" type="number" min="1" max="${timed?86400:1000}" step="1" placeholder="${timed?"Segundos":item.target_reps_min ?? "—"}${!timed && item.target_reps_max && item.target_reps_max !== item.target_reps_min ? `–${item.target_reps_max}` : ""}" value="${reps}" inputmode="numeric" aria-label="${timed?"Segundos":"Repeticiones"} serie ${index + 1}"><input class="live-rir" type="number" min="0" max="10" step="1" value="${current?.rir == null ? "" : 10 - Number(current.rir)}" inputmode="numeric" aria-label="RPE serie ${index + 1}"><input class="live-complete" type="checkbox" ${current?.completed ? "checked" : ""} aria-label="Completar serie ${index + 1}"></label>`;
-      }).join("") + `<button type="button" class="add-live-set">+ Agregar serie</button>`;
+      }).join("") + `${canEditRoutine()?'<button type="button" class="add-live-set">+ Agregar serie</button><button type="button" class="remove-live-set">− Quitar última serie</button>':''}`;
     sets.querySelectorAll(".live-set-type").forEach((select, index) => { select.value = currentLogs.find(log => log.set_number === index + 1)?.set_type === "warmup" ? "warmup" : "normal"; });
-    sets.querySelector(".add-live-set").onclick = () => {
+    const addSet=sets.querySelector('.add-live-set'),removeSet=sets.querySelector('.remove-live-set');
+    async function persistSets(count){if(!canEditRoutine()||sessionCompleted||count<1||count>20)return false;try{if(!isFreeWorkout())await checkedQuery(db.rpc('ft_set_personal_series',{p_entry:item.id,p_sets:count}));item.target_sets=count;if(isFreeWorkout())saveFreeDraft();return true}catch{toast('No se pudieron cambiar las series');return false}}
+    if(removeSet)removeSet.onclick=async()=>{const rows=sets.querySelectorAll('.hevy-set-row');if(rows.length<=1)return;const last=rows[rows.length-1];if([...last.querySelectorAll('input')].some(input=>input.type==='checkbox'?input.checked:input.value!=='')){toast('No se puede quitar una serie con resultados registrados');return}removeSet.disabled=true;try{if(await persistSets(rows.length-1)){last.remove();updateWorkoutStats()}}finally{removeSet.disabled=false}};
+    if(addSet)addSet.onclick = async () => {
+      if(!canEditRoutine())return;
+      addSet.disabled=true;const changed=await persistSets(sets.querySelectorAll('.hevy-set-row').length+1);addSet.disabled=false;if(!changed)return;
       const rows = sets.querySelectorAll(".hevy-set-row"),
         lastRow = rows[rows.length - 1],
         clone = lastRow.cloneNode(true),
@@ -1515,7 +1531,7 @@
       form.querySelector(".saved-exercise-destination").hidden = !saved;
       const newFolder = folder.value === "new";
       form.querySelector(".destination-folder-name").hidden = !newFolder;
-      const plans = availableRoutines.filter(plan => plan.source === "client" && plan.folder_id === folder.value);
+      const plans = availableRoutines.filter(plan => plan.source === "client" && plan.created_by===routineOwnerUserId && plan.folder_id === folder.value);
       training.innerHTML = `${plans.map(plan => `<option value="${esc(plan.id)}">${esc(plan.name)}</option>`).join("")}<option value="new">+ Nuevo entrenamiento</option>`;
       if (routine?.id && plans.some(plan => plan.id === routine.id)) training.value = routine.id;
       if (newFolder) training.value = "new";
@@ -1618,7 +1634,7 @@
   function openLibraryExercise(exercise) {
     const overlay = document.createElement("div");
     overlay.className = "client-exercise-preview";
-    overlay.innerHTML = `<section><button type="button" class="exercise-preview-close">×</button>${window.ftExerciseMedia ? window.ftExerciseMedia.html(exercise.database || {media_url:exercise.gif || exercise.imagen,name:exercise.nombre_es || exercise.nombre}) : `<img src="${esc(exercise.imagen)}" alt="">`}<small>${esc(exercise.grupo)} · ${esc(exercise.equipo)}</small><h2>${esc(exercise.nombre_es || exercise.nombre)}</h2><ol>${(exercise.instrucciones || []).map((step) => `<li>${esc(step)}</li>`).join("") || '<li>Consulta las indicaciones de Fernando antes de realizar el ejercicio.</li>'}</ol><form class="client-exercise-config"><label>Entrenamiento<select name="destination">${availableRoutines.filter(plan=>plan.source==="client").map(plan=>`<option value="${esc(plan.id)}" ${plan.id===routine?.id?"selected":""}>${esc(personalFolders.find(folder=>folder.id===plan.folder_id)?.name || "Mis rutinas")} · ${esc(plan.name)}</option>`).join("")}<option value="new">+ Crear entrenamiento y elegir carpeta</option></select></label><div class="client-form-grid"><label>Dia<input name="day" type="number" min="1" max="14" value="${selectedRoutineDay || 1}" required></label><label>Posicion<input name="position" type="number" min="1" value="${routineItems.length + 1}" required></label><label>Series<input name="sets" type="number" min="1" max="20" value="3" required></label><label>Repeticiones minimas<input name="min" type="number" min="1" max="100" value="8" required></label><label>Repeticiones maximas<input name="max" type="number" min="1" max="100" value="12" required></label><label>Descanso (segundos)<input name="rest" type="number" min="0" max="900" value="90" required></label></div><p class="form-feedback" aria-live="polite"></p><button type="submit" class="client-add-exercise">+ Anadir al entrenamiento</button></form></section>`;
+    overlay.innerHTML = `<section><button type="button" class="exercise-preview-close">×</button>${window.ftExerciseMedia ? window.ftExerciseMedia.html(exercise.database || {media_url:exercise.gif || exercise.imagen,name:exercise.nombre_es || exercise.nombre}) : `<img src="${esc(exercise.imagen)}" alt="">`}<small>${esc(exercise.grupo)} · ${esc(exercise.equipo)}</small><h2>${esc(exercise.nombre_es || exercise.nombre)}</h2><ol>${(exercise.instrucciones || []).map((step) => `<li>${esc(step)}</li>`).join("") || '<li>Consulta las indicaciones de Fernando antes de realizar el ejercicio.</li>'}</ol><form class="client-exercise-config"><label>Entrenamiento<select name="destination">${availableRoutines.filter(plan=>plan.source==="client"&&plan.created_by===routineOwnerUserId).map(plan=>`<option value="${esc(plan.id)}" ${plan.id===routine?.id?"selected":""}>${esc(personalFolders.find(folder=>folder.id===plan.folder_id)?.name || "Mis rutinas")} · ${esc(plan.name)}</option>`).join("")}<option value="new">+ Crear entrenamiento y elegir carpeta</option></select></label><div class="client-form-grid"><label>Dia<input name="day" type="number" min="1" max="14" value="${selectedRoutineDay || 1}" required></label><label>Posicion<input name="position" type="number" min="1" value="${routineItems.length + 1}" required></label><label>Series<input name="sets" type="number" min="1" max="20" value="3" required></label><label>Repeticiones minimas<input name="min" type="number" min="1" max="100" value="8" required></label><label>Repeticiones maximas<input name="max" type="number" min="1" max="100" value="12" required></label><label>Descanso (segundos)<input name="rest" type="number" min="0" max="900" value="90" required></label></div><p class="form-feedback" aria-live="polite"></p><button type="submit" class="client-add-exercise">+ Anadir al entrenamiento</button></form></section>`;
     overlay.innerHTML = overlay.innerHTML.replace('<option value="new">', `<option value="free" ${isFreeWorkout() || !routine ? "selected" : ""}>Entrenamiento libre</option><option value="new">`);
     document.body.appendChild(overlay);
     overlay.querySelector("button").onclick = () => overlay.remove();

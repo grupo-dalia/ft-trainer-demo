@@ -35,10 +35,11 @@ if (!session) {
   } else {
     window.ftSupabase = client;
     await load("app.js?v=2");
-    await load("catalogo.js?v=5");
-    await load("admin-features.js?v=5");
+    await load("catalogo.js?v=7");
+    await load("admin-features.js?v=6");
     await load("exercise-media.js?v=2");
-    await load("trainer-exercise-videos.js?v=3");
+    await load("trainer-exercise-videos.js?v=5");
+    await load("exercise-option-chips.js?v=2");
     await load("supabase-data.js?v=11");
     await load("admin-live.js?v=13");
     await load("terms-viewer.js?v=1");
