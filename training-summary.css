@@ -1,0 +1,36 @@
+/* Scoped design for the admin training summary. */
+.training-summary-dialog{--sum-bg:#fff;--sum-raised:#f5f8f6;--sum-ink:#1e3b2a;--sum-muted:#728278;--sum-line:#e2ebe5;--sum-accent:#238b59;width:min(760px,calc(100vw - 32px));max-height:88dvh;padding:30px!important;border:1px solid var(--sum-line)!important;border-radius:22px!important;background:var(--sum-bg)!important;color:var(--sum-ink)!important;box-shadow:0 24px 80px #102c2433}
+html[data-theme="dark"] .training-summary-dialog{--sum-bg:#18241e;--sum-raised:#213229;--sum-ink:#e8f4ec;--sum-muted:#adbfaf;--sum-line:#38513e;--sum-accent:#83dca7}
+.training-summary-dialog::backdrop{background:#0b211e99;backdrop-filter:blur(5px)}
+.training-summary-dialog #training-summary-body{font-family:"DM Sans",sans-serif}
+.training-summary-dialog #training-summary-body :is(h2,h3){font-family:"DM Sans",sans-serif!important;text-transform:none!important;letter-spacing:-.02em!important;color:var(--sum-ink)!important;line-height:1.4!important}
+.training-summary-dialog #training-summary-body .training-summary-intro h2{font-size:24px!important;font-weight:700!important;margin:12px 0 5px!important}
+.training-summary-dialog .training-summary-close{position:absolute;top:20px;right:20px;float:none;display:grid;place-items:center;width:34px;height:34px;padding:0!important;background:var(--sum-raised)!important;border:1px solid var(--sum-line)!important;border-radius:10px;color:var(--sum-muted)!important;font:23px Arial!important;cursor:pointer}
+.training-summary-dialog .training-summary-intro{padding-right:30px;margin-bottom:24px}
+.training-summary-dialog .summary-kicker{display:inline-flex;align-items:center;gap:7px;margin:0;padding:5px 9px;border-radius:7px;background:var(--sum-raised);color:var(--sum-accent)!important;font:600 10px "DM Sans",sans-serif;letter-spacing:.07em}
+.training-summary-dialog .summary-kicker::before{content:'✓';font-size:12px}
+.training-summary-dialog .summary-routine-name{font:500 14px/1.5 "DM Sans",sans-serif;color:var(--sum-ink)!important;margin:0 0 7px}
+.training-summary-dialog .training-summary-intro small{color:var(--sum-muted)!important;font-size:12px}
+.training-summary-dialog .training-summary-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.training-summary-dialog .training-summary-metrics article{padding:16px 13px;border:1px solid var(--sum-line);background:var(--sum-raised);border-radius:12px;min-width:0}
+.training-summary-dialog .training-summary-metrics small{font:500 10px/1.5 "DM Sans",sans-serif;color:var(--sum-muted)!important;display:block;margin-bottom:10px}
+.training-summary-dialog .training-summary-metrics b{font:600 25px/1.2 "DM Sans",sans-serif;color:var(--sum-ink)!important;letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+.training-summary-dialog .training-summary-metrics b span{font-size:11px;letter-spacing:0;color:var(--sum-muted)}
+.training-summary-dialog .summary-volume-note{font:400 10px/1.5 "DM Sans",sans-serif;color:var(--sum-muted)!important;margin:10px 0 26px}
+.training-summary-dialog .summary-exercises-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.training-summary-dialog #training-summary-body .summary-exercises-heading h3{font-size:14px!important;font-weight:600;margin:0!important}
+.training-summary-dialog .summary-exercises-heading>span{font-size:10px;color:var(--sum-muted)}
+.training-summary-dialog .summary-exercises{gap:12px}
+.training-summary-dialog .summary-exercise-card{border:1px solid var(--sum-line);border-radius:13px;overflow:hidden;background:var(--sum-bg)}
+.training-summary-dialog .summary-exercise-card>header{position:static!important;display:flex!important;gap:12px;align-items:center;padding:15px 16px!important;border:0!important;border-bottom:1px solid var(--sum-line)!important;background:var(--sum-raised)!important;box-shadow:none!important;height:auto!important}
+.training-summary-dialog .summary-exercise-number{width:32px;height:32px;flex-shrink:0;border-radius:9px;background:var(--sum-bg);border:1px solid var(--sum-line);color:var(--sum-accent);font:600 13px "DM Sans",sans-serif}
+.training-summary-dialog #training-summary-body .summary-exercise-card h3{font-size:14px!important;font-weight:600!important;margin:0 0 3px!important}
+.training-summary-dialog .summary-exercise-card header small{font:400 11px "DM Sans",sans-serif;color:var(--sum-muted)!important}
+.training-summary-dialog .summary-set{padding:12px 16px;border-color:var(--sum-line)}
+.training-summary-dialog .summary-set-index{font:500 11px "DM Sans",sans-serif;color:var(--sum-muted)}
+.training-summary-dialog .summary-set-performance{justify-content:flex-start;padding-left:20px}
+.training-summary-dialog .summary-set-performance b{font:600 18px "DM Sans",sans-serif;color:var(--sum-ink)!important;min-width:20px}
+.training-summary-dialog .summary-set-performance :is(span,i){color:var(--sum-muted)!important;font-size:11px}
+.training-summary-dialog .summary-set-done{background:var(--sum-raised);color:var(--sum-accent)}
+.training-summary-dialog button:focus-visible{outline:3px solid var(--sum-accent);outline-offset:3px}
+@media(max-width:520px){.training-summary-dialog{padding:22px 18px!important}.training-summary-dialog .training-summary-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.training-summary-dialog #training-summary-body .training-summary-intro h2{font-size:21px!important}.training-summary-dialog .summary-exercises-heading>span{display:none}.training-summary-dialog .summary-set-performance{padding-left:0}.training-summary-dialog .summary-set{gap:8px}}
