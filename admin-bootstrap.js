@@ -58,8 +58,8 @@ if (!session) {
     await load("vendor/jspdf.umd.min.js");
     await load("admin-month-details.js?v=2");
     await load("exercise-progression.js?v=6");
-    await load("routine-history.js?v=1");
-    await load("messaging.js?v=1");
+    await load("routine-history.js?v=2");
+    await load("messaging.js?v=2");
     document.body.style.visibility = "visible";
   }
 }

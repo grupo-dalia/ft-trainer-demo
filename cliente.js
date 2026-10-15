@@ -26,7 +26,7 @@ window.addEventListener("pageshow", (event) => {
     await load("client-materials.js?v=2");
     await load("client-hall-of-fame.js?v=2");
     await load("client-navigation-fix.js?v=3");
-    await load("messaging.js?v=1");
+    await load("messaging.js?v=2");
     document.body.style.visibility = "visible";
     return;
   }
@@ -130,7 +130,7 @@ window.addEventListener("pageshow", (event) => {
   await load("client-materials.js?v=2");
   await load("client-hall-of-fame.js?v=2");
   await load("client-navigation-fix.js?v=3");
-    await load("messaging.js?v=1");
+    await load("messaging.js?v=2");
   document.body.style.visibility = "visible";
 })().catch(() => {
   document.body.style.visibility = "visible";
