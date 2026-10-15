@@ -175,4 +175,5 @@
     await oldLoadClients();
     attachTrainingButtons();
   };
+const originalHistory=window.openClientTraining;window.openClientTraining=async function(clientId,name){await originalHistory(clientId,name);const body=document.querySelector('#client-training-overlay .training-log-body');if(!body)return;const host=document.createElement('section');host.className='admin-client-comparison';body.prepend(host);if(window.ftExerciseProgression)await window.ftExerciseProgression.mount(host,ftSupabase,clientId)};
 })();

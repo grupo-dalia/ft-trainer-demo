@@ -40,7 +40,7 @@ if (!session) {
     await load("exercise-media.js?v=2");
     await load("trainer-exercise-videos.js?v=5");
     await load("exercise-option-chips.js?v=2");
-    await load("supabase-data.js?v=11");
+    await load("supabase-data.js?v=12");
     await load("admin-live.js?v=13");
     await load("terms-viewer.js?v=1");
     await load("routine-folders.js?v=21");
@@ -51,12 +51,14 @@ if (!session) {
     await load("client-import-core.js?v=6");
     await load("client-import.js?v=11");
     await load("payments-manager.js?v=6");
-    await load("client-training-log.js?v=4");
+    await load("client-training-log.js?v=5");
     await load("trainer-materials-admin.js?v=2");
     await load("admin-notifications.js?v=2");
     await load("admin-training-feed.js?v=8");
     await load("vendor/jspdf.umd.min.js");
     await load("admin-month-details.js?v=2");
+    await load("exercise-progression.js?v=5");
+    await load("messaging.js?v=1");
     document.body.style.visibility = "visible";
   }
 }

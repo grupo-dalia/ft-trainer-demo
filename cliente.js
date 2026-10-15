@@ -21,11 +21,12 @@ window.addEventListener("pageshow", (event) => {
     await load("set-progress.js?v=1");
     await load("vendor/jspdf.umd.min.js");
     await load("client-fees.js?v=2");
-    await load("exercise-progression.js?v=4");
+    await load("exercise-progression.js?v=5");
     await load("client-sections.js?v=46");
     await load("client-materials.js?v=2");
     await load("client-hall-of-fame.js?v=2");
     await load("client-navigation-fix.js?v=3");
+    await load("messaging.js?v=1");
     document.body.style.visibility = "visible";
     return;
   }
@@ -124,11 +125,12 @@ window.addEventListener("pageshow", (event) => {
   await load("set-progress.js?v=1");
     await load("vendor/jspdf.umd.min.js");
     await load("client-fees.js?v=2");
-    await load("exercise-progression.js?v=4");
+    await load("exercise-progression.js?v=5");
     await load("client-sections.js?v=46");
   await load("client-materials.js?v=2");
   await load("client-hall-of-fame.js?v=2");
   await load("client-navigation-fix.js?v=3");
+    await load("messaging.js?v=1");
   document.body.style.visibility = "visible";
 })().catch(() => {
   document.body.style.visibility = "visible";
