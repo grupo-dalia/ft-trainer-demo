@@ -31,5 +31,13 @@
     if (exercise.media_type === 'video' || /\.(mp4|webm)(\?|$)/i.test(url)) return `<video style="width:100%;max-height:340px" controls playsinline preload="metadata" src="${escape(url)}"></video>`;
     return `<img style="width:100%;max-height:340px;object-fit:contain" src="${escape(url)}" alt="Demostracion de ${escape(exercise.name || 'ejercicio')}">`;
   }
-  window.ftExerciseMedia = {youtubeId, vimeoVideo, html};
+  function preview(exercise) {
+    const url=exercise.media_url||'',id=youtubeId(url),vimeo=vimeoVideo(url);
+    const play='<span class="catalog-video-play" aria-hidden="true">▶</span>';
+    if(id)return `<img src="https://i.ytimg.com/vi/${id}/hqdefault.jpg" alt="Vista previa de ${escape(exercise.name)}" loading="lazy">${play}`;
+    if(vimeo)return `<iframe src="${escape(vimeo.embed)}" title="Vista previa de ${escape(exercise.name)}" loading="lazy" tabindex="-1" aria-hidden="true" class="catalog-video-frame"></iframe>${play}`;
+    if((exercise.media_type==='video'||/\.(mp4|webm)(\?|$)/i.test(url))&&/^https?:\/\//i.test(url))return `<video src="${escape(url)}#t=0.1" muted playsinline preload="metadata" aria-hidden="true"></video>${play}`;
+    return `<img src="${escape(exercise.thumbnail_url||'assets/brand/ft-symbol-color.png')}" alt="${escape(exercise.name)}" loading="lazy">`;
+  }
+  window.ftExerciseMedia = {youtubeId, vimeoVideo, html, preview};
 })();
