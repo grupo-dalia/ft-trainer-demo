@@ -40,10 +40,18 @@
     return `<img src="${escape(exercise.thumbnail_url||(/^(https?:\/\/|assets\/)/i.test(url)&&!vimeo?url:'assets/brand/ft-symbol-color.png'))}" alt="${escape(exercise.name)}" loading="lazy">`;
   }
   const previewCache=new Map();
+  let savedThumbnails;
+  async function savedThumbnail(url){
+    if(!savedThumbnails)savedThumbnails=fetch('data/video-thumbnails.json?v=1').then(response=>response.ok?response.json():{}).catch(()=>({}));
+    const items=await savedThumbnails;
+    return /^https:\/\//i.test(items[url]||'')?items[url]:null;
+  }
   async function hydratePreviews(root) {
     await Promise.all([...root.querySelectorAll('[data-vimeo-preview]')].map(async img=>{
       const url=img.dataset.vimeoPreview;
       try{
+        const saved=await savedThumbnail(url);
+        if(saved){img.src=saved;return;}
         if(!previewCache.has(url))previewCache.set(url,fetch('https://vimeo.com/api/oembed.json?url='+encodeURIComponent(url)).then(response=>{if(!response.ok)throw Error('preview');return response.json()}).then(data=>{if(!/^https:\/\//i.test(data.thumbnail_url||''))throw Error('thumbnail');return data.thumbnail_url}));
         img.src=await previewCache.get(url);
       }catch{previewCache.delete(url);}

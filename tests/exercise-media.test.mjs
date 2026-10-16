@@ -34,9 +34,19 @@ test('library previews use YouTube thumbnails, resolve Vimeo and retain catalog 
 
 test('Vimeo thumbnails are loaded once and reused across cards',async()=>{
  let requests=0;
- const ctx=vm.createContext({window:{},URL,fetch:async()=>{requests++;return {ok:true,json:async()=>({thumbnail_url:'https://i.vimeocdn.com/video/test.jpg'})}}});
+ const ctx=vm.createContext({window:{},URL,fetch:async url=>{if(url.startsWith('data/'))return {ok:true,json:async()=>({})};requests++;return {ok:true,json:async()=>({thumbnail_url:'https://i.vimeocdn.com/video/test.jpg'})}}});
  vm.runInContext(fs.readFileSync(new URL('../exercise-media.js',import.meta.url),'utf8'),ctx);
  const images=[{dataset:{vimeoPreview:'https://vimeo.com/123'}},{dataset:{vimeoPreview:'https://vimeo.com/123'}}];
  await ctx.window.ftExerciseMedia.hydratePreviews({querySelectorAll:()=>images});
  assert.equal(requests,1);assert.equal(images[0].src,'https://i.vimeocdn.com/video/test.jpg');assert.equal(images[1].src,images[0].src);
+});
+
+
+test('saved verified thumbnails avoid cross-origin Vimeo requests',async()=>{
+ const requests=[];
+ const ctx=vm.createContext({window:{},URL,fetch:async url=>{requests.push(url);return {ok:true,json:async()=>({'https://vimeo.com/123':'https://i.vimeocdn.com/video/saved.jpg'})}}});
+ vm.runInContext(fs.readFileSync(new URL('../exercise-media.js',import.meta.url),'utf8'),ctx);
+ const image={dataset:{vimeoPreview:'https://vimeo.com/123'}};
+ await ctx.window.ftExerciseMedia.hydratePreviews({querySelectorAll:()=>[image]});
+ assert.equal(image.src,'https://i.vimeocdn.com/video/saved.jpg');assert.equal(requests.length,1);assert.match(requests[0],/^data\//);
 });
