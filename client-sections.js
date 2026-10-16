@@ -1612,11 +1612,22 @@
     };
   }
 
+  async function loadClientLibraryExercises() {
+    const records=[];
+    for(let offset=0;;offset+=500){
+      const batch=await checkedQuery(db.from("exercises").select("id,name,body_group,primary_muscle,equipment,instructions,media_url,thumbnail_url,media_type,tracking_type,is_custom,source_catalog_id,created_at").eq("is_active",true).order("id").range(offset,offset+499));
+      records.push(...(batch||[]));
+      if(!batch||batch.length<500)break;
+    }
+    const custom=item=>item.is_custom===true&&!item.source_catalog_id;
+    return records.sort((a,b)=>Number(custom(b))-Number(custom(a))||(custom(a)&&custom(b)?(Date.parse(b.created_at)||0)-(Date.parse(a.created_at)||0):0)||a.name.localeCompare(b.name,'es'));
+  }
+
   async function renderClientLibrary(host) {
     try {
     host.innerHTML = '<div class="panel-loading">Cargando ejercicios…</div>';
     if (!clientExerciseLibrary) {
-      const data = await checkedQuery(db.from("exercises").select("id,name,body_group,primary_muscle,equipment,instructions,media_url,thumbnail_url,media_type,tracking_type").eq("is_active", true).order("name").limit(1000));
+      const data = await loadClientLibraryExercises();
       clientExerciseLibrary = (data || []).map((item) => ({ id:item.id, nombre_es:item.name, grupo:item.primary_muscle || item.body_group, equipo:item.equipment || "Sin material", imagen:item.thumbnail_url || item.media_url || "assets/brand/ft-symbol-color.png", gif:item.media_url || item.thumbnail_url, instrucciones:item.instructions ? [item.instructions] : [], database:item }));
     }
     host.innerHTML = `<section class="client-panel-card client-library"><div class="panel-title"><div><small>BIBLIOTECA FT</small><h2>Ejercicios y tecnica</h2></div><button type="button" id="create-client-exercise">+ Crear ejercicio</button></div><div class="client-library-tools"><input id="client-exercise-search" placeholder="Buscar ejercicio o musculo…"><select id="client-exercise-group"><option value="">Todos los grupos</option>${[...new Set(clientExerciseLibrary.map((item) => item.grupo).filter(Boolean))].sort().map((group) => `<option>${esc(group)}</option>`).join("")}</select></div><div class="client-library-selection"><span>Selecciona varios ejercicios o abre uno para configurar sus series.</span><button type="button" class="add-selected-exercises" disabled>Añadir seleccionados (0)</button></div><div class="client-library-results"></div></section>`;

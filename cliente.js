@@ -22,7 +22,7 @@ window.addEventListener("pageshow", (event) => {
     await load("vendor/jspdf.umd.min.js");
     await load("client-fees.js?v=2");
     await load("exercise-progression.js?v=6");
-    await load("client-sections.js?v=46");
+    await load("client-sections.js?v=47");
     await load("client-materials.js?v=2");
     await load("client-hall-of-fame.js?v=2");
     await load("client-navigation-fix.js?v=3");
@@ -126,7 +126,7 @@ window.addEventListener("pageshow", (event) => {
     await load("vendor/jspdf.umd.min.js");
     await load("client-fees.js?v=2");
     await load("exercise-progression.js?v=6");
-    await load("client-sections.js?v=46");
+    await load("client-sections.js?v=47");
   await load("client-materials.js?v=2");
   await load("client-hall-of-fame.js?v=2");
   await load("client-navigation-fix.js?v=3");
