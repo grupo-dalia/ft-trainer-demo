@@ -24,3 +24,19 @@ test('Vimeo keeps unlisted privacy hashes and rejects lookalike hosts',()=>{
  assert.equal(media.vimeoVideo('https://vimeo.com.evil.test/123456789'),null);
  assert.match(media.html({media_url:'https://vimeo.com/123456789/abcdef1234'}),/player.vimeo.com\/video\/123456789\?h=abcdef1234/);
 });
+
+test('library previews use YouTube thumbnails, resolve Vimeo and retain catalog images',()=>{
+ assert.match(media.preview({media_url:'https://youtu.be/abcdefghijk',name:'Press'}),/i.ytimg.com\/vi\/abcdefghijk\/hqdefault.jpg/);
+ assert.match(media.preview({media_url:'https://vimeo.com/123456789',name:'Press'}),/data-vimeo-preview="https:\/\/vimeo.com\/123456789"/);
+ assert.match(media.preview({media_url:'https://example.com/demo.gif',name:'Press'}),/src="https:\/\/example.com\/demo.gif"/);
+ assert.match(media.preview({media_url:'https://example.com/demo.mp4',name:'Press'}),/<video/);
+});
+
+test('Vimeo thumbnails are loaded once and reused across cards',async()=>{
+ let requests=0;
+ const ctx=vm.createContext({window:{},URL,fetch:async()=>{requests++;return {ok:true,json:async()=>({thumbnail_url:'https://i.vimeocdn.com/video/test.jpg'})}}});
+ vm.runInContext(fs.readFileSync(new URL('../exercise-media.js',import.meta.url),'utf8'),ctx);
+ const images=[{dataset:{vimeoPreview:'https://vimeo.com/123'}},{dataset:{vimeoPreview:'https://vimeo.com/123'}}];
+ await ctx.window.ftExerciseMedia.hydratePreviews({querySelectorAll:()=>images});
+ assert.equal(requests,1);assert.equal(images[0].src,'https://i.vimeocdn.com/video/test.jpg');assert.equal(images[1].src,images[0].src);
+});

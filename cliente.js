@@ -17,12 +17,12 @@ window.addEventListener("pageshow", (event) => {
   ) {
     await load("cliente-base.js?v=3");
     await load("client-home.js?v=9");
-    await load("exercise-media.js?v=2");
+    await load("exercise-media.js?v=4");
     await load("set-progress.js?v=1");
     await load("vendor/jspdf.umd.min.js");
     await load("client-fees.js?v=2");
     await load("exercise-progression.js?v=6");
-    await load("client-sections.js?v=47");
+    await load("client-sections.js?v=48");
     await load("client-materials.js?v=2");
     await load("client-hall-of-fame.js?v=2");
     await load("client-navigation-fix.js?v=3");
@@ -121,12 +121,12 @@ window.addEventListener("pageshow", (event) => {
     member.access_status === "active" && membershipIsCurrent;
   await load("cliente-base.js?v=3");
   await load("client-home.js?v=9");
-  await load("exercise-media.js?v=2");
+  await load("exercise-media.js?v=4");
   await load("set-progress.js?v=1");
     await load("vendor/jspdf.umd.min.js");
     await load("client-fees.js?v=2");
     await load("exercise-progression.js?v=6");
-    await load("client-sections.js?v=47");
+    await load("client-sections.js?v=48");
   await load("client-materials.js?v=2");
   await load("client-hall-of-fame.js?v=2");
   await load("client-navigation-fix.js?v=3");

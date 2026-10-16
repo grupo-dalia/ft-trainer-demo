@@ -35,9 +35,19 @@
     const url=exercise.media_url||'',id=youtubeId(url),vimeo=vimeoVideo(url);
     const play='<span class="catalog-video-play" aria-hidden="true">▶</span>';
     if(id)return `<img src="https://i.ytimg.com/vi/${id}/hqdefault.jpg" alt="Vista previa de ${escape(exercise.name)}" loading="lazy">${play}`;
-    if(vimeo)return `<iframe src="${escape(vimeo.embed)}" title="Vista previa de ${escape(exercise.name)}" loading="lazy" tabindex="-1" aria-hidden="true" class="catalog-video-frame"></iframe>${play}`;
+    if(vimeo)return `<img src="${escape(exercise.thumbnail_url||(/^(https?:\/\/|assets\/)/i.test(url)&&!vimeo?url:'assets/brand/ft-symbol-color.png'))}" data-vimeo-preview="${escape(vimeo.url)}" alt="Vista previa de ${escape(exercise.name)}" loading="lazy">${play}`;
     if((exercise.media_type==='video'||/\.(mp4|webm)(\?|$)/i.test(url))&&/^https?:\/\//i.test(url))return `<video src="${escape(url)}#t=0.1" muted playsinline preload="metadata" aria-hidden="true"></video>${play}`;
-    return `<img src="${escape(exercise.thumbnail_url||'assets/brand/ft-symbol-color.png')}" alt="${escape(exercise.name)}" loading="lazy">`;
+    return `<img src="${escape(exercise.thumbnail_url||(/^(https?:\/\/|assets\/)/i.test(url)&&!vimeo?url:'assets/brand/ft-symbol-color.png'))}" alt="${escape(exercise.name)}" loading="lazy">`;
   }
-  window.ftExerciseMedia = {youtubeId, vimeoVideo, html, preview};
+  const previewCache=new Map();
+  async function hydratePreviews(root) {
+    await Promise.all([...root.querySelectorAll('[data-vimeo-preview]')].map(async img=>{
+      const url=img.dataset.vimeoPreview;
+      try{
+        if(!previewCache.has(url))previewCache.set(url,fetch('https://vimeo.com/api/oembed.json?url='+encodeURIComponent(url)).then(response=>{if(!response.ok)throw Error('preview');return response.json()}).then(data=>{if(!/^https:\/\//i.test(data.thumbnail_url||''))throw Error('thumbnail');return data.thumbnail_url}));
+        img.src=await previewCache.get(url);
+      }catch{previewCache.delete(url);}
+    }));
+  }
+  window.ftExerciseMedia = {youtubeId, vimeoVideo, html, preview, hydratePreviews};
 })();
