@@ -43,7 +43,7 @@ if (!session) {
     await load("supabase-data.js?v=12");
     await load("admin-live.js?v=13");
     await load("terms-viewer.js?v=1");
-    await load("routine-folders.js?v=21");
+    await load("routine-folders.js?v=24");
     await load("admin-enhancements.js?v=7");
     await load("client-groups.js?v=1");
     await load("routine-editor.js?v=9");
@@ -58,7 +58,7 @@ if (!session) {
     await load("vendor/jspdf.umd.min.js");
     await load("admin-month-details.js?v=2");
     await load("exercise-progression.js?v=6");
-    await load("routine-history.js?v=9");
+    await load("routine-history.js?v=10");
     await load("messaging.js?v=2");
     document.body.style.visibility = "visible";
   }

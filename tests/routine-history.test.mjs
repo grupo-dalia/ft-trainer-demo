@@ -52,3 +52,9 @@ test('previous-session dashes count as zero without inventing recorded values or
  assert.match(html,/<div class="series-values compare-higher"[^>]*><strong title="Más repeticiones que la sesión anterior">6<\/strong>/);
  assert.match(html,/<div class="series-values compare-none"><strong>—<\/strong>/);
 });
+test('routine deletion checks trainer role before mutation and verifies the requested client',async()=>{
+ let deleted=false,filters=[];
+ const db={rpc:async()=>({data:false}),from:()=>{deleted=true;return {delete(){return this},eq(key,value){filters.push([key,value]);return this},select(){return this},single:async()=>({data:{id:'r'}})}}};
+ await assert.rejects(()=>ctx.RoutineHistoryCore.deleteAdminRoutine(db,'r','c'),/administradores/);assert.equal(deleted,false);
+ db.rpc=async()=>({data:true});await ctx.RoutineHistoryCore.deleteAdminRoutine(db,'r','c');assert.deepEqual(filters,[['id','r'],['client_id','c']]);
+});

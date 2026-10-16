@@ -47,7 +47,7 @@ async function loadRoutineFolders() {
       ),
       ...folderState.routines.map(
         (routine) =>
-          `<article class="routine-file"><div class="file-icon routine-icon">▤</div><div class="routine-copy"><b>${escapeHtml(routine.name)}</b><small>${escapeHtml(routine.description || "Sin descripcion")}</small></div><label class="folder-public-control"><input type="checkbox" class="publish-routine" data-routine="${routine.id}" ${routine.is_published?"checked":""}> Visible para usuarios</label><div class="routine-actions"><button type="button" class="secondary rename-routine" data-rename-routine="${routine.id}">Renombrar</button><button type="button" class="secondary edit-routine" data-routine="${routine.id}">Editar ejercicios</button><button type="button" class="primary assign-routine" data-routine="${routine.id}">Asignar a cliente</button></div><label class="move-control">Guardar en<select class="folder-move" data-routine="${routine.id}" aria-label="Mover rutina"><option value="">Rutinas (raiz)</option>${options}</select><button type="button" class="move-routine-button" data-move-routine="${routine.id}">Añadir a carpeta</button></label></article>`,
+          `<article class="routine-file"><div class="file-icon routine-icon">▤</div><div class="routine-copy"><b>${escapeHtml(routine.name)}</b><small>${escapeHtml(routine.description || "Sin descripcion")}</small></div><label class="folder-public-control"><input type="checkbox" class="publish-routine" data-routine="${routine.id}" ${routine.is_published?"checked":""}> Visible para usuarios</label><div class="routine-actions"><button type="button" class="secondary rename-routine" data-rename-routine="${routine.id}">Renombrar</button><button type="button" class="secondary edit-routine" data-routine="${routine.id}" aria-label="Editar rutina" title="Editar rutina"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-9M8 3v18M5 7h3M5 12h3M5 17h3"/><path d="m13 12 1-4 6-6 3 3-6 6-4 1ZM18 4l3 3"/></svg></button><button type="button" class="primary assign-routine" data-routine="${routine.id}" aria-label="Asignar a cliente" title="Asignar a cliente"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="9" cy="7" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M19 8v8M15 12h8"/></svg></button></div><label class="move-control">Guardar en<select class="folder-move" data-routine="${routine.id}" aria-label="Mover rutina"><option value="">Rutinas (raiz)</option>${options}</select><button type="button" class="move-routine-button" data-move-routine="${routine.id}">Añadir a carpeta</button></label></article>`,
       ),
     ].join("") ||
     '<div class="routine-empty"><b>Esta carpeta esta vacia</b><p>Crea una rutina o mueve una existente hasta aqui.</p></div>';
@@ -108,11 +108,13 @@ async function loadRoutineFolders() {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "secondary delete-routine";
-    button.textContent = "Eliminar";
+    button.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/></svg>';
+    button.setAttribute("aria-label", "Eliminar rutina");button.title="Eliminar rutina";
     button.onclick = async () => {
       if (!confirm("Eliminar esta rutina? Las asignaciones de esta plantilla no se veran afectadas.")) return;
-      const { error } = await ftSupabase.from("routines").delete().eq("id", routineId).is("client_id", null);
-      if (error) { toast("No se pudo eliminar la rutina."); return; }
+      button.disabled=true;
+      try { await window.RoutineHistoryCore.deleteAdminRoutine(ftSupabase,routineId,null); }
+      catch { button.disabled=false;toast("No se pudo eliminar la rutina o no tienes permisos de administrador.");return; }
       toast("Rutina eliminada.");
       loadRoutineFolders();
     };

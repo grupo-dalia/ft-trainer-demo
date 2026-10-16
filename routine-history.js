@@ -47,7 +47,15 @@
     }).join('');
     return {weeks,html};
   }
-  root.RoutineHistoryCore={routineTable,compareMetrics};
+  async function deleteAdminRoutine(db,routineId,clientId){
+    const role=await db.rpc('is_trainer');
+    if(role.error||role.data!==true)throw Error('Solo los administradores pueden eliminar rutinas.');
+    let query=db.from('routines').delete().eq('id',routineId);
+    query=clientId?query.eq('client_id',clientId):query.is('client_id',null);
+    const result=await query.select('id').single();
+    if(result.error||!result.data)throw Error('No se pudo eliminar la rutina.');
+  }
+  root.RoutineHistoryCore={routineTable,compareMetrics,deleteAdminRoutine};
   if(typeof window==='undefined')return;
   async function allPages(query){const rows=[];for(let offset=0;;){const {data,error}=await query().order('id').range(offset,offset+499);if(error)throw error;if(!data?.length)return rows;rows.push(...data);offset+=data.length}}
   window.ftRoutineHistory={async mount(host,db,clientId){host.innerHTML='<p>Cargando rutinas e histórico…</p>';try{
@@ -60,6 +68,7 @@
     host.innerHTML='<div class="routine-history-list"></div>';
     const list=host.querySelector('.routine-history-list');
     if(!routines.length){list.innerHTML='<p>No hay rutinas asignadas a este cliente.</p>';return}
-    for(const routine of routines){routine.routine_exercises=items.filter(item=>item.routine_id===routine.id);const section=document.createElement('details');section.className='routine-weekly';section.open=routines.length===1;const result=routineTable(routine,logs);section.innerHTML=`<summary><span class="routine-history-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="3" width="16" height="18" rx="3"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span><span class="routine-history-title"><b>${esc(routine.name)}</b><small>Sesiones por día · ${routine.routine_exercises.length} ejercicios asignados</small></span></summary><div class="routine-history-controls"><p>Cada día, sus ejercicios y series.<br>Cada sesión se compara con la anterior.</p><label>Mostrar<select><option value="">Todas las semanas</option>${result.weeks.slice().reverse().map(w=>`<option value="${w}">Semana del ${date(w+'T12:00:00Z')}</option>`).join('')}</select></label></div><div class="routine-week-result">${result.html}</div>`;section.querySelector('select').onchange=event=>{section.querySelector('.routine-week-result').innerHTML=routineTable(routine,logs,event.target.value).html};list.appendChild(section)}
+    const role=await db.rpc('is_trainer');const canDelete=!role.error&&role.data===true;
+    for(const routine of routines){routine.routine_exercises=items.filter(item=>item.routine_id===routine.id);const section=document.createElement('details');section.className='routine-weekly';section.open=routines.length===1;const result=routineTable(routine,logs);section.innerHTML=`<summary><span class="routine-history-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="3" width="16" height="18" rx="3"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span><span class="routine-history-title"><b>${esc(routine.name)}</b><small>Sesiones por día · ${routine.routine_exercises.length} ejercicios asignados</small></span>${canDelete?'<button type="button" class="routine-history-delete" aria-label="Eliminar rutina" title="Eliminar rutina"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/></svg></button>':''}</summary><div class="routine-history-controls"><p>Cada día, sus ejercicios y series.<br>Cada sesión se compara con la anterior.</p><label>Mostrar<select><option value="">Todas las semanas</option>${result.weeks.slice().reverse().map(w=>`<option value="${w}">Semana del ${date(w+'T12:00:00Z')}</option>`).join('')}</select></label></div><div class="routine-week-result">${result.html}</div>`;section.querySelector('select').onchange=event=>{section.querySelector('.routine-week-result').innerHTML=routineTable(routine,logs,event.target.value).html};const remove=section.querySelector('.routine-history-delete');if(remove)remove.onclick=async event=>{event.preventDefault();event.stopPropagation();if(!confirm(`¿Eliminar la rutina "${routine.name}" de este cliente? Los entrenamientos ya registrados se conservarán.`))return;remove.disabled=true;try{await deleteAdminRoutine(db,routine.id,clientId);await window.ftRoutineHistory.mount(host,db,clientId)}catch(error){remove.disabled=false;toast(error.message)}};list.appendChild(section)}
   }catch{host.innerHTML='<p>No se pudo cargar el histórico.</p><button type="button">Reintentar</button>';host.querySelector('button').onclick=()=>window.ftRoutineHistory.mount(host,db,clientId)}}};
 })(globalThis);
