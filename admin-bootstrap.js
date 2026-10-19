@@ -47,7 +47,7 @@ if (!session) {
     await load("admin-enhancements.js?v=7");
     await load("client-groups.js?v=1");
     await load("routine-editor.js?v=9");
-    await load("routine-planner-v2.js?v=5");
+    await load("routine-planner-v2.js?v=7");
     await load("client-import-core.js?v=6");
     await load("client-import.js?v=11");
     await load("payments-manager.js?v=6");

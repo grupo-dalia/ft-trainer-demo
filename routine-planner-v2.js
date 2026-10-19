@@ -55,10 +55,11 @@
       dayConfig.innerHTML = weekly ? `<p><b>Que se trabaja cada dia</b><small>El editor filtrara el catalogo automaticamente.</small></p>${selected.map((day, index) => `<label>${labels[day - 1]}<select name="muscle_${day}">${defaultMuscles.map((muscle) => `<option${muscle === defaultMuscles[index] ? " selected" : ""}>${muscle}</option>`).join("")}</select></label>`).join("")}` : "";
     };
     const setMode = () => {
-      const guided = form.querySelector('[name="mode"]:checked').value === "guided";
-      node.querySelector(".plan-choice-grid").hidden = !guided;
-      if (guided) renderDayConfig();
-      else { days.classList.remove("show"); dayQuestion.hidden = true; dayConfig.hidden = true; }
+      const weekly=form.querySelector('[name="scope"]:checked').value === "weekly";
+      node.querySelector(".plan-choice-grid").hidden=false;
+      days.classList.toggle("show",weekly);
+      dayQuestion.hidden=!weekly;
+      renderDayConfig();
     };
     node.querySelector(".admin-form-close").onclick = () =>
       node.classList.remove("open");
@@ -75,13 +76,12 @@
     );
     days.querySelectorAll('input[name="day"]').forEach((input) => (input.onchange = renderDayConfig));
     form.querySelectorAll('[name="mode"]').forEach((input) => (input.onchange = setMode));
-    dayQuestion.hidden = true;
-    renderDayConfig();
+    setMode();
     form.onsubmit = async (event) => {
       event.preventDefault();
       const data = new FormData(form),
         mode = String(data.get("mode")),
-        scope = mode === "manual" ? "manual" : String(data.get("scope")),
+        scope = String(data.get("scope")),
         selectedDays = data.getAll("day"),
         feedback = form.querySelector(".form-feedback"),
         button = form.querySelector('[type="submit"]');
@@ -145,10 +145,10 @@
     if (!header || !list || !dayInput) return;
     const rows = [...list.querySelectorAll(".routine-exercise-row")],
       usedDays = [...new Set([...rows.map((row) => Number(row.querySelector(".routine-exercise-order")?.textContent.match(/\d+/)?.[0]) || 1), ...(routineConfig?.coach_reasoning?.training_days || [])])].sort((a, b) => a - b),
-      maxDay = Math.max(1, ...usedDays),
+      sessionCount = usedDays.length || 1,
       controls = document.createElement("div");
     controls.className = "planner-editor-summary";
-    controls.innerHTML = `<span>${maxDay} ${maxDay === 1 ? "sesion" : "sesiones"}</span><span>${rows.length} ejercicios</span><span>Organizado por dia y musculo</span>`;
+    controls.innerHTML = `<span>${sessionCount} ${sessionCount === 1 ? "sesion" : "sesiones"}</span><span>${rows.length} ejercicios</span><span>Organizado por dia y musculo</span>`;
     header.querySelector("div").appendChild(controls);
     const assignButton = document.createElement("button");
     assignButton.type = "button";
@@ -178,6 +178,24 @@
     };
     list.parentElement.insertBefore(tabs, list);
     renderTabs(usedDays[0] || 1);
+
+    const daySettings=document.createElement("details");
+    daySettings.className="planner-editor-days";
+    daySettings.innerHTML=`<summary>Configurar días de entrenamiento</summary><div>${["Lunes","Martes","Miercoles","Jueves","Viernes","Sabado","Domingo"].map((label,index)=>`<label><input type="checkbox" value="${index+1}" ${usedDays.includes(index+1)?"checked":""}> ${label}</label>`).join("")}</div><button type="button" class="secondary">Guardar días</button><p role="status"></p>`;
+    tabs.before(daySettings);
+    daySettings.querySelector("button").onclick=async()=>{
+      const selected=[...daySettings.querySelectorAll("input:checked")].map(input=>Number(input.value));
+      const status=daySettings.querySelector("p"),button=daySettings.querySelector("button");
+      if(!selected.length){status.textContent="Selecciona al menos un día.";return;}
+      const occupied=rows.map(row=>Number(row.querySelector(".routine-exercise-order")?.textContent.match(/\d+/)?.[0])||1);
+      if(occupied.some(day=>!selected.includes(day))){status.textContent="No puedes quitar un día que contiene ejercicios.";return;}
+      button.disabled=true;
+      const reasoning={...(routineConfig?.coach_reasoning||{}),scope:selected.length>1?"weekly":"daily",training_days:selected};
+      const {error}=await ftSupabase.from("routines").update({coach_reasoning:reasoning}).eq("id",id).select("id").single();
+      button.disabled=false;
+      if(error){status.textContent="No se pudieron guardar los días. Inténtalo de nuevo.";return;}
+      await window.openRoutineEditor(id);
+    };
 
     const search = host.querySelector("#routine-exercise-search"),
       searchLabel = search?.closest("label");
